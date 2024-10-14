@@ -24,7 +24,7 @@ public class Program
         if (identityFolder is null)
             throw new InvalidOperationException("Please set 'WhalesSecretPrivateAssets' environment variable.");
 
-        string credentialsJson = File.ReadAllText(Path.Combine(identityFolder,  "BinanceApiIdentity.json"));
+        string credentialsJson = File.ReadAllText(Path.Combine(identityFolder, "BinanceApiIdentity.json"));
         using BinanceApiIdentity apiIdentity = BinanceApiIdentity.CreateFromJson(credentialsJson);
 
         api.SetCredentials(apiIdentity);
