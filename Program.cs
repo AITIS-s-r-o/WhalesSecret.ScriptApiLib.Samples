@@ -29,8 +29,8 @@ public class Program
 
         api.SetCredentials(apiIdentity);
 
-        ITradeApiClient client = await api.TradeApiV1.ConnectAsync(ExchangeMarket.BinanceSpot).ConfigureAwait(false);
-        ITickerSubscription tickerSubscription = await client.CreateTickerSubscriptionAsync(SymbolPair.BTC_USDT, CancellationToken.None).ConfigureAwait(false);
+        await using ITradeApiClient client = await api.TradeApiV1.ConnectAsync(ExchangeMarket.BinanceSpot).ConfigureAwait(false);
+        await using ITickerSubscription tickerSubscription = await client.CreateTickerSubscriptionAsync(SymbolPair.BTC_USDT, CancellationToken.None).ConfigureAwait(false);
 
         while (true)
         {
