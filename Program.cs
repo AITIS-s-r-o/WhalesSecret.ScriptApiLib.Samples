@@ -16,9 +16,11 @@ public class Program
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task Main(string[] args)
     {
-        await using ScriptApi api = await ScriptApi.CreateAsync(appDataFolder: "data", connectToBinanceSandbox: false, connectToKucoinSandbox: false);
+        await using ScriptApi api = await ScriptApi.CreateAsync();
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
-        await using ITradeApiClient client = await api.TradeApiV1.ConnectAsync(ExchangeMarket.BinanceSpot, connectionOptions).ConfigureAwait(false);
+
+        _ = await api.InitializeMarketAsync(ExchangeMarket.BinanceSpot).ConfigureAwait(false);
+        await using ITradeApiClient client = await api.ConnectAsync(ExchangeMarket.BinanceSpot, connectionOptions).ConfigureAwait(false);
         await using ITickerSubscription tickerSubscription = await client.CreateTickerSubscriptionAsync(SymbolPair.BTC_USDT, CancellationToken.None).ConfigureAwait(false);
 
         while (true)
