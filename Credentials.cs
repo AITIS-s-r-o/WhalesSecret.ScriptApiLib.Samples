@@ -42,7 +42,7 @@ public static class Credentials
     /// </summary>
     /// <returns>Exchange API credentials for Binance exchange using RSA algorithm.</returns>
     public static IApiIdentity GetBinanceRsaApiIdentity()
-        => BinanceApiIdentity.CreateRsa(name: "BinanceRsaCredentials", key: BinanceRsaApiKey, BinanceRsaSecret);
+        => BinanceApiIdentity.CreateRsa(name: "BinanceRsaCredentials", key: BinanceRsaApiKey, Convert.FromBase64String(BinanceRsaSecret));
 
     /// <summary>
     /// Gets exchange API credentials for Kucoin exchange.
