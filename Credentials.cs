@@ -17,7 +17,7 @@ public static class Credentials
     public const string BinanceRsaApiKey = "CHANGE THIS TO Binance RSA API key";
 
     /// <summary>API secret for Binance exchange using RSA algorithm.</summary>
-    public const string BinanceRsaSecret = "CHANGE THIS TO BASE-64 encoded Binance RSA API secret";
+    public const string BinanceRsaSecret = "CHANGE THIS TO BASE64 encoded Binance RSA API secret";
 
     /// <summary>API key for Kucoin exchange.</summary>
     public const string KucoinApiKey = "CHANGE THIS TO Kucoin API key";
