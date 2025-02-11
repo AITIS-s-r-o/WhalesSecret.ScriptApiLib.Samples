@@ -39,7 +39,7 @@ public class OrderBookBasic : IScriptApiSample
         await Console.Out.WriteLineAsync($"Wait for next order book update for {symbolPair}.").ConfigureAwait(false);
         OrderBook orderBook = await subscription.GetOrderBookAsync(getMode: OrderBookGetMode.WaitUntilNew, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Order book update '{orderBook}' has been received.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync($"Up-to-date order book snapshot '{orderBook}' has been received.").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
         for (int i = 4; i >= 0; i--)
