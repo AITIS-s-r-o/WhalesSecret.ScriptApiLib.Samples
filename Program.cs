@@ -1,15 +1,21 @@
 using System;
 using System.Threading.Tasks;
+using WhalesSecret.ScriptApiLib.Samples.Connections;
 using WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 using WhalesSecret.TradeScriptLib.Entities;
 
 namespace WhalesSecret.ScriptApiLib.Samples;
 
+/// <summary>
+/// Main application class that contains program entry point.
+/// </summary>
 public class Program
 {
     /// <summary>List of supported samples. Each sample is defined by a triplet - name of the sample, type of the sample class, and description.</summary>
     private static readonly object[][] sampleDescriptions = new object[][]
     {
+        new object[] { "Connections/Public", typeof(PublicConnection), "Demonstrates how to connect to an exchange via public connection."},
+        new object[] { "Connections/Private", typeof(PrivateConnection), "Demonstrates how to connect to an exchange via private connection using exchange API credentials."},
         new object[] { "Subscriptions/Candle.Basic", typeof(CandleBasic), "Basic candle subscription sample. Demonstrates how a candle subscription can created and consumed."},
         new object[] { "Subscriptions/OrderBook.Basic", typeof(OrderBookBasic), "Basic order book subscription sample. Demonstrates how an order book subscription can be created"
             + " and consumed."},
@@ -19,7 +25,15 @@ public class Program
     /// <summary>
     /// Application that fetches new ticker data and displays it.
     /// </summary>
-    /// <param name="args">Command-line arguments.</param>
+    /// <param name="args">Command-line arguments.
+    /// <para>The program must be started with 2 arguments given in this order:
+    /// <list type="table">
+    /// <item><c>sampleName</c> – Name of the sample to run.</item>
+    /// <item><c>exchangeMarket</c> – <see cref="ExchangeMarket">Exchange market</see> to use in the sample.</item>
+    /// </list>
+    /// </para>
+    /// <para>Run the program without any arguments to see the supported values for each argument.</para>
+    /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task Main(string[] args)
     {
@@ -61,7 +75,7 @@ public class Program
         await Console.Out.WriteLineAsync($$"""
             Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}} <sampleName> <exchangeMarket>
 
-                sampleName - name of the sample to run, following values are supported:
+                sampleName - Name of the sample to run. Following values are supported:
 
             """).ConfigureAwait(false);
 
@@ -75,7 +89,7 @@ public class Program
         string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
         await Console.Out.WriteLineAsync($$"""
 
-                exchangeMarket - which exchange market should the sample connect to; supported values are {{markets}}
+                exchangeMarket - Exchange market to use in the sample. Supported values are {{markets}}
             """).ConfigureAwait(false);
     }
 }
