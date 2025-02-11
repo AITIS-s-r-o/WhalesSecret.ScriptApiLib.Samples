@@ -1,5 +1,6 @@
+using System;
 using System.Diagnostics;
-using WhalesSecret.ScriptApiLib;
+using System.Threading.Tasks;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.Entities;
