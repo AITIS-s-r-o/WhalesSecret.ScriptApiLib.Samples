@@ -1,3 +1,4 @@
+using System;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Entities;
 
@@ -10,19 +11,19 @@ namespace WhalesSecret.ScriptApiLib.Samples;
 public static class Credentials
 {
     /// <summary>API key for Binance exchange using HMAC algorithm.</summary>
-    public const string BinanceHmacApiKey = "CHANGE THIS Binance HMAC API key";
+    public const string BinanceHmacApiKey = "CHANGE THIS TO Binance HMAC API key";
 
     /// <summary>API key for Binance exchange using RSA algorithm.</summary>
-    public const string BinanceRsaApiKey = "CHANGE THIS Binance RSA API key";
+    public const string BinanceRsaApiKey = "CHANGE THIS TO Binance RSA API key";
+
+    /// <summary>API secret for Binance exchange using RSA algorithm.</summary>
+    public const string BinanceRsaSecret = "CHANGE THIS TO BASE-64 encoded Binance RSA API secret";
 
     /// <summary>API key for Kucoin exchange.</summary>
     public const string KucoinApiKey = "CHANGE THIS Kucoin API key";
 
     /// <summary>API secret for Binance exchange using HMAC algorithm.</summary>
     public static readonly SensitiveByteArray BinanceHmacSecret = "CHANGE THIS Binance HMAC API secret"u8;
-
-    /// <summary>API secret for Binance exchange using RSA algorithm.</summary>
-    public static readonly SensitiveByteArray BinanceRsaSecret = "CHANGE THIS Binance RSA API secret"u8;
 
     /// <summary>API secret for Kucoin exchange.</summary>
     public static readonly SensitiveByteArray KucoinSecret = "CHANGE THIS Kucoin secret"u8;
