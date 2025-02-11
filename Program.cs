@@ -55,7 +55,7 @@ public class Program
             await Console.Out.WriteLineAsync($$"""
                 ERROR: {{error}}
 
-            """).ConfigureAwait(false);
+                """).ConfigureAwait(false);
         }
 
         await Console.Out.WriteLineAsync($$"""
