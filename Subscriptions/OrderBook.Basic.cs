@@ -9,7 +9,7 @@ using WhalesSecret.TradeScriptLib.Entities.MarketData;
 namespace WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 
 /// <summary>
-/// Tests of order book subscriptions with a trade API client in the script-box-less environment.
+/// Basic sample that demonstrates how an order book subscription can be created and consumed.
 /// </summary>
 public class OrderBookBasic : IScriptApiSample
 {
