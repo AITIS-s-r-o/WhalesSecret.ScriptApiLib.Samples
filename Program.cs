@@ -11,8 +11,8 @@ public class Program
     private static readonly object[][] sampleDescriptions = new object[][]
     {
         new object[] { "Subscriptions/Candle.Basic", typeof(CandleBasic), "Basic candle subscription sample. Demonstrates how candle subscriptions can created and consumed."},
-        new object[] { "Subscriptions/OrderBook.Basic", typeof(OrderBookBasic), "Basic order book subscription sample. Demonstrates how an order book subscription can be created and "
-            + "consumed."},
+        new object[] { "Subscriptions/OrderBook.Basic", typeof(OrderBookBasic), "Basic order book subscription sample. Demonstrates how an order book subscription can be created"
+            + " and consumed."},
         new object[] { "Subscriptions/Ticker.Basic", typeof(TickerBasic), "Basic ticker subscription sample. Demonstrates how ticker subscription can be created and consumed."},
     };
 
