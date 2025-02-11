@@ -47,7 +47,8 @@ public class OrderBookBasic : IScriptApiSample
             if (orderBook.Asks.Count < i)
                 continue;
 
-            await Console.Out.WriteLineAsync($"  ask #{i + 1}: {orderBook.Asks[i].Price} {symbolPair.QuoteSymbol} - {orderBook.Asks[i].Quantity}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"  ask #{i + 1}: {orderBook.Asks[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Asks[i].Price} {symbolPair.QuoteSymbol}")
+                .ConfigureAwait(false);
         }
 
         await Console.Out.WriteLineAsync("  ---------------------------------------").ConfigureAwait(false);
@@ -57,7 +58,8 @@ public class OrderBookBasic : IScriptApiSample
             if (orderBook.Bids.Count < i)
                 break;
 
-            await Console.Out.WriteLineAsync($"  bid #{i + 1}: {orderBook.Bids[i].Price} {symbolPair.QuoteSymbol} - {orderBook.Bids[i].Quantity}").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"  bid #{i + 1}: {orderBook.Bids[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Bids[i].Price} {symbolPair.QuoteSymbol}")
+                .ConfigureAwait(false);
         }
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
