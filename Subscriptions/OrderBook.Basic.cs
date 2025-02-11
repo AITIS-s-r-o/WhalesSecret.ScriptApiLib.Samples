@@ -41,6 +41,26 @@ public class OrderBookBasic : IScriptApiSample
 
         await Console.Out.WriteLineAsync($"Order book update '{orderBook}' has been received.").ConfigureAwait(false);
 
+        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        for (int i = 4; i >= 0; i--)
+        {
+            if (orderBook.Asks.Count < i)
+                continue;
+
+            await Console.Out.WriteLineAsync($"  ask #{i + 1}: {orderBook.Asks[i].Price} {symbolPair.QuoteSymbol} - {orderBook.Asks[i].Quantity}").ConfigureAwait(false);
+        }
+
+        await Console.Out.WriteLineAsync("  ---------------------------------------").ConfigureAwait(false);
+
+        for (int i = 0; i < 5; i++)
+        {
+            if (orderBook.Bids.Count < i)
+                break;
+
+            await Console.Out.WriteLineAsync($"  bid #{i + 1}: {orderBook.Bids[i].Price} {symbolPair.QuoteSymbol} - {orderBook.Bids[i].Quantity}").ConfigureAwait(false);
+        }
+
+        await Console.Out.WriteLineAsync().ConfigureAwait(false);
         await Console.Out.WriteLineAsync("Disposing order book subscription, trade API client, and script API.").ConfigureAwait(false);
     }
 }
