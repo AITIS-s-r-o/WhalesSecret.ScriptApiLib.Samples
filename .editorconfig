@@ -3341,8 +3341,12 @@ dotnet_diagnostic.IDE0300.severity = none
 dotnet_diagnostic.IDE0301.severity = none
 
 # IDE0305: Collection initialization can be simplified
-# Disable reason: As of 2023, it can lead to performance regressions.
+# Disable reason: We prefer not to use the new collection expression (i.e. []) at the moment to avoid big code changes and to avoid early tooling issues.
 dotnet_diagnostic.IDE0305.severity = none
+
+# IDE0306: Collection initialization can be simplified
+# Disable reason: We prefer not to use the new collection expression (i.e. []) at the moment to avoid big code changes and to avoid early tooling issues.
+dotnet_diagnostic.IDE0306.severity = none
 
 # RS0030: Do not use banned APIs
 # The symbol has been marked as banned in this project, and an alternate should be used instead.
@@ -3351,3 +3355,21 @@ dotnet_diagnostic.RS0030.severity = warning
 # xUnit1030: Do not call ConfigureAwait in test method
 # Developers should not call ConfigureAwait(false) against tasks in a test method, as this may cause parallelization issues like running too many tests in parallel.
 dotnet_diagnostic.xUnit1030.severity = warning
+
+# VSTHRD003: Avoid awaiting foreign Tasks
+# Tasks that are created and run from another context (not within the currently running method or delegate) should not be returned or awaited on. Doing so can result in deadlocks
+# because awaiting a Task does not result in the awaiter "joining" the effort such that access to the main thread is shared. If the awaited Task requires the main thread, and the
+# caller that is awaiting it is blocking the main thread, a deadlock will result.
+# Disable reason: Whale's Secret Core is not a UI application.
+dotnet_diagnostic.VSTHRD003.severity = none
+
+# Test files
+[*{Test.cs,Tests.cs}]
+
+# CA1859: Use concrete types when possible for improved performance
+# Disable reason: In tests, performance is not really an objective. Code clarity is more important.
+dotnet_diagnostic.CA1859.severity = none
+
+# CA1869: Cache and reuse 'JsonSerializerOptions' instances
+# Disable reason: In tests, performance is not really an objective. Code clarity is more important.
+dotnet_diagnostic.CA1869.severity = none

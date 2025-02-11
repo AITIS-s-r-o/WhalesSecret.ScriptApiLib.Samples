@@ -5,7 +5,7 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
 
-namespace WhalesSecret.ScriptApiLibConsoleApp;
+namespace WhalesSecret.ScriptApiLib.Samples;
 
 public class Program
 {
@@ -21,7 +21,7 @@ public class Program
 
         _ = await api.InitializeMarketAsync(ExchangeMarket.BinanceSpot).ConfigureAwait(false);
         await using ITradeApiClient client = await api.ConnectAsync(ExchangeMarket.BinanceSpot, connectionOptions).ConfigureAwait(false);
-        await using ITickerSubscription tickerSubscription = await client.CreateTickerSubscriptionAsync(SymbolPair.BTC_USDT, CancellationToken.None).ConfigureAwait(false);
+        await using ITickerSubscription tickerSubscription = await client.CreateTickerSubscriptionAsync(SymbolPair.BTC_USDT).ConfigureAwait(false);
 
         while (true)
         {
