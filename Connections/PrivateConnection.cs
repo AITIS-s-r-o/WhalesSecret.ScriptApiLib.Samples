@@ -38,6 +38,7 @@ public class PrivateConnection : IScriptApiSample
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
         scriptApi.SetCredentials(apiIdentity);
+
         await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a private connection.").ConfigureAwait(false);
 
         // Trading connection type means that only a private connection is established. Full-trading would create two connections, public and private.
