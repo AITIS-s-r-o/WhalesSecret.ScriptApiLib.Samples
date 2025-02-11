@@ -20,16 +20,16 @@ public static class Credentials
     public const string BinanceRsaSecret = "CHANGE THIS TO BASE-64 encoded Binance RSA API secret";
 
     /// <summary>API key for Kucoin exchange.</summary>
-    public const string KucoinApiKey = "CHANGE THIS Kucoin API key";
+    public const string KucoinApiKey = "CHANGE THIS TO Kucoin API key";
 
     /// <summary>API secret for Binance exchange using HMAC algorithm.</summary>
-    public static readonly SensitiveByteArray BinanceHmacSecret = "CHANGE THIS Binance HMAC API secret"u8;
+    public static readonly SensitiveByteArray BinanceHmacSecret = "CHANGE THIS TO Binance HMAC API secret"u8;
 
     /// <summary>API secret for Kucoin exchange.</summary>
-    public static readonly SensitiveByteArray KucoinSecret = "CHANGE THIS Kucoin secret"u8;
+    public static readonly SensitiveByteArray KucoinSecret = "CHANGE THIS TO Kucoin secret"u8;
 
     /// <summary>API passphrase for Kucoin exchange.</summary>
-    public static readonly SensitiveByteArray KucoinPassphrase = "CHANGE THIS Kucoin passphrase"u8;
+    public static readonly SensitiveByteArray KucoinPassphrase = "CHANGE THIS TO Kucoin passphrase"u8;
 
     /// <summary>
     /// Gets exchange API credentials for Binance exchange using HMAC algorithm.
