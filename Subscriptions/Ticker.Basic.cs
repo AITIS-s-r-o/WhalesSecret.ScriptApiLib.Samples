@@ -9,7 +9,7 @@ using WhalesSecret.TradeScriptLib.Entities.MarketData;
 namespace WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 
 /// <summary>
-/// Basic sample that demonstrates how ticker subscription can be created and consumed.
+/// Basic sample that demonstrates how a ticker subscription can be created and consumed.
 /// </summary>
 public class TickerBasic : IScriptApiSample
 {
