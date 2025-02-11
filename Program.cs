@@ -33,6 +33,7 @@ public class Program
     /// </list>
     /// </para>
     /// <para>Run the program without any arguments to see the supported values for each argument.</para>
+    /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task Main(string[] args)
     {
