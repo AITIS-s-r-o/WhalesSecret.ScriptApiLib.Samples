@@ -28,7 +28,6 @@ public class ExchangeAccount : IScriptApiSample
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync().ConfigureAwait(false);
 
-        // Initialization of the market is required before connection can be created.
         await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
         _ = await scriptApi.InitializeMarketAsync(exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
 
