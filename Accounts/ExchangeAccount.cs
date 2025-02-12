@@ -55,8 +55,11 @@ public class ExchangeAccount : IScriptApiSample
         // As the connection is established, we can consume the exchange account information. Without specification of a sub-account, the primary sub-account is used.
         ExchangeAccountInformation info = tradeClient.GetLatestExchangeAccountInformation();
 
-        await Console.Out.WriteLineAsync($"The following information is valid at UTC time {info.Timestamp}.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        if (info.Timestamp != DateTime.MinValue)
+        {
+            await Console.Out.WriteLineAsync($"The following information is valid at UTC time {info.Timestamp}.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        }
 
         if (info.MakerFee is not null)
             await Console.Out.WriteLineAsync($"Your basic maker fee is {info.MakerFee * 100m} %.").ConfigureAwait(false);
