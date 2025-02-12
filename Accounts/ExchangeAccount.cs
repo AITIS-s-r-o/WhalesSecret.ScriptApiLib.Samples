@@ -55,7 +55,8 @@ public class ExchangeAccount : IScriptApiSample
         // As the connection is established, we can consume the exchange account information. Without specification of a sub-account, the primary sub-account is used.
         ExchangeAccountInformation info = tradeClient.GetLatestExchangeAccountInformation();
 
-        // The minimal value of the timestamp is reserved for the snapshots.
+        // The minimal value of the timestamp is reserved for the snapshots. In this sample, we are unlikely to get anything else than a snapshot since we do not await additional
+        // updates. However, if updates were awaited, the timestamp would become meaningful.
         if (info.Timestamp != DateTime.MinValue)
         {
             await Console.Out.WriteLineAsync($"The following information is valid at UTC time {info.Timestamp}.").ConfigureAwait(false);
