@@ -69,6 +69,7 @@ public class ExchangeAccount : IScriptApiSample
                 .ConfigureAwait(false);
         }
 
+        await Console.Out.WriteLineAsync().ConfigureAwait(false);
         await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
     }
 }
