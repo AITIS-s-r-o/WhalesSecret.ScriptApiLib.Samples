@@ -7,7 +7,7 @@ using WhalesSecret.TradeScriptLib.Exchanges;
 namespace WhalesSecret.ScriptApiLib.Samples.Exchanges;
 
 /// <summary>
-/// Sample that demonstrates what kind of information can we get from the exchange market initialization.
+/// Sample that demonstrates what kind of information we can get from the exchange market initialization.
 /// </summary>
 public class ExchangeInformation : IScriptApiSample
 {
