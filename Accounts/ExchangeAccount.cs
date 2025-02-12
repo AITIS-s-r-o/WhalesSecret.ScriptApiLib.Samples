@@ -58,8 +58,12 @@ public class ExchangeAccount : IScriptApiSample
         await Console.Out.WriteLineAsync($"The following information is valid at UTC time {info.Timestamp}.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Your basic maker fee is {info.MakerFee * 100}%.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Your basic taker fee is {info.MakerFee * 100}%.").ConfigureAwait(false);
+        if (info.MakerFee is not null)
+            await Console.Out.WriteLineAsync($"Your basic maker fee is {info.MakerFee * 100m} %.").ConfigureAwait(false);
+
+        if (info.TakerFee is not null)
+            await Console.Out.WriteLineAsync($"Your basic taker fee is {info.TakerFee * 100m} %.").ConfigureAwait(false);
+
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"List of wallet balances on the primary sub-account:").ConfigureAwait(false);
