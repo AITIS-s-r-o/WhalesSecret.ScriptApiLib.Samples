@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Samples.Connections;
+using WhalesSecret.ScriptApiLib.Samples.Exchanges;
 using WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 using WhalesSecret.TradeScriptLib.Entities;
 
@@ -16,6 +17,7 @@ public class Program
     {
         new object[] { "Connections/Public", typeof(PublicConnection), "Demonstrates how to connect to an exchange via public connection."},
         new object[] { "Connections/Private", typeof(PrivateConnection), "Demonstrates how to connect to an exchange via private connection using exchange API credentials."},
+        new object[] { "Exchanges/ExchangeInformation", typeof(ExchangeInformation), "Demonstrates what kind of information can we get from the exchange market initialization."},
         new object[] { "Subscriptions/Candle.Basic", typeof(CandleBasic), "Basic candle subscription sample. Demonstrates how a candle subscription can created and consumed."},
         new object[] { "Subscriptions/OrderBook.Basic", typeof(OrderBookBasic), "Basic order book subscription sample. Demonstrates how an order book subscription can be created"
             + " and consumed."},

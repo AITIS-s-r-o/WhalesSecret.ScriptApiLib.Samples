@@ -49,9 +49,9 @@ public class PrivateConnection : IScriptApiSample
 
         // As the connection is established, we can use the connected client to, for example, query the time of the exchange.
         DateTime utcExchangeTime = tradeClient.GetExchangeUtcDateTime();
-        TimeSpan diff = DateTime.UtcNow - utcExchangeTime;
+        TimeSpan diff = utcExchangeTime - DateTime.UtcNow;
 
-        await Console.Out.WriteLineAsync($"Current UTC time of the {exchangeMarket} exchange is {utcExchangeTime}. The difference between the local time and the exchange time is {
+        await Console.Out.WriteLineAsync($"Current UTC time of the {exchangeMarket} exchange is {utcExchangeTime}. The difference between the exchange time and the local time is {
             diff}.").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
