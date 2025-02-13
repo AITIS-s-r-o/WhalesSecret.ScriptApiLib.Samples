@@ -13,5 +13,5 @@ public interface IScriptApiSample
     /// </summary>
     /// <param name="exchangeMarket">Exchange market to connect to.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task RunSampleAsync(ExchangeMarket exchangeMarket);
+    public Task RunSampleAsync(ExchangeMarket exchangeMarket);
 }
