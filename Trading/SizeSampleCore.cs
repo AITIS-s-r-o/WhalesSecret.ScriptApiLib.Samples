@@ -47,7 +47,7 @@ public static class SizeSampleCore
         decimal exchangeOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => useLargeOrder ? 25m : 6.0m,
-            ExchangeMarket.KucoinSpot => useLargeOrder ? 10m : 2.0m,
+            ExchangeMarket.KucoinSpot => useLargeOrder ? 20m : 2.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
