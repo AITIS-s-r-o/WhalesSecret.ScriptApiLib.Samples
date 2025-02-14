@@ -24,6 +24,8 @@ public class Program
         new object[] { "Orders/Size.Small", typeof(SizeSmall), "Basic order sample. Demonstrates how small sized orders can be placed."},
         new object[] { "Orders/Size.Large", typeof(SizeLarge), "Basic order sample. Demonstrates how larger sized orders can be placed. Requires valid license."},
         new object[] { "Subscriptions/Candle.Basic", typeof(CandleBasic), "Basic candle subscription sample. Demonstrates how a candle subscription can created and consumed."},
+        new object[] { "Subscriptions/Candle.Set", typeof(CandleSet), "Advanced candle subscription sample. Demonstrates how multiple candlestick subscriptions can be created and "
+            + "consumed at the same time.."},
         new object[] { "Subscriptions/OrderBook.Basic", typeof(OrderBookBasic), "Basic order book subscription sample. Demonstrates how an order book subscription can be created"
             + " and consumed."},
         new object[] { "Subscriptions/Ticker.Basic", typeof(TickerBasic), "Basic ticker subscription sample. Demonstrates how a ticker subscription can be created and consumed."},
