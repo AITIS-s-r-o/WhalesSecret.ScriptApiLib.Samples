@@ -14,7 +14,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// Sample that demonstrates how to create orders. The sample creates a limit buy order with the price well under the current price. It is thus not expected that the order is
 /// filled. Then the order is canceled.
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
-/// <para>Placing small orders does not need a valid license. Placing larger orders requiers a valid license to be put into <see cref="License"/>.</para>
+/// <para>Placing small orders does not need a valid license. Placing larger orders requires a valid license to be put into <see cref="License"/>.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
 public static class SizeSampleCore
