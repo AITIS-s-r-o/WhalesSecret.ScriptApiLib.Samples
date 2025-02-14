@@ -14,7 +14,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// Sample that demonstrates how to create orders. The sample creates a limit buy order with the price well under the current price. It is thus not expected that the order is
 /// filled. Then the order is canceled.
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
-/// <para>Placing small orders does not need a valid license. Placing larger orders requiers a valid license to be put into <see cref="License"/>.</para>
+/// <para>Placing small orders does not need a valid license. Placing larger orders requires a valid license to be put into <see cref="License"/>.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
 public static class SizeSampleCore
@@ -39,6 +39,7 @@ public static class SizeSampleCore
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
+        // Compute a limit price so that the order is unlikely to fill.
         decimal limitPrice = Math.Floor(helper.BestBid / 5 * 4);
         await Console.Out.WriteLineAsync($"Best bid price is {helper.BestBid} {symbolPair.QuoteSymbol}, limit price set to {limitPrice} {symbolPair.QuoteSymbol}.")
             .ConfigureAwait(false);
@@ -62,8 +63,8 @@ public static class SizeSampleCore
         await tradeClient.CancelOrderAsync(liveOrder, timeoutCts.Token).ConfigureAwait(false);
 
         // As the cancellation succeeded, this is just a sanity check that should complete almost instantly.
-        await Console.Out.WriteLineAsync($"Wait for the order to be terminated.").ConfigureAwait(false);
-        await liveOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Wait for the order to be terminated.").ConfigureAwait(false);
+        _ = await liveOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
     }
