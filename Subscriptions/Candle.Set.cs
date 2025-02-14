@@ -10,7 +10,8 @@ using WhalesSecret.TradeScriptLib.Exceptions;
 namespace WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 
 /// <summary>
-/// Advanced sample that demonstrates how multiple candlestick subscriptions can be created and consumed at the same time.
+/// Advanced sample that demonstrates how multiple candlestick subscriptions can be created and consumed at the same time using <see cref="ICandlestickSubscriptionSet"/> and its
+/// batch monitoring methods. It also demonstrates a possibility to remove subscription from the set.
 /// </summary>
 public class CandleSet : IScriptApiSample
 {
