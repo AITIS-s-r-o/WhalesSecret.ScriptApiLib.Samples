@@ -39,6 +39,7 @@ public static class SizeSampleCore
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
+        // Compute a limit price so that the order is unlikely to fill.
         decimal limitPrice = Math.Floor(helper.BestBid / 5 * 4);
         await Console.Out.WriteLineAsync($"Best bid price is {helper.BestBid} {symbolPair.QuoteSymbol}, limit price set to {limitPrice} {symbolPair.QuoteSymbol}.")
             .ConfigureAwait(false);
