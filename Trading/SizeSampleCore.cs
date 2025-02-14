@@ -64,7 +64,7 @@ public static class SizeSampleCore
 
         // As the cancellation succeeded, this is just a sanity check that should complete almost instantly.
         await Console.Out.WriteLineAsync($"Wait for the order to be terminated.").ConfigureAwait(false);
-        await liveOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await liveOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
     }
