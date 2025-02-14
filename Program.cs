@@ -22,7 +22,7 @@ public class Program
         new object[] { "Connections/Private", typeof(PrivateConnection), "Demonstrates how to connect to an exchange via private connection using exchange API credentials."},
         new object[] { "Exchanges/ExchangeInformation", typeof(ExchangeInformation), "Demonstrates what kind of information can we get from the exchange market initialization."},
         new object[] { "Orders/Size.Small", typeof(SizeSmall), "Basic order sample. Demonstrates how small sized orders can be placed."},
-        new object[] { "Orders/Size.Large", typeof(SizeLarge), "Basic order sample. Demonstrates how larger sized orders can be placed. Requires valid license."},
+        new object[] { "Orders/Size.Large", typeof(SizeLarge), "Basic order sample. Demonstrates how larger-sized orders can be placed. Requires a valid license."},
         new object[] { "Subscriptions/Candle.Basic", typeof(CandleBasic), "Basic candle subscription sample. Demonstrates how a candle subscription can created and consumed."},
         new object[] { "Subscriptions/OrderBook.Basic", typeof(OrderBookBasic), "Basic order book subscription sample. Demonstrates how an order book subscription can be created"
             + " and consumed."},
