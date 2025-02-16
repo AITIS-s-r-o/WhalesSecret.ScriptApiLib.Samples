@@ -50,7 +50,8 @@ public class CandleSet : IScriptApiSample
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(candleWidth, timeoutCts.Token))
         {
-            await Console.Out.WriteLineAsync($"First we get the latest closed candles for all symbol pairs.").ConfigureAwait(false);
+            // Candles are either open or closed. A closed candle is a candle for a time period that will not change in the future because its time interval is in the past. Similarly, an open candle is a candle that represents an ongoing time period and as such it can still change.
+            await Console.Out.WriteLineAsync("First we get the latest closed candles for all symbol pairs.").ConfigureAwait(false);
             for (int i = 0; i < symbolPairs.Length; i++)
             {
                 // When we call this method for the first time, we have not consumed any candles on the given subscriptions yet, so we get the same results as we would get if we
