@@ -74,7 +74,7 @@ public class CandleSet : IScriptApiSample
 
             await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync($"Dispose batch monitoring to be able to remove subscription from the set.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Dispose batch monitoring to be able to remove subscription from the set.").ConfigureAwait(false);
         }
 
         SymbolPair removeSymbolPair = symbolPairs[1];
