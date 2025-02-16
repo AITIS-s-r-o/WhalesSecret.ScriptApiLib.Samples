@@ -100,7 +100,7 @@ public class CandleSet : IScriptApiSample
             }
 
             await Console.Out.WriteLineAsync().ConfigureAwait(false);
-            await Console.Out.WriteLineAsync($"Dispose batch monitoring to.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Dispose batch monitoring to.").ConfigureAwait(false);
         }
 
         await Console.Out.WriteLineAsync("Disposing candlestick subscriptions set, trade API client, and script API.").ConfigureAwait(false);
