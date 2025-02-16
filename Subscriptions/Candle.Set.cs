@@ -92,7 +92,7 @@ public class CandleSet : IScriptApiSample
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(candleWidth, timeoutCts.Token))
         {
-            await Console.Out.WriteLineAsync($"Wait for 10 candlesticks updates from any symbol of the two remaining symbols.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Wait for 10 candlesticks updates from any symbol of the two remaining symbols.").ConfigureAwait(false);
             for (int i = 0; i < 10; i++)
             {
                 CandleUpdate candleUpdate = await subscriptionSet.WhenAnyNewCandlestickUpdateAsync(candleWidth).ConfigureAwait(false);
