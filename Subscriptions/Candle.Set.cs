@@ -84,7 +84,6 @@ public class CandleSet : IScriptApiSample
 
         await subscription.DisposeAsync().ConfigureAwait(false);
 
-        await Task.Delay(5000).ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"Start batch monitoring again for candle width {candleWidth}.").ConfigureAwait(false);
