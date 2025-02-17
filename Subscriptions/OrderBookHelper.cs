@@ -23,8 +23,6 @@ public static class OrderBookHelper
     {
         SymbolPair symbolPair = orderBook.SymbolPair;
 
-        await Console.Out.WriteLineAsync($"Up-to-date order book snapshot '{orderBook}' has been received.").ConfigureAwait(false);
-
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
         for (int i = sideSize - 1; i >= 0; i--)
         {

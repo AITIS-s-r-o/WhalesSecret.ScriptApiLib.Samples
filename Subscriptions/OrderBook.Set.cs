@@ -102,6 +102,7 @@ public class OrderBookSet : IScriptApiSample
 
             await Console.Out.WriteLineAsync("Dispose batch monitoring of the second subset.").ConfigureAwait(false);
         }
+
         await Console.Out.WriteLineAsync("Disposing both order book subscription subsets, trade API client, and script API.").ConfigureAwait(false);
     }
 }
