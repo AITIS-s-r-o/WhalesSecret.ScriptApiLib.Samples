@@ -42,27 +42,9 @@ public class OrderBookBasic : IScriptApiSample
         await Console.Out.WriteLineAsync($"Up-to-date order book snapshot '{orderBook}' has been received.").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        for (int i = 4; i >= 0; i--)
-        {
-            if (orderBook.Asks.Count < i)
-                continue;
 
-            await Console.Out.WriteLineAsync($"  ask #{i + 1}: {orderBook.Asks[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Asks[i].Price} {symbolPair.QuoteSymbol}")
-                .ConfigureAwait(false);
-        }
+        await OrderBookHelper.PrintOrderBookAsync(orderBook).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("  ---------------------------------------").ConfigureAwait(false);
-
-        for (int i = 0; i < 5; i++)
-        {
-            if (orderBook.Bids.Count < i)
-                break;
-
-            await Console.Out.WriteLineAsync($"  bid #{i + 1}: {orderBook.Bids[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Bids[i].Price} {symbolPair.QuoteSymbol}")
-                .ConfigureAwait(false);
-        }
-
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
         await Console.Out.WriteLineAsync("Disposing order book subscription, trade API client, and script API.").ConfigureAwait(false);
     }
 }

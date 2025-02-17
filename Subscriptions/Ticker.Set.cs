@@ -62,14 +62,14 @@ public class TickerSet : IScriptApiSample
             await Console.Out.WriteLineAsync("Wait for 10 ticker updates from any symbol pair.").ConfigureAwait(false);
             for (int i = 0; i < 10; i++)
             {
-                // Note that here, we are not guaranteed to get any number of updates from every symbol pairs.
+                // Note that here, we are not guaranteed to get any number of updates from every symbol pair.
                 Ticker ticker = await subscriptionSet.WhenAnyNewTickerAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New ticker update received: {ticker}").ConfigureAwait(false);
             }
 
             await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync("Dispose batch monitoring to be able to remove subscription from the set.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Dispose batch monitoring to be able to call methods for individual symbol pairs.").ConfigureAwait(false);
         }
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
