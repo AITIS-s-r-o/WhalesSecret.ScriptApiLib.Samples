@@ -29,6 +29,8 @@ public class Program
         new object[] { "Subscriptions/OrderBook.Basic", typeof(OrderBookBasic), "Basic order book subscription sample. Demonstrates how an order book subscription can be created"
             + " and consumed."},
         new object[] { "Subscriptions/Ticker.Basic", typeof(TickerBasic), "Basic ticker subscription sample. Demonstrates how a ticker subscription can be created and consumed."},
+        new object[] { "Subscriptions/Ticker.Set", typeof(TickerSet), "Advanced ticker subscription sample. Demonstrates how multiple ticker subscriptions can be created and"
+            + " consumed at the same time."},
     };
 
     /// <summary>
