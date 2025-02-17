@@ -89,13 +89,13 @@ public class OrderBookSet : IScriptApiSample
         await Console.Out.WriteLineAsync($"Start batch monitoring for the the second subset.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-        await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(timeoutCts.Token))
+        await using (IAsyncDisposable batchMonitoring = subscriptionSet2.StartBatchMonitoring(timeoutCts.Token))
         {
             await Console.Out.WriteLineAsync("Print first 10 order books for the 2 symbol pairs of the second subset.").ConfigureAwait(false);
             for (int i = 0; i < 10; i++)
             {
                 // Note that here, we are not guaranteed to get any number of updates from every symbol pair.
-                OrderBook orderBook = await subscriptionSet.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
+                OrderBook orderBook = await subscriptionSet2.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New order book received:").ConfigureAwait(false);
 
                 await OrderBookHelper.PrintOrderBookAsync(orderBook).ConfigureAwait(false);
