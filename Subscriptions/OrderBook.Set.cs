@@ -68,17 +68,20 @@ public class OrderBookSet : IScriptApiSample
                 // Note that here, we are not guaranteed to get any number of updates from every symbol pair.
                 OrderBook orderBook = await subscriptionSet.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New order book received:").ConfigureAwait(false);
-
+            
                 await OrderBookHelper.PrintOrderBookAsync(orderBook).ConfigureAwait(false);
             }
-
+            
             await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
             await Console.Out.WriteLineAsync("Dispose batch monitoring to be able to remove subscription from the set.").ConfigureAwait(false);
         }
 
         await Console.Out.WriteLineAsync($"Split subscription set into 2 subsets.").ConfigureAwait(false);
-        if (!subscriptionSet.TryRemoveSubscriptionSubset(new SymbolPair[] { symbolPairs[1], symbolPairs[2] }, out IOrderBookSubscriptionSet? subscriptionSet2))
+        IOrderBookSubscriptionSet? subscriptionSet2 = await subscriptionSet.TryRemoveSubscriptionSubsetAsync(new SymbolPair[] { symbolPairs[1], symbolPairs[2] })
+            .ConfigureAwait(false);
+
+        if (subscriptionSet2 is null)
             throw new SanityCheckException($"Removing '{symbolPairs[1]}' and '{symbolPairs[2]}' from the subscription set failed.");
 
         await using IOrderBookSubscriptionSet subscriptionSet2ToDispose = subscriptionSet2;
