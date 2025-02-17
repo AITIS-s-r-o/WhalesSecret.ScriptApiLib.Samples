@@ -47,22 +47,11 @@ public class TickerSet : IScriptApiSample
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(timeoutCts.Token))
         {
-            await Console.Out.WriteLineAsync("First we get the latest tickers for all symbol pairs.").ConfigureAwait(false);
-            for (int i = 0; i < symbolPairs.Length; i++)
-            {
-                // When we call this method for the first time, we have not consumed any tickers on the given subscriptions yet, so we get the same results as we would get if we
-                // called GetLatestTicker for each symbol pair separately. However, using WhenAnyNewTickerAsync will cause consumption of the last state and so we will be able to
-                // wait for new data below.
-                Ticker ticker = await subscriptionSet.WhenAnyNewTickerAsync().ConfigureAwait(false);
-                await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | Latest known ticker: {ticker}").ConfigureAwait(false);
-            }
-
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
-
             await Console.Out.WriteLineAsync("Wait for 10 ticker updates from any symbol pair.").ConfigureAwait(false);
             for (int i = 0; i < 10; i++)
             {
-                // Note that here, we are not guaranteed to get any number of updates from every symbol pair.
+                // Note that we are not guaranteed to get any number of updates from any particular symbol pair. Also note that when a subscription is created, we get an initial
+                // state, which is propagated as an update, but it may be preceeded with any number of updates of earlier subscribed symbol pairs of the same set.
                 Ticker ticker = await subscriptionSet.WhenAnyNewTickerAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New ticker update received: {ticker}").ConfigureAwait(false);
             }
