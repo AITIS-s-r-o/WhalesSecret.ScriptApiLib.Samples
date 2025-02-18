@@ -49,9 +49,8 @@ public class OrderUpdates : IScriptApiSample
         // Rounding is necessary to get accepted on exchanges.
         decimal orderSize = Math.Round(exchangeOrderSize / limitPrice, decimals: helper.VolumePrecision);
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"order-updates-sample-1-{DateTime.UtcNow.Ticks}");
-
         await Console.Out.WriteLineAsync("Creating the first limit order.").ConfigureAwait(false);
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"updates-sample-1-{DateTime.UtcNow.Ticks}");
         ILiveLimitOrder liveOrder = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 
@@ -88,6 +87,7 @@ public class OrderUpdates : IScriptApiSample
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
         await Console.Out.WriteLineAsync("Creating the second limit order.").ConfigureAwait(false);
+        clientOrderId = string.Create(CultureInfo.InvariantCulture, $"updates-sample-2-{DateTime.UtcNow.Ticks}");
         ILiveLimitOrder liveOrder2 = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 
