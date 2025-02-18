@@ -54,6 +54,7 @@ public class RequestBuilder : IScriptApiSample
         // Rounding is necessary to get accepted on exchanges.
         decimal orderSize = Math.Round(baseOrderSize / limitPrice, decimals: helper.VolumePrecision);
 
+        await Console.Out.WriteLineAsync("Build limit order request.").ConfigureAwait(false);
         LimitOrderRequest limitOrderRequest = limitBuilder
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
@@ -63,6 +64,7 @@ public class RequestBuilder : IScriptApiSample
             .SetPrice(limitPrice)
             .Build();
 
+        await Console.Out.WriteLineAsync("Build market order request 1.").ConfigureAwait(false);
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = limitBuilder.ConvertTo<MarketOrderRequest>();
         MarketOrderRequest marketOrderRequest1 = marketBuilder
             .SetClientOrderId(clientOrderId2)
@@ -70,11 +72,12 @@ public class RequestBuilder : IScriptApiSample
             .SetSize(baseOrderSize)
             .Build();
 
+        await Console.Out.WriteLineAsync("Build market order request 2.").ConfigureAwait(false);
         MarketOrderRequest marketOrderRequest2 = marketBuilder
+            .SetClientOrderId(clientOrderId3)
             .SetSide(OrderSide.Sell)
             .SetSizeInBaseSymbol(true)
             .SetSize(baseOrderSize)
-            .SetClientOrderId(clientOrderId2)
             .Build();
 
         await Console.Out.WriteLineAsync("Place the three orders.").ConfigureAwait(false);
