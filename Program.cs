@@ -21,8 +21,6 @@ public class Program
         new object[] { "Connections/Public", typeof(PublicConnection), "Demonstrates how to connect to an exchange via public connection."},
         new object[] { "Connections/Private", typeof(PrivateConnection), "Demonstrates how to connect to an exchange via private connection using exchange API credentials."},
         new object[] { "Exchanges/ExchangeInformation", typeof(ExchangeInformation), "Demonstrates what kind of information can we get from the exchange market initialization."},
-        new object[] { "Orders/Size.Small", typeof(SizeSmall), "Basic order sample. Demonstrates how small-sized orders can be placed."},
-        new object[] { "Orders/Size.Large", typeof(SizeLarge), "Basic order sample. Demonstrates how larger-sized orders can be placed. Requires a valid license."},
         new object[] { "Subscriptions/Candle.Basic", typeof(CandleBasic), "Basic candle subscription sample. Demonstrates how a candle subscription can created and consumed."},
         new object[] { "Subscriptions/Candle.Set", typeof(CandleSet), "Advanced candle subscription sample. Demonstrates how multiple candlestick subscriptions can be created and"
             + " consumed at the same time."},
@@ -33,6 +31,9 @@ public class Program
         new object[] { "Subscriptions/Ticker.Basic", typeof(TickerBasic), "Basic ticker subscription sample. Demonstrates how a ticker subscription can be created and consumed."},
         new object[] { "Subscriptions/Ticker.Set", typeof(TickerSet), "Advanced ticker subscription sample. Demonstrates how multiple ticker subscriptions can be created and"
             + " consumed at the same time."},
+        new object[] { "Trading/Order.Size.Small", typeof(SizeSmall), "Basic order sample. Demonstrates how small-sized orders can be placed."},
+        new object[] { "Trading/Order.Size.Large", typeof(SizeLarge), "Basic order sample. Demonstrates how larger-sized orders can be placed. Requires a valid license."},
+        new object[] { "Trading/Order.Updates", typeof(OrderUpdates), "Basic order sample. Demonstrates how larger-sized orders can be placed. Requires a valid license."},
     };
 
     /// <summary>
