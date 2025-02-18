@@ -51,22 +51,29 @@ public class RequestBuilder : IScriptApiSample
         // Compute a limit price so that the order is unlikely to fill.
         decimal limitPrice = Math.Floor(helper.BestBid / 5 * 4);
 
+        // Rounding is necessary to get accepted on exchanges.
+        decimal orderSize = Math.Round(baseOrderSize / limitPrice, decimals: helper.VolumePrecision);
+
         LimitOrderRequest limitOrderRequest = limitBuilder
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
             .SetSymbolPair(symbolPair)
-            .SetSize(baseOrderSize)
-            .SetSizeInBaseSymbol(true)
+            .SetSizeInBaseSymbol(false)
+            .SetSize(orderSize)
             .SetPrice(limitPrice)
             .Build();
 
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = limitBuilder.ConvertTo<MarketOrderRequest>();
         MarketOrderRequest marketOrderRequest1 = marketBuilder
             .SetClientOrderId(clientOrderId2)
+            .SetSizeInBaseSymbol(true)
+            .SetSize(baseOrderSize)
             .Build();
 
         MarketOrderRequest marketOrderRequest2 = marketBuilder
             .SetSide(OrderSide.Sell)
+            .SetSizeInBaseSymbol(true)
+            .SetSize(baseOrderSize)
             .SetClientOrderId(clientOrderId2)
             .Build();
 
