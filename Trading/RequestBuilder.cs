@@ -36,9 +36,9 @@ public class RequestBuilder : IScriptApiSample
 
         OrderRequestBuilder<LimitOrderRequest> limitBuilder = new();
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"limitBuilder-sample-1-{DateTime.UtcNow.Ticks}");
-        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"limitBuilder-sample-2-{DateTime.UtcNow.Ticks}");
-        string clientOrderId3 = string.Create(CultureInfo.InvariantCulture, $"limitBuilder-sample-3-{DateTime.UtcNow.Ticks}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"builder-sample-1-{DateTime.UtcNow.Ticks}");
+        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"builder-sample-2-{DateTime.UtcNow.Ticks}");
+        string clientOrderId3 = string.Create(CultureInfo.InvariantCulture, $"builder-sample-3-{DateTime.UtcNow.Ticks}");
 
         // Buy a small amount of bitcoin.
         decimal baseOrderSize = exchangeMarket switch
