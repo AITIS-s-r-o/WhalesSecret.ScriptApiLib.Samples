@@ -96,7 +96,7 @@ public class RequestBuilder : IScriptApiSample
         await Console.Out.WriteLineAsync($"Market order '{marketOrder2} is live.");
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Cancel the limit order.");
+        await Console.Out.WriteLineAsync("Cancel the limit order.");
         await tradeClient.CancelOrderAsync(limitOrder, timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Wait until the limit order is closed.").ConfigureAwait(false);
