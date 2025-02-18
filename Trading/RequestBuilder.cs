@@ -59,26 +59,30 @@ public class RequestBuilder : IScriptApiSample
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
             .SetSymbolPair(symbolPair)
-            .SetSizeInBaseSymbol(false)
+            .SetSizeInBaseSymbol(true)
             .SetSize(orderSize)
             .SetPrice(limitPrice)
             .Build();
+
+        await Console.Out.WriteLineAsync($"Constructed limit order request: {limitOrderRequest}").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Build market order request 1.").ConfigureAwait(false);
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = limitBuilder.ConvertTo<MarketOrderRequest>();
         MarketOrderRequest marketOrderRequest1 = marketBuilder
             .SetClientOrderId(clientOrderId2)
-            .SetSizeInBaseSymbol(true)
+            .SetSizeInBaseSymbol(false)
             .SetSize(baseOrderSize)
             .Build();
+
+        await Console.Out.WriteLineAsync($"Constructed market order request 1: {marketOrderRequest1}").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Build market order request 2.").ConfigureAwait(false);
         MarketOrderRequest marketOrderRequest2 = marketBuilder
             .SetClientOrderId(clientOrderId3)
             .SetSide(OrderSide.Sell)
-            .SetSizeInBaseSymbol(true)
-            .SetSize(baseOrderSize)
             .Build();
+
+        await Console.Out.WriteLineAsync($"Constructed market order request 2: {marketOrderRequest2}").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Place the three orders.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
