@@ -64,7 +64,7 @@ public class OrderBookSet : IScriptApiSample
             await Console.Out.WriteLineAsync("Dispose batch monitoring to be able to remove subscription from the set.").ConfigureAwait(false);
         }
 
-        await Console.Out.WriteLineAsync($"Split subscription set into 2 subsets.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Split subscription set into 2 subsets.").ConfigureAwait(false);
         IOrderBookSubscriptionSet? subscriptionSet2 = await subscriptionSet.TryRemoveSubscriptionSubsetAsync(new SymbolPair[] { symbolPairs[1], symbolPairs[2] })
             .ConfigureAwait(false);
 
