@@ -43,7 +43,7 @@ public class OrderBookSet : IScriptApiSample
 
         await Console.Out.WriteLineAsync($"{symbolPairs.Length} order book subscriptions on {exchangeMarket} has been created successfully.").ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Start batch monitoring.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Start batch monitoring.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(timeoutCts.Token))
