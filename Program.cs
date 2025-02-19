@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Samples.Accounts;
 using WhalesSecret.ScriptApiLib.Samples.Connections;
 using WhalesSecret.ScriptApiLib.Samples.Exchanges;
+using WhalesSecret.ScriptApiLib.Samples.Indicators;
 using WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 using WhalesSecret.ScriptApiLib.Samples.Trading;
 using WhalesSecret.TradeScriptLib.Entities;
