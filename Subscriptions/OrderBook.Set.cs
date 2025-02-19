@@ -43,7 +43,7 @@ public class OrderBookSet : IScriptApiSample
 
         await Console.Out.WriteLineAsync($"{symbolPairs.Length} order book subscriptions on {exchangeMarket} has been created successfully.").ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Start batch monitoring.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Start batch monitoring.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(timeoutCts.Token))
@@ -52,7 +52,7 @@ public class OrderBookSet : IScriptApiSample
             for (int i = 0; i < 10; i++)
             {
                 // Note that we are not guaranteed to get any number of updates from any particular symbol pair. Also note that when a subscription is created, we get an initial
-                // state, which is propagated as an update, but it may be preceeded with any number of updates of earlier subscribed symbol pairs of the same set.
+                // state, which is propagated as an update, but it may be preceded with any number of updates of earlier subscribed symbol pairs of the same set.
                 OrderBook orderBook = await subscriptionSet.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New order book received:").ConfigureAwait(false);
             
@@ -64,7 +64,7 @@ public class OrderBookSet : IScriptApiSample
             await Console.Out.WriteLineAsync("Dispose batch monitoring to be able to remove subscription from the set.").ConfigureAwait(false);
         }
 
-        await Console.Out.WriteLineAsync($"Split subscription set into 2 subsets.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Split subscription set into 2 subsets.").ConfigureAwait(false);
         IOrderBookSubscriptionSet? subscriptionSet2 = await subscriptionSet.TryRemoveSubscriptionSubsetAsync(new SymbolPair[] { symbolPairs[1], symbolPairs[2] })
             .ConfigureAwait(false);
 
@@ -73,7 +73,7 @@ public class OrderBookSet : IScriptApiSample
 
         await using IOrderBookSubscriptionSet subscriptionSet2ToDispose = subscriptionSet2;
 
-        await Console.Out.WriteLineAsync($"Start batch monitoring for the the second subset.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Start batch monitoring for the the second subset.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet2.StartBatchMonitoring(timeoutCts.Token))

@@ -42,7 +42,7 @@ public class TickerSet : IScriptApiSample
 
         await Console.Out.WriteLineAsync($"{symbolPairs.Length} ticker subscriptions on {exchangeMarket} has been created successfully.").ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Start batch monitoring.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Start batch monitoring.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(timeoutCts.Token))
@@ -50,8 +50,8 @@ public class TickerSet : IScriptApiSample
             await Console.Out.WriteLineAsync("Wait for 10 ticker updates from any symbol pair.").ConfigureAwait(false);
             for (int i = 0; i < 10; i++)
             {
-                // Note that we are not guaranteed to get any number of updates from any particular symbol pair. Also note that when a subscription is created, we get an initial
-                // state, which is propagated as an update, but it may be preceeded with any number of updates of earlier subscribed symbol pairs of the same set.
+                // Note that we are not guaranteed to get any number of updates for any particular symbol pair. Also note that when a subscription is created, we get an initial
+                // state, which is propagated as an update, but it may be preceded with any number of updates of earlier subscribed symbol pairs of the same set.
                 Ticker ticker = await subscriptionSet.WhenAnyNewTickerAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New ticker update received: {ticker}").ConfigureAwait(false);
             }
@@ -74,6 +74,6 @@ public class TickerSet : IScriptApiSample
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Disposing ticker subscription, trade API client, and script API.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Disposing ticker subscription set, trade API client, and script API.").ConfigureAwait(false);
     }
 }
