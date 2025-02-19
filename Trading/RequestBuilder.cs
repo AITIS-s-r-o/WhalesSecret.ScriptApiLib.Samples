@@ -54,7 +54,7 @@ public class RequestBuilder : IScriptApiSample
         // Rounding is necessary to get accepted on exchanges.
         decimal orderSize = Math.Round(baseOrderSize / limitPrice, decimals: helper.VolumePrecision);
 
-        await Console.Out.WriteLineAsync("Build limit order request.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
         LimitOrderRequest limitOrderRequest = limitBuilder
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
