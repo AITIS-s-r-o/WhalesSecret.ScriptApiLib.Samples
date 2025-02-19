@@ -70,7 +70,15 @@ public class Rsi : IScriptApiSample
             await Console.Out.WriteLineAsync().ConfigureAwait(false);
             await Console.Out.WriteLineAsync("Waiting for the next closed candle...").ConfigureAwait(false);
 
-            lastClosedCandle = await subscription.WaitNextClosedCandlestickAsync(candleWidth, timeoutCts.Token).ConfigureAwait(false);
+            try
+            {
+                lastClosedCandle = await subscription.WaitNextClosedCandlestickAsync(candleWidth, timeoutCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+
             await Console.Out.WriteLineAsync($"New closed candle arrived: {lastClosedCandle}").ConfigureAwait(false);
 
             quotes.Add(this.QuoteFromCandle(lastClosedCandle));
