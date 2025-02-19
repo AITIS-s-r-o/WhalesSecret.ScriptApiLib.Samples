@@ -100,7 +100,7 @@ public class RequestBuilder : IScriptApiSample
         await tradeClient.CancelOrderAsync(limitOrder, timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Wait until the limit order is closed.").ConfigureAwait(false);
-        await limitOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await limitOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Wait until the market order 1 is filled.").ConfigureAwait(false);
         await marketOrder1.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
