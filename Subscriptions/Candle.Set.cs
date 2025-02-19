@@ -57,7 +57,7 @@ public class CandleSet : IScriptApiSample
             {
                 // Note that we are not guaranteed to get two closed candles for each of the three symbol pairs in the subscription. Some exchanges do not deliver closed
                 // candlestick updates until there is an actual new trade. Also note that when a subscription is created, we get an initial state, which is propagated as an update,
-                // but it may be preceeded with any number of updates of earlier subscribed symbol pairs of the same set.
+                // but it may be preceded with any number of updates of earlier subscribed symbol pairs of the same set.
                 CandleWithExchangeSymbolPair candle = await subscriptionSet.WhenAnyNewClosedCandlestickAsync(candleWidth).ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New closed candle received: {candle}").ConfigureAwait(false);
             }
