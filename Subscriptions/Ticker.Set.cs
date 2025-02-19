@@ -74,6 +74,6 @@ public class TickerSet : IScriptApiSample
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Disposing ticker subscription, trade API client, and script API.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Disposing ticker subscription set, trade API client, and script API.").ConfigureAwait(false);
     }
 }
