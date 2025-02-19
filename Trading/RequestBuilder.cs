@@ -15,7 +15,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
 /// <summary>
 /// Sample that demonstrates how to use <see cref="OrderRequestBuilder{TOrderRequest}"/> to build orders. The sample creates and places a buy limit order and then it creates
-/// and places 2 market orders (buy and sell). THe limit order is then cancelled.
+/// and places two market orders (buy and sell). THe limit order is then cancelled.
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
