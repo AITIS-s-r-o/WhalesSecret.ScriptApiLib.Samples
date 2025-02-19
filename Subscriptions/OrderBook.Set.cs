@@ -73,7 +73,7 @@ public class OrderBookSet : IScriptApiSample
 
         await using IOrderBookSubscriptionSet subscriptionSet2ToDispose = subscriptionSet2;
 
-        await Console.Out.WriteLineAsync($"Start batch monitoring for the the second subset.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Start batch monitoring for the the second subset.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet2.StartBatchMonitoring(timeoutCts.Token))
