@@ -14,14 +14,14 @@ namespace WhalesSecret.ScriptApiLib.Samples.Indicators;
 /// <summary>
 /// Sample that demonstrates the use of <see cref="https://dotnet.stockindicators.dev/indicators/Rsi/#content">RSI</see> indicator from
 /// <see href="https://dotnet.stockindicators.dev/">Skender.Stock.Indicators</see>. The sample creates a candlestick subscriptions with 1-minute BTC/USDT candles and feeds
-/// the indicator for 5 minutes. It also obtains historical candle data for the last 24 hours.
+/// the indicator for about 5 minutes. It also obtains historical candle data for the last 24 hours.
 /// </summary>
 public class Rsi : IScriptApiSample
 {
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
     {
-        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
+        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(5));
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync().ConfigureAwait(false);
 
@@ -68,7 +68,7 @@ public class Rsi : IScriptApiSample
         while (!timeoutCts.IsCancellationRequested)
         {
             await Console.Out.WriteLineAsync().ConfigureAwait(false);
-            await Console.Out.WriteLineAsync("Waiting for next closed candle...").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Waiting for the next closed candle...").ConfigureAwait(false);
 
             lastClosedCandle = await subscription.WaitNextClosedCandlestickAsync(candleWidth, timeoutCts.Token).ConfigureAwait(false);
             await Console.Out.WriteLineAsync($"New closed candle arrived: {lastClosedCandle}").ConfigureAwait(false);
