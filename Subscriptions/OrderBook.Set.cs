@@ -52,7 +52,7 @@ public class OrderBookSet : IScriptApiSample
             for (int i = 0; i < 10; i++)
             {
                 // Note that we are not guaranteed to get any number of updates from any particular symbol pair. Also note that when a subscription is created, we get an initial
-                // state, which is propagated as an update, but it may be preceeded with any number of updates of earlier subscribed symbol pairs of the same set.
+                // state, which is propagated as an update, but it may be preceded with any number of updates of earlier subscribed symbol pairs of the same set.
                 OrderBook orderBook = await subscriptionSet.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New order book received:").ConfigureAwait(false);
             
