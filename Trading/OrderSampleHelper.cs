@@ -135,7 +135,7 @@ public class OrderSampleHelper : IAsyncDisposable
 
             OrderBook orderBook = await subscription.GetOrderBookAsync(getMode: OrderBookGetMode.WaitUntilNew, cancellationToken).ConfigureAwait(false);
 
-            if (orderBook.Bids.Count == 0 || orderBook.Asks.Count == 0)
+            if ((orderBook.Bids.Count == 0) || (orderBook.Asks.Count == 0))
             {
                 string msg = $"Empty order book has been received for symbol pair '{symbolPair}' on {exchangeMarket}.";
                 await Console.Error.WriteLineAsync($"ERROR: {msg}").ConfigureAwait(false);
