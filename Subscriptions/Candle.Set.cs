@@ -52,7 +52,7 @@ public class CandleSet : IScriptApiSample
         {
             // Candles are either open or closed. A closed candle is a candle for a time period that will not change in the future because its time interval is in the past.
             // Similarly, an open candle is a candle that represents an ongoing time period and as such it can still change.
-            await Console.Out.WriteLineAsync($"Wait for 6 closed candlesticks updates.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Wait for 6 closed candlesticks updates.").ConfigureAwait(false);
             for (int i = 0; i < 6; i++)
             {
                 // Note that we are not guaranteed to get two closed candles for each of the three symbol pairs in the subscription. Some exchanges do not deliver closed
