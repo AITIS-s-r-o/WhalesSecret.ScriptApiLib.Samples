@@ -50,24 +50,14 @@ public class CandleSet : IScriptApiSample
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(candleWidth, timeoutCts.Token))
         {
-            // Candles are either open or closed. A closed candle is a candle for a time period that will not change in the future because its time interval is in the past. Similarly, an open candle is a candle that represents an ongoing time period and as such it can still change.
-            await Console.Out.WriteLineAsync("First we get the latest closed candles for all symbol pairs.").ConfigureAwait(false);
-            for (int i = 0; i < symbolPairs.Length; i++)
+            // Candles are either open or closed. A closed candle is a candle for a time period that will not change in the future because its time interval is in the past.
+            // Similarly, an open candle is a candle that represents an ongoing time period and as such it can still change.
+            await Console.Out.WriteLineAsync("Wait for 6 closed candlesticks updates.").ConfigureAwait(false);
+            for (int i = 0; i < 6; i++)
             {
-                // When we call this method for the first time, we have not consumed any candles on the given subscriptions yet, so we get the same results as we would get if we
-                // called GetLatestClosedCandlestick. However, using WhenAnyNewClosedCandlestickAsync will cause consumption of the last state and so we will be able to wait for
-                // new data below.
-                CandleWithExchangeSymbolPair candle = await subscriptionSet.WhenAnyNewClosedCandlestickAsync(candleWidth).ConfigureAwait(false);
-                await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | Latest known closed candle: {candle}").ConfigureAwait(false);
-            }
-
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
-
-            await Console.Out.WriteLineAsync($"Wait for closed candlesticks updates.").ConfigureAwait(false);
-            for (int i = 0; i < symbolPairs.Length; i++)
-            {
-                // Note that here, we are not guaranteed to get one closed candle for each of the three symbol pairs in the subscription. Some exchanges do not deliver closed
-                // candlestick update until there is an actual new trade.
+                // Note that we are not guaranteed to get two closed candles for each of the three symbol pairs in the subscription. Some exchanges do not deliver closed
+                // candlestick updates until there is an actual new trade. Also note that when a subscription is created, we get an initial state, which is propagated as an update,
+                // but it may be preceded with any number of updates of earlier subscribed symbol pairs of the same set.
                 CandleWithExchangeSymbolPair candle = await subscriptionSet.WhenAnyNewClosedCandlestickAsync(candleWidth).ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New closed candle received: {candle}").ConfigureAwait(false);
             }
@@ -92,7 +82,7 @@ public class CandleSet : IScriptApiSample
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(candleWidth, timeoutCts.Token))
         {
-            await Console.Out.WriteLineAsync("Wait for 10 candlesticks updates from any symbol of the two remaining symbols.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Wait for 10 candlesticks updates from any symbol pair of the two remaining symbols.").ConfigureAwait(false);
             for (int i = 0; i < 10; i++)
             {
                 CandleUpdate candleUpdate = await subscriptionSet.WhenAnyNewCandlestickUpdateAsync(candleWidth).ConfigureAwait(false);
