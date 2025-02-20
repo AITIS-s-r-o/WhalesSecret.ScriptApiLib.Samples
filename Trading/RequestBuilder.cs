@@ -13,7 +13,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
 /// <summary>
 /// Sample that demonstrates how to use <see cref="OrderRequestBuilder{TOrderRequest}"/> to build orders. The sample creates and places a buy limit order and then it creates
-/// and places 2 market orders (buy and sell). THe limit order is then cancelled.
+/// and places two market orders (buy and sell). THe limit order is then cancelled.
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
@@ -52,7 +52,7 @@ public class RequestBuilder : IScriptApiSample
         // Rounding is necessary to get accepted on exchanges.
         decimal orderSize = Math.Round(baseOrderSize / limitPrice, decimals: helper.VolumePrecision);
 
-        await Console.Out.WriteLineAsync("Build limit order request.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
         LimitOrderRequest limitOrderRequest = limitBuilder
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
@@ -98,7 +98,7 @@ public class RequestBuilder : IScriptApiSample
         await tradeClient.CancelOrderAsync(limitOrder, timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Wait until the limit order is closed.").ConfigureAwait(false);
-        await limitOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await limitOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Wait until the market order 1 is filled.").ConfigureAwait(false);
         await marketOrder1.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);

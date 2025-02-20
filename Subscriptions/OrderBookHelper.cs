@@ -11,7 +11,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 public static class OrderBookHelper
 {
     /// <summary>
-    /// Prints the top bids and asks of the given order book to the concole output.
+    /// Prints the top bids and asks of the given order book to the console output.
     /// </summary>
     /// <param name="orderBook">Order book to print.</param>
     /// <param name="sideSize">Maximal number of bids and asks to print.</param>
