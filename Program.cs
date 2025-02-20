@@ -33,6 +33,8 @@ public class Program
             + " and consumed."},
         new object[] { "Subscriptions/OrderBook.Set", typeof(OrderBookSet), "Advanced order book subscription sample. Demonstrates how multiple order book subscriptions can be"
             + " created and consumed at the same time."},
+        new object[] { "Subscriptions/OrderBook.Arbitrage", typeof(OrderBookArbitrage), "Advanced order book subscription sample. Demonstrates how to monitor order books on two"
+            + " different exchanges at the same time."},
         new object[] { "Subscriptions/Ticker.Basic", typeof(TickerBasic), "Basic ticker subscription sample. Demonstrates how a ticker subscription can be created and consumed."},
         new object[] { "Subscriptions/Ticker.Set", typeof(TickerSet), "Advanced ticker subscription sample. Demonstrates how multiple ticker subscriptions can be created and"
             + " consumed at the same time."},
