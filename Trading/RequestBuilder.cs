@@ -7,13 +7,21 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
+using WhalesSecret.TradeScriptLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Utils.Orders;
 
 namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
 /// <summary>
 /// Sample that demonstrates how to use <see cref="OrderRequestBuilder{TOrderRequest}"/> to build orders. The sample creates and places a buy limit order and then it creates
-/// and places two market orders (buy and sell). THe limit order is then cancelled.
+/// and places two market orders (buy and sell). The limit order is then cancelled.
+/// <para>
+/// The order request builder uses <see cref="ExchangeInfo">exchange information</see> in order to prevent us submitting invalid order requests. For example, using the order
+/// request builder, it is not possible to place order for unsupported symbol pair. Similarly, the builder takes care of necessary rounding. Each exchange impose different rules
+/// on each tradable symbol pair and the order request builder makes it easy to comply with these requirements. For example, we can ask the order request builder to create an order
+/// to buy <c>5.123456</c> USD worth of BTC, but if the price precision of the given symbol pair on the given exchange market is limited to 3 decimal places, when we build the order
+/// request, it will round the price to <c>5.123</c> USD.
+/// </para>
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
