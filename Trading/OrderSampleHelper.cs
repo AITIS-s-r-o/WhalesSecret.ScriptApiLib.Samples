@@ -20,6 +20,9 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// </remarks>
 public class OrderSampleHelper : IAsyncDisposable
 {
+    /// <summary>Information about an exchange market and its tradable pairs.</summary>
+    public ExchangeInfo ExchangeInfo { get; }
+
     /// <summary>Connected trade API client.</summary>
     public ITradeApiClient TradeApiClient { get; }
 
@@ -45,15 +48,17 @@ public class OrderSampleHelper : IAsyncDisposable
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
+    /// <param name="exchangeInfo">Information about an exchange market and its tradable pairs.</param>
     /// <param name="tradeApiClient">Connected trade API client.</param>
     /// <param name="bestBid">Price of the best bid.</param>
     /// <param name="bestAsk">Price of the best ask.</param>
     /// <param name="selectedSymbolPair">Symbol pair to be traded on the target exchange.</param>
     /// <param name="volumePrecision">Volume precision for the <paramref name="selectedSymbolPair">selected symbol pair</paramref>.</param>
-    public OrderSampleHelper(ITradeApiClient tradeApiClient, decimal bestBid, decimal bestAsk, SymbolPair selectedSymbolPair, int volumePrecision)
+    public OrderSampleHelper(ExchangeInfo exchangeInfo, ITradeApiClient tradeApiClient, decimal bestBid, decimal bestAsk, SymbolPair selectedSymbolPair, int volumePrecision)
     {
         this.disposedValueLock = new();
 
+        this.ExchangeInfo = exchangeInfo;
         this.TradeApiClient = tradeApiClient;
         this.BestBid = bestBid;
         this.BestAsk = bestAsk;
@@ -150,7 +155,7 @@ public class OrderSampleHelper : IAsyncDisposable
             await Console.Out.WriteLineAsync("Dispose order book subscription.").ConfigureAwait(false);
         }
 
-        OrderSampleHelper orderSampleHelper = new(tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, volumePrecision: limits.VolumePrecision.Value);
+        OrderSampleHelper orderSampleHelper = new(exchangeInfo, tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, volumePrecision: limits.VolumePrecision.Value);
         return orderSampleHelper;
     }
 

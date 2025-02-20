@@ -7,16 +7,27 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
+using WhalesSecret.TradeScriptLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Utils.Orders;
 
 namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
 /// <summary>
 /// Sample that demonstrates how to use <see cref="OrderRequestBuilder{TOrderRequest}"/> to build orders. The sample creates and places a buy limit order and then it creates
-/// and places two market orders (buy and sell). THe limit order is then cancelled.
+/// and places two market orders (buy and sell). The limit order is then cancelled.
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
-/// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
+/// <remarks>
+/// <para>
+/// The order request builder uses <see cref="ExchangeInfo">exchange information</see> in order to prevent us submitting invalid order requests. For example, using the order
+/// request builder, it is not possible to place order for an unsupported symbol pair. Similarly, the builder takes care of necessary rounding. Each exchange imposes different rules
+/// on each tradable symbol pair and the order request builder makes it easy to comply with these requirements. For example, we can ask the order request builder to create an order
+/// to buy <c>5.123456</c> USD worth of BTC, but if the volume precision of the given symbol pair on the given exchange market is limited to 3 decimal places, when we build
+/// the order request, it will round the volume to <c>5.123</c> USD. At the same time, the original requested size is preserved, so if the order builder is then used to buy
+/// different asset, e.g. trading LTC/USD, if the volume precision there is 4 decimal places, the order request will have size set to <c>5.1235</c> USD worth of BTC.
+/// </para>
+/// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
+/// </remarks>
 public class RequestBuilder : IScriptApiSample
 {
     /// <inheritdoc/>
@@ -32,7 +43,7 @@ public class RequestBuilder : IScriptApiSample
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
-        OrderRequestBuilder<LimitOrderRequest> limitBuilder = new();
+        OrderRequestBuilder<LimitOrderRequest> limitBuilder = new(helper.ExchangeInfo);
 
         string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"builder-sample-1-{DateTime.UtcNow.Ticks}");
         string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"builder-sample-2-{DateTime.UtcNow.Ticks}");
@@ -49,8 +60,8 @@ public class RequestBuilder : IScriptApiSample
         // Compute a limit price so that the order is unlikely to fill.
         decimal limitPrice = Math.Floor(helper.BestBid / 5 * 4);
 
-        // Rounding is necessary to get accepted on exchanges.
-        decimal orderSize = Math.Round(baseOrderSize / limitPrice, decimals: helper.VolumePrecision);
+        // When using the order request builder, we do not need to round sizes and prices. The builder takes care of these requirements as well as other things.
+        decimal orderSize = baseOrderSize / limitPrice;
 
         await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
         LimitOrderRequest limitOrderRequest = limitBuilder
@@ -64,6 +75,9 @@ public class RequestBuilder : IScriptApiSample
 
         await Console.Out.WriteLineAsync($"Constructed limit order request: {limitOrderRequest}").ConfigureAwait(false);
 
+        // The builder remembers all the settings used for the limit order and these settings are preserved, if possible, even when we convert the builder to a builder for
+        // a different type of order. Therefore, we do not need to set the order side or the symbol pair again. We would not need to set the size either, but we want to demonstrate
+        // here that market orders can be placed with size specified in quote symbol (i.e. we can request buying 5 USD worth of BTC, instead of requesting buying 0.0000xxxx BTC.
         await Console.Out.WriteLineAsync("Build market order request 1.").ConfigureAwait(false);
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = limitBuilder.ConvertTo<MarketOrderRequest>();
         MarketOrderRequest marketOrderRequest1 = marketBuilder
