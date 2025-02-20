@@ -10,7 +10,8 @@ using WhalesSecret.TradeScriptLib.Exchanges;
 namespace WhalesSecret.ScriptApiLib.Samples.Subscriptions;
 
 /// <summary>
-/// Advanced sample that demonstrates how to monitor order books on two different exchanges at the same time.
+/// Advanced sample that demonstrates how to monitor order books on two different exchanges at the same time. The sample creates <c>BTC/USDT</c> order book subscription on two
+/// exchanges and it consumes order book updates. When an order book update is received, an arbitrage opportunity is calculated.
 /// </summary>
 public class OrderBookArbitrage : IScriptApiSample
 {
