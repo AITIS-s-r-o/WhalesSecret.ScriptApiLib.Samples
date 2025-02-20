@@ -12,7 +12,7 @@ using Skender.Stock.Indicators;
 namespace WhalesSecret.ScriptApiLib.Samples.Indicators;
 
 /// <summary>
-/// Sample that demonstrates the use of <see cref="https://dotnet.stockindicators.dev/indicators/Rsi/#content">RSI</see> indicator from
+/// Sample that demonstrates the use of <see cref="https://dotnet.stockindicators.dev/indicators/Rsi/#content">Relative Strength Indicator</see> (RSI) from
 /// <see href="https://dotnet.stockindicators.dev/">Skender.Stock.Indicators</see>. The sample creates a candlestick subscriptions with 1-minute BTC/USDT candles and feeds
 /// the indicator for about 5 minutes. It also obtains historical candle data for the last 24 hours.
 /// </summary>
@@ -44,7 +44,7 @@ public class Rsi : IScriptApiSample
         CandleWidth candleWidth = CandleWidth.Minute1;
 
         Candle lastClosedCandle = subscription.GetLatestClosedCandlestick(candleWidth);
-        await Console.Out.WriteLineAsync($"Latested closed {candleWidth} candle: {lastClosedCandle}").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync($"Latest closed {candleWidth} candle: {lastClosedCandle}").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Getting 24 hours of candle data").ConfigureAwait(false);
         DateTime startTime = lastClosedCandle.Timestamp.AddHours(-24);
