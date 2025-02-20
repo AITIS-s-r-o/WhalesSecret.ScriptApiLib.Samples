@@ -34,6 +34,7 @@ public class Program
         new object[] { "Trading/Order.Size.Small", typeof(SizeSmall), "Basic order sample. Demonstrates how small-sized orders can be placed."},
         new object[] { "Trading/Order.Size.Large", typeof(SizeLarge), "Basic order sample. Demonstrates how larger-sized orders can be placed. Requires a valid license."},
         new object[] { "Trading/Order.Updates", typeof(OrderUpdates), "Basic order's updates sample. Demonstrates how order's updates can be consumed."},
+        new object[] { "Trading/Order.Builder", typeof(RequestBuilder), "Basic order request builder sample. Demonstrates how orders can be built using the builder pattern."},
     };
 
     /// <summary>
