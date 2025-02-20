@@ -44,7 +44,7 @@ public class Rsi : IScriptApiSample
         CandleWidth candleWidth = CandleWidth.Minute1;
 
         Candle lastClosedCandle = subscription.GetLatestClosedCandlestick(candleWidth);
-        await Console.Out.WriteLineAsync($"Latested closed {candleWidth} candle: {lastClosedCandle}").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync($"Latest closed {candleWidth} candle: {lastClosedCandle}").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Getting 24 hours of candle data").ConfigureAwait(false);
         DateTime startTime = lastClosedCandle.Timestamp.AddHours(-24);
