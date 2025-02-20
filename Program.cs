@@ -42,6 +42,8 @@ public class Program
         new object[] { "Trading/Order.Updates", typeof(OrderUpdates), "Basic order's updates sample. Demonstrates how order's updates can be consumed. Requires credentials."},
         new object[] { "Trading/Order.Builder", typeof(RequestBuilder), "Basic order request builder sample. Demonstrates how orders can be build using the builder pattern."
             + " Requires credentials." },
+        new object[] { "Trading/TradeOrder.History", typeof(TradeOrderHistory), "Demonstrates getting historical trades and orders records. Requires credentials." },
+        new object[] { "Trading/Order.Open.List", typeof(ListOpenOrders), "Sample that demonstrates how to get a list of open orders. Requires credentials." },
     };
 
     /// <summary>
