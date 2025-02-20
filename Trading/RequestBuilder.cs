@@ -20,7 +20,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// <remarks>
 /// <para>
 /// The order request builder uses <see cref="ExchangeInfo">exchange information</see> in order to prevent us submitting invalid order requests. For example, using the order
-/// request builder, it is not possible to place order for unsupported symbol pair. Similarly, the builder takes care of necessary rounding. Each exchange impose different rules
+/// request builder, it is not possible to place order for an unsupported symbol pair. Similarly, the builder takes care of necessary rounding. Each exchange imposes different rules
 /// on each tradable symbol pair and the order request builder makes it easy to comply with these requirements. For example, we can ask the order request builder to create an order
 /// to buy <c>5.123456</c> USD worth of BTC, but if the volume precision of the given symbol pair on the given exchange market is limited to 3 decimal places, when we build
 /// the order request, it will round the volume to <c>5.123</c> USD. At the same time, the original requested size is preserved, so if the order builder is then used to buy
