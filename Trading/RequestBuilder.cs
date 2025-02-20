@@ -32,7 +32,7 @@ public class RequestBuilder : IScriptApiSample
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
-        OrderRequestBuilder<LimitOrderRequest> limitBuilder = new();
+        OrderRequestBuilder<LimitOrderRequest> limitBuilder = new(helper.ExchangeInfo);
 
         string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"builder-sample-1-{DateTime.UtcNow.Ticks}");
         string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"builder-sample-2-{DateTime.UtcNow.Ticks}");
@@ -49,8 +49,8 @@ public class RequestBuilder : IScriptApiSample
         // Compute a limit price so that the order is unlikely to fill.
         decimal limitPrice = Math.Floor(helper.BestBid / 5 * 4);
 
-        // Rounding is necessary to get accepted on exchanges.
-        decimal orderSize = Math.Round(baseOrderSize / limitPrice, decimals: helper.VolumePrecision);
+        // When using the order request builder, we do not need to round sizes and prices. The builder takes care of these requirements as well as other things.
+        decimal orderSize = baseOrderSize / limitPrice;
 
         await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
         LimitOrderRequest limitOrderRequest = limitBuilder
@@ -64,6 +64,9 @@ public class RequestBuilder : IScriptApiSample
 
         await Console.Out.WriteLineAsync($"Constructed limit order request: {limitOrderRequest}").ConfigureAwait(false);
 
+        // The builder remembers all the settings used for the limit order and these settings are preserved, if possible, even when we convert the builder to a builder for
+        // a different type of order. Therefore, we do not need to set the order side or the symbol pair again. We would not need to set the size either, but we want to demonstrate
+        // here that market orders can be placed with size specified in quote symbol (i.e. we can request buying 5 USD worth of BTC, instead of requesting buying 0.0000xxxx BTC.
         await Console.Out.WriteLineAsync("Build market order request 1.").ConfigureAwait(false);
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = limitBuilder.ConvertTo<MarketOrderRequest>();
         MarketOrderRequest marketOrderRequest1 = marketBuilder
