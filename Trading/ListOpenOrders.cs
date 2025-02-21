@@ -76,7 +76,7 @@ public class ListOpenOrders : IScriptApiSample
         IReadOnlyList<ILiveOrder> liveOrders = await tradeClient.GetOpenOrdersAsync(OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
         
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Following open orders were found:").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Following open orders were found:").ConfigureAwait(false);
         for (int i = 0; i < liveOrders.Count; i++)
             await Console.Out.WriteLineAsync($"  #{i + 1}: {liveOrders[i]}").ConfigureAwait(false);
 
