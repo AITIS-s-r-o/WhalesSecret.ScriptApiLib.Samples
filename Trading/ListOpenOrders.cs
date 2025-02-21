@@ -37,7 +37,7 @@ public class ListOpenOrders : IScriptApiSample
 
         OrderRequestBuilder<LimitOrderRequest> limitBuilder = new(helper.ExchangeInfo);
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"activeorders-1-{DateTime.UtcNow.Ticks}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"activeOrders-1-{DateTime.UtcNow.Ticks}");
 
         // Buy a small amount of bitcoin.
         decimal baseOrderSize = exchangeMarket switch
@@ -76,7 +76,7 @@ public class ListOpenOrders : IScriptApiSample
         IReadOnlyList<ILiveOrder> liveOrders = await tradeClient.GetOpenOrdersAsync(OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
         
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Following open orders were found:").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Following open orders were found:").ConfigureAwait(false);
         for (int i = 0; i < liveOrders.Count; i++)
             await Console.Out.WriteLineAsync($"  #{i + 1}: {liveOrders[i]}").ConfigureAwait(false);
 
