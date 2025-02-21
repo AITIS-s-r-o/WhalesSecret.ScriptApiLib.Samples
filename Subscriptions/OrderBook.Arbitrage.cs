@@ -101,7 +101,7 @@ public class OrderBookArbitrage : IScriptApiSample
                     if ((primaryOrderBook.Value.Bids.Count > 0) && (secondaryOrderBook.Value.Asks.Count > 0))
                     {
                         OrderBookEntry primaryBestBid = primaryOrderBook.Value.Bids[0];
-                        OrderBookEntry secondaryBestAsk = primaryOrderBook.Value.Asks[1];
+                        OrderBookEntry secondaryBestAsk = secondaryOrderBook.Value.Asks[0];
 
                         decimal amount = Math.Min(primaryBestBid.Quantity, secondaryBestAsk.Quantity);
                         decimal priceDiff = primaryBestBid.Price - secondaryBestAsk.Price;
@@ -132,7 +132,7 @@ public class OrderBookArbitrage : IScriptApiSample
 
                     if ((primaryOrderBook.Value.Asks.Count > 0) && (secondaryOrderBook.Value.Bids.Count > 0))
                     {
-                        OrderBookEntry secondaryBestBid = primaryOrderBook.Value.Bids[1];
+                        OrderBookEntry secondaryBestBid = secondaryOrderBook.Value.Bids[0];
                         OrderBookEntry primaryBestAsk = primaryOrderBook.Value.Asks[0];
 
                         decimal amount = Math.Min(primaryBestAsk.Quantity, secondaryBestBid.Quantity);
