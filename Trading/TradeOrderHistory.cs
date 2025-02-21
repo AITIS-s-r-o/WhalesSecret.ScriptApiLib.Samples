@@ -19,7 +19,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// </summary>
 /// <remarks>
 /// Note that for <see cref="ExchangeMarket.BinanceSpot"/> the exchange account initialization may take several minutes. The initialization is done only once, so only the first
-/// run of the sample is affected. Due to the nature of its API, this initialization is required for the historical records to be obtained correctly. 
+/// run of the sample is affected. Due to the nature of its API, this initialization is required for the historical records to be obtained correctly.
 /// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
 /// </remarks>
 public class TradeOrderHistory : IScriptApiSample
