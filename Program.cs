@@ -33,6 +33,8 @@ public class Program
             + " and consumed."},
         new object[] { "Subscriptions/OrderBook.Set", typeof(OrderBookSet), "Advanced order book subscription sample. Demonstrates how multiple order book subscriptions can be"
             + " created and consumed at the same time."},
+        new object[] { "Subscriptions/OrderBook.Arbitrage", typeof(OrderBookArbitrage), "Advanced order book subscription sample. Demonstrates how to monitor order books on two"
+            + " different exchanges at the same time."},
         new object[] { "Subscriptions/Ticker.Basic", typeof(TickerBasic), "Basic ticker subscription sample. Demonstrates how a ticker subscription can be created and consumed."},
         new object[] { "Subscriptions/Ticker.Set", typeof(TickerSet), "Advanced ticker subscription sample. Demonstrates how multiple ticker subscriptions can be created and"
             + " consumed at the same time."},
@@ -42,6 +44,8 @@ public class Program
         new object[] { "Trading/Order.Updates", typeof(OrderUpdates), "Basic order's updates sample. Demonstrates how order's updates can be consumed. Requires credentials."},
         new object[] { "Trading/Order.Builder", typeof(RequestBuilder), "Basic order request builder sample. Demonstrates how orders can be build using the builder pattern."
             + " Requires credentials." },
+        new object[] { "Trading/TradeOrder.History", typeof(TradeOrderHistory), "Demonstrates getting historical trades and orders records. Requires credentials." },
+        new object[] { "Trading/Order.Open.List", typeof(ListOpenOrders), "Sample that demonstrates how to get a list of open orders. Requires credentials." },
     };
 
     /// <summary>
