@@ -37,7 +37,7 @@ public class ListOpenOrders : IScriptApiSample
 
         OrderRequestBuilder<LimitOrderRequest> limitBuilder = new(helper.ExchangeInfo);
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"activeorders-1-{DateTime.UtcNow.Ticks}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"activeOrders-1-{DateTime.UtcNow.Ticks}");
 
         // Buy a small amount of bitcoin.
         decimal baseOrderSize = exchangeMarket switch
