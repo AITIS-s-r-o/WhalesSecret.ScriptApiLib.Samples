@@ -27,7 +27,7 @@ public class TradeOrderHistory : IScriptApiSample
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
     {
-        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
+        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(10));
 
         // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
