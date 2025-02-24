@@ -45,7 +45,7 @@ public class TradeOrderHistory : IScriptApiSample
         if (exchangeMarket == ExchangeMarket.BinanceSpot)
         {
             await Console.Out.WriteLineAsync("WARNING: When this sample is run for the first time, exchange account initialization needs to be done. This operation may take"
-                + "  several minutes to complete.").ConfigureAwait(false);
+                + " several minutes to complete.").ConfigureAwait(false);
         }
 
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
