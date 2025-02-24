@@ -27,7 +27,7 @@ public class TradeOrderHistory : IScriptApiSample
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
     {
-        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
+        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(10));
 
         // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
@@ -44,8 +44,8 @@ public class TradeOrderHistory : IScriptApiSample
 
         if (exchangeMarket == ExchangeMarket.BinanceSpot)
         {
-            await Console.Out.WriteLineAsync("WARNING: When this sample is run for the first time, exchange account initialization needs to be done. This operation may take"
-                + "  several minutes to complete.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"WARNING: When this sample is run for the first time for {exchangeMarket}, exchange account initialization needs to be done. This"
+                + " operation may take several minutes to complete.").ConfigureAwait(false);
         }
 
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
