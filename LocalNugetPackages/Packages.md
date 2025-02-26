@@ -1,1 +1,0 @@
-﻿Place `WhalesSecret.ScriptApiLib.<version>.nupkg` (e.g. `WhalesSecret.ScriptApiLib.1.0.0.61.nupkg`) file in this folder. 
