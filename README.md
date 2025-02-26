@@ -24,7 +24,8 @@ await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeM
 
 ## Running Samples
 
-Build the samples solution using the latest MSVS. Then simply run the main executable as a console application in order to see the following usage instructions:
+Make sure [.NET9](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) is installed on your computer. Build the samples .NET solution using the latest MSVS or any other .NET 
+tool of your choice. Then simply run the main executable as a console application in order to see the following usage instructions:
 
 ```
 Usage: WhalesSecret.ScriptApiLib.Samples <sampleName> <exchangeMarket>
@@ -63,7 +64,6 @@ WhalesSecret.ScriptApiLib.Samples Subscriptions/Ticker.Basic BinanceSpot
 
 Some samples require valid API credentials. This means you have to have an account on the exchange market you want to run sample against and you have to modify
 [Credentials.cs](Credentials.cs) file to include your real credentials.
-
 
 ## License
           
