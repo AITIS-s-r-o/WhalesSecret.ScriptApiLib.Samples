@@ -1,6 +1,6 @@
 # Whale's Secret ScriptApiLib Samples
 
-Samples that demonstrate abilities of Whale's Secret ScriptApiLib.
+Samples that demonstrate abilities of [Whale's Secret ScriptApiLib](https://www.nuget.org/packages/WhalesSecret.ScriptApiLib).
 
 Whale's Secret ScriptApiLib is a .NET library that provides unified API to different digital assets platforms with focus on easy of use and robust error handling.
 
