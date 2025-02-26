@@ -6,9 +6,8 @@ Whale's Secret ScriptApiLib is a .NET library that provides unified API to diffe
 
 ## How to Start
 
-The simplest example is [PublicConnection sample](Connections/PublicConnection.cs) which simply 
-connects to a selected exchange market without need to have credentials or license. Such a public connection enables you to download public market data, such as order books, 
-tickers, or candlesticks.
+The simplest example is [PublicConnection sample](Connections/PublicConnection.cs) which simply connects to a selected exchange market without need to have credentials or license.
+Such a public connection enables you to download public market data, such as order books, tickers, or candlesticks.
 
 The core of this sample looks as follows:
 
