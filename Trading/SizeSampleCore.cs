@@ -33,7 +33,7 @@ public static class SizeSampleCore
 
         // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
-        await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions).ConfigureAwait(false);
+        await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, timeoutCts.Token).ConfigureAwait(false);
 
         await using OrderSampleHelper helper = await OrderSampleHelper.InitializeAsync(scriptApi, exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
         ITradeApiClient tradeClient = helper.TradeApiClient;
