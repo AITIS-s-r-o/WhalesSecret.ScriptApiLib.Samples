@@ -20,7 +20,7 @@ public class CandleSet : IScriptApiSample
     {
         using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(5));
 
-        await using ScriptApi scriptApi = await ScriptApi.CreateAsync().ConfigureAwait(false);
+        await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
         _ = await scriptApi.InitializeMarketAsync(exchangeMarket, timeoutCts.Token).ConfigureAwait(false);

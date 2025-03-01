@@ -17,7 +17,7 @@ public class PublicConnection : IScriptApiSample
     {
         using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
 
-        await using ScriptApi scriptApi = await ScriptApi.CreateAsync().ConfigureAwait(false);
+        await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
         // Initialization of the market is required before connection can be created.
         await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
