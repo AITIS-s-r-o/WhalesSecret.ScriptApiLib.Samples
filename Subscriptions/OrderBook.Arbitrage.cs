@@ -20,7 +20,7 @@ public class OrderBookArbitrage : IScriptApiSample
     {
         using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
 
-        await using ScriptApi scriptApi = await ScriptApi.CreateAsync().ConfigureAwait(false);
+        await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
         ExchangeMarket primaryMarket = exchangeMarket;
         ExchangeMarket secondaryMarket = exchangeMarket == ExchangeMarket.BinanceSpot ? ExchangeMarket.KucoinSpot : ExchangeMarket.BinanceSpot;
