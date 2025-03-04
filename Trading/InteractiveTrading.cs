@@ -60,9 +60,13 @@ public class InteractiveTrading : IScriptApiSample
             if (orderType is null)
                 continue;
 
+            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+
             OrderSide? orderSide = await AskForOrderSideAsync().ConfigureAwait(false);
             if (orderSide is null)
                 continue;
+
+            await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
             decimal? orderSize = await AskForDecimalValueAsync($"""Specify an order size in {OrderSymbolPair.BaseSymbol}:""").ConfigureAwait(false);
             if (orderSize is null)
@@ -79,6 +83,8 @@ public class InteractiveTrading : IScriptApiSample
             }
             else if (orderType == OrderType.Limit)
             {
+                await Console.Out.WriteLineAsync().ConfigureAwait(false);
+
                 decimal? orderPrice = await AskForDecimalValueAsync($"""Specify a price in {OrderSymbolPair.QuoteSymbol}:""").ConfigureAwait(false);
                 if (orderPrice is null)
                     continue;
@@ -92,7 +98,7 @@ public class InteractiveTrading : IScriptApiSample
                 throw new SanityCheckException($"Invalid order type {orderType} provided.");
             }
 
-            bool? cancelOrder = await AskForBoolValueAsync($"Do you want to cancel the order '{liveOrder.ClientOrderId}'?").ConfigureAwait(false);
+            bool? cancelOrder = await AskForBoolValueAsync($"Do you want to cancel the order '{liveOrder.ClientOrderId}'? [Y/N]").ConfigureAwait(false);
             if (cancelOrder == true)
             {
                 using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(1));
@@ -100,10 +106,13 @@ public class InteractiveTrading : IScriptApiSample
             }
             else
             {
+                await Console.Out.WriteLineAsync().ConfigureAwait(false);
                 await Console.Out.WriteLineAsync($"The order '{liveOrder.ClientOrderId}' will not be canceled.").ConfigureAwait(false);
             }
 
-            bool? continuePlacing = await AskForBoolValueAsync("Do you want to place another order?").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+
+            bool? continuePlacing = await AskForBoolValueAsync("Do you want to place another order? [Y/N]").ConfigureAwait(false);
             if (continuePlacing != true)
                 break;
         }
@@ -127,6 +136,7 @@ public class InteractiveTrading : IScriptApiSample
 
         await Console.Out.WriteLineAsync(options).ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
         ConsoleKeyInfo info = Console.ReadKey();
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
@@ -158,6 +168,7 @@ public class InteractiveTrading : IScriptApiSample
 
         await Console.Out.WriteLineAsync(options).ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
         ConsoleKeyInfo info = Console.ReadKey();
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
@@ -181,7 +192,7 @@ public class InteractiveTrading : IScriptApiSample
     private static async Task<decimal?> AskForDecimalValueAsync(string prompt)
     {
         await Console.Out.WriteLineAsync(prompt).ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
         string? line = Console.ReadLine();
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
@@ -204,7 +215,7 @@ public class InteractiveTrading : IScriptApiSample
     private static async Task<bool?> AskForBoolValueAsync(string prompt)
     {
         await Console.Out.WriteLineAsync(prompt).ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
         ConsoleKeyInfo info = Console.ReadKey();
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
