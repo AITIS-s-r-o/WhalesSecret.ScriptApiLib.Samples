@@ -201,7 +201,7 @@ public class InteractiveTrading : IScriptApiSample
 
         if (!decimal.TryParse(line, CultureInfo.InvariantCulture, out decimal value))
         {
-            await Console.Out.WriteLineAsync("Failed to parse provided value. Note that decimal comma is to be used to provide input.").ConfigureAwait(false);
+            await Console.Out.WriteLineAsync("Failed to parse provided value. Note that decimal separator is to be used to provide input.").ConfigureAwait(false);
             return null;
         }
 
