@@ -100,7 +100,7 @@ public class OrderSampleHelper : IAsyncDisposable
 
         await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
 
-        // Default connection options use full-trading connection type, which means both public and private connection will be established with the exchange.
+        // Default connection options use full-trading connection type, which means both public and private connections will be established with the exchange.
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, ConnectionOptions.Default).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"Connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
