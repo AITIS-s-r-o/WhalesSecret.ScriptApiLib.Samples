@@ -160,11 +160,11 @@ public class InteractiveTrading : IScriptApiSample
     private static async Task<OrderSide?> AskForOrderSideAsync()
     {
         string options = """
-                Select order side:
+            Select order side:
 
-                1] Buy
-                2] Sell
-                """;
+            1] Buy
+            2] Sell
+            """;
 
         await Console.Out.WriteLineAsync(options).ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
