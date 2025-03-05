@@ -13,7 +13,7 @@ using WhalesSecret.TradeScriptLib.Exchanges;
 namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
 /// <summary>
-/// Sample that demonstrates an interactive sample that allows to place market/limit orders and optionally cancel them.
+/// Sample allows to place market and limit orders and optionally cancel them in an interactive way.
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the keys and the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
