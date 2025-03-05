@@ -17,7 +17,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// demonstrate the discovery of an open order.
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
-/// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
+/// <remarks>IMPORTANT: You have to change the keys and the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
 public class OrderUpdates : IScriptApiSample
 {
     /// <inheritdoc/>
@@ -25,7 +25,6 @@ public class OrderUpdates : IScriptApiSample
     {
         using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
 
-        // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, timeoutCts.Token).ConfigureAwait(false);
 

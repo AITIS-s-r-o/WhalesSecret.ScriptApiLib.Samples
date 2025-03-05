@@ -12,7 +12,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Connections;
 /// Sample that demonstrates how to connect to an exchange market using a private connection. Private connections are necessary when accessing information related to the user's
 /// exchange account, or to create orders. These operations require exchange API credentials to be set.
 /// </summary>
-/// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
+/// <remarks>IMPORTANT: You have to change the keys and the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
 public class PrivateConnection : IScriptApiSample
 {
     /// <inheritdoc/>

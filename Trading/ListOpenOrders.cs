@@ -27,7 +27,6 @@ public class ListOpenOrders : IScriptApiSample
     {
         using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
 
-        // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, timeoutCts.Token).ConfigureAwait(false);
 
