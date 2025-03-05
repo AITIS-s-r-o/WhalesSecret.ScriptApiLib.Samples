@@ -7,7 +7,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// Sample that demonstrates how to place (small) orders without a valid license.
 /// </summary>
 /// <seealso cref="SizeSampleCore"/>
-/// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
+/// <remarks>IMPORTANT: You have to change the keys and the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
 public class SizeSmall : IScriptApiSample
 {
     /// <inheritdoc/>

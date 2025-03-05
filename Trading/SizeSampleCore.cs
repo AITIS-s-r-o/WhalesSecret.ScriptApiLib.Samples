@@ -16,7 +16,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// <para>Placing small orders does not need a valid license. Placing larger orders requires a valid license to be put into <see cref="License"/>.</para>
 /// </summary>
-/// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
+/// <remarks>IMPORTANT: You have to change the keys and the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
 public static class SizeSampleCore
 {
     /// <summary>
