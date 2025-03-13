@@ -1,3 +1,4 @@
+using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.Entities;
@@ -19,56 +20,39 @@ DateTime startTime = endTime.AddDays(-3);
 
 CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(SymbolPair.BTC_USDT, CandleWidth.Hour1, startTime, endTime);
 
-// Compute RSI.
-List<float> list = candlestickData.Candles.Select(x => (float)x.ClosePrice).ToList();
-List<float> rsiValues = RSIUtils.RSI.CalculateRSI(list);
-float? lastRsi = rsiValues.Last();
+// Compute RSI using:
+// <PackageReference Include="Skender.Stock.Indicators" Version="2.6.1" />
+RsiResult? lastRsi = ComputeRsi(candlestickData.Candles);
 
-string action = lastRsi switch
+if (lastRsi is not null)
 {
-    null => "No data",
-    > 70 => "Sell",
-    < 30 => "Buy",
-    _ => "Hold"
-};
-
-Console.WriteLine($"Last RSI value is: {rsiValues.Last()}. The signal tells: {action}");
-
-// Source code from: https://codepal.ai/code-generator/query/0yb8AHbY/csharp-calculate-rsi-values
-namespace RSIUtils
-{
-    public class RSI
+    string action = lastRsi.Rsi switch
     {
-        public static List<float> CalculateRSI(List<float> data)
-        {
-            List<float> rsiValues = new();
+        > 70 => "Sell",
+        < 30 => "Buy",
+        _ => "Hold"
+    };
 
-            // Check if the data list is empty or contains only one element.
-            if (data.Count < 2)
-            {
-                throw new ArgumentException("The data list should contain at least two elements.");
-            }
+    Console.WriteLine($"Last RSI value is: {lastRsi?.Rsi}. The signal tells: {action}");
+}
+else
+{
+    Console.WriteLine($"No data to compute RSI.");
+}
 
-            // Calculate the first RSI value.
-            float firstChange = data[1] - data[0];
-            float firstGain = Math.Max(firstChange, 0);
-            float firstLoss = Math.Abs(Math.Min(firstChange, 0));
-            float firstRS = firstGain / firstLoss;
-            float firstRSI = 100 - (100 / (1 + firstRS));
-            rsiValues.Add(firstRSI);
+static RsiResult? ComputeRsi(IEnumerable<Candle> candles)
+{
+    IEnumerable<Quote> quotes = candles.Select(c => new Quote()
+    {
+        Date = c.Timestamp,
+        Open = c.OpenPrice,
+        High = c.HighPrice,
+        Low = c.LowPrice,
+        Close = c.ClosePrice,
+        Volume = c.BaseVolume,
+    });
 
-            // Calculate the subsequent RSI values.
-            for (int i = 2; i < data.Count; i++)
-            {
-                float change = data[i] - data[i - 1];
-                float gain = Math.Max(change, 0);
-                float loss = Math.Abs(Math.Min(change, 0));
-                float RS = (gain + (rsiValues[i - 2] * (i - 1))) / (loss + (rsiValues[i - 2] * (i - 1)));
-                float RSI = 100 - (100 / (1 + RS));
-                rsiValues.Add(RSI);
-            }
+    IEnumerable<RsiResult> results = quotes.GetRsi();
 
-            return rsiValues;
-        }
-    }
+    return results.Last();
 }
