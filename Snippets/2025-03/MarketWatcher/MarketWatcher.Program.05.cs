@@ -3,6 +3,8 @@ using WhalesSecret.ScriptApiLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
+using System.Diagnostics;
+using System.Web;
 
 await using ScriptApi scriptApi = await ScriptApi.CreateAsync();
 
@@ -26,18 +28,41 @@ RsiResult? lastRsi = ComputeRsi(candlestickData.Candles);
 
 if (lastRsi is not null)
 {
-    string action = lastRsi.Rsi switch
+    string? signal = lastRsi.Rsi switch
     {
-        > 70 => "Sell",
-        < 30 => "Buy",
-        _ => "Hold"
+        < 30 => "oversold",
+        > 70 => "overbought",
+        _ => null
     };
 
-    Console.WriteLine($"Last RSI value is: {lastRsi?.Rsi}. The signal tells: {action}");
+    if (signal is not null)
+    {
+        Console.WriteLine($"Last RSI value is: {lastRsi.Rsi}. The signal tells: {signal}");
+        await SendTelegramMessageAsync($"Your daily observer: RSI signals {signal} for BTC/USDT on Binance!");
+    }
+    else
+    {
+        Console.WriteLine("No RSI signal at the moment, try it later!");
+    }
 }
 else
 {
     Console.WriteLine($"No data to compute RSI.");
+}
+
+static async Task SendTelegramMessageAsync(string message)
+{
+    string chatId = HttpUtility.UrlEncode("<YOUR_PUBLIC_TELEGRAM_CHANNEL_NAME>");
+    string apiToken = "XXXXXXXXXX:YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY";
+    message = HttpUtility.UrlEncode(message);
+
+    using HttpClient client = new();
+    string uri = $"https://api.telegram.org/bot{apiToken}/sendMessage?chat_id={chatId}&text={message}";
+    using HttpRequestMessage request = new(HttpMethod.Get, uri);
+    HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false);
+
+    string content = await response.Content.ReadAsStringAsync();
+    Debug.Assert(response.IsSuccessStatusCode, content);
 }
 
 static RsiResult? ComputeRsi(IEnumerable<Candle> candles)
