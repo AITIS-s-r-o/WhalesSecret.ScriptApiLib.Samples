@@ -1,6 +1,5 @@
 using WhalesSecret.ScriptApiLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
-using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
 
@@ -15,12 +14,7 @@ await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(ExchangeM
 
 Console.WriteLine("🐋 got connected!");
 
-await using IOrderBookSubscription subscription = await tradeClient.CreateOrderBookSubscriptionAsync(SymbolPair.BTC_USDT);
+DateTime endTime = DateTime.Now;
+DateTime startTime = endTime.AddDays(-3);
 
-while (true)
-{
-    OrderBook orderBook = await subscription.GetOrderBookAsync(getMode: OrderBookGetMode.WaitUntilNew);
-
-    Console.WriteLine($"[{DateTime.Now}] Top of book is: {orderBook.Bids[0]}|{orderBook.Asks[0]} (spread: {orderBook.Spread}).");
-    await Task.Delay(TimeSpan.FromSeconds(5));
-}
+CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(SymbolPair.BTC_USDT, CandleWidth.Hour1, startTime, endTime);

@@ -1,3 +1,4 @@
+using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.Entities;
@@ -18,3 +19,40 @@ DateTime endTime = DateTime.Now;
 DateTime startTime = endTime.AddDays(-3);
 
 CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(SymbolPair.BTC_USDT, CandleWidth.Hour1, startTime, endTime);
+
+// Compute RSI using:
+// <PackageReference Include="Skender.Stock.Indicators" Version="2.6.1" />
+RsiResult? lastRsi = ComputeRsi(candlestickData.Candles);
+
+if (lastRsi is not null)
+{
+    string action = lastRsi.Rsi switch
+    {
+        > 70 => "Sell",
+        < 30 => "Buy",
+        _ => "Hold"
+    };
+
+    Console.WriteLine($"Last RSI value is: {lastRsi?.Rsi}. The signal tells: {action}");
+}
+else
+{
+    Console.WriteLine($"No data to compute RSI.");
+}
+
+static RsiResult? ComputeRsi(IEnumerable<Candle> candles)
+{
+    IEnumerable<Quote> quotes = candles.Select(c => new Quote()
+    {
+        Date = c.Timestamp,
+        Open = c.OpenPrice,
+        High = c.HighPrice,
+        Low = c.LowPrice,
+        Close = c.ClosePrice,
+        Volume = c.BaseVolume,
+    });
+
+    IEnumerable<RsiResult> results = quotes.GetRsi();
+
+    return results.Last();
+}
