@@ -44,7 +44,7 @@ public class OrderUpdates : IScriptApiSample
         };
 
         // Rounding is necessary to get accepted on exchanges.
-        decimal orderSize = Math.Round(exchangeOrderSize / limitPrice, decimals: helper.VolumePrecision);
+        decimal orderSize = Math.Round(exchangeOrderSize / limitPrice, decimals: helper.BaseVolumePrecision);
 
         await Console.Out.WriteLineAsync("Creating the first limit order.").ConfigureAwait(false);
         string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"updates-sample-1-{DateTime.UtcNow.Ticks}");
