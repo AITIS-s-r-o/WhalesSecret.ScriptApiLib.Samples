@@ -35,8 +35,8 @@ public class OrderSampleHelper : IAsyncDisposable
     /// <summary>Symbol pair to be traded on the target exchange.</summary>
     public SymbolPair SelectedSymbolPair { get; }
 
-    /// <summary>Volume precision for the <see cref="SymbolPair">selected symbol pair</see>.</summary>
-    public int VolumePrecision { get; }
+    /// <summary>Base volume precision for the <see cref="SymbolPair">selected symbol pair</see>.</summary>
+    public int BaseVolumePrecision { get; }
 
     /// <summary>Lock object to be used when accessing <see cref="disposedValue"/>.</summary>
     private readonly Lock disposedValueLock;
@@ -53,8 +53,8 @@ public class OrderSampleHelper : IAsyncDisposable
     /// <param name="bestBid">Price of the best bid.</param>
     /// <param name="bestAsk">Price of the best ask.</param>
     /// <param name="selectedSymbolPair">Symbol pair to be traded on the target exchange.</param>
-    /// <param name="volumePrecision">Volume precision for the <paramref name="selectedSymbolPair">selected symbol pair</paramref>.</param>
-    public OrderSampleHelper(ExchangeInfo exchangeInfo, ITradeApiClient tradeApiClient, decimal bestBid, decimal bestAsk, SymbolPair selectedSymbolPair, int volumePrecision)
+    /// <param name="baseVolumePrecision">Base volume precision for the <paramref name="selectedSymbolPair">selected symbol pair</paramref>.</param>
+    public OrderSampleHelper(ExchangeInfo exchangeInfo, ITradeApiClient tradeApiClient, decimal bestBid, decimal bestAsk, SymbolPair selectedSymbolPair, int baseVolumePrecision)
     {
         this.disposedValueLock = new();
 
@@ -63,13 +63,13 @@ public class OrderSampleHelper : IAsyncDisposable
         this.BestBid = bestBid;
         this.BestAsk = bestAsk;
         this.SelectedSymbolPair = selectedSymbolPair;
-        this.VolumePrecision = volumePrecision;
+        this.BaseVolumePrecision = baseVolumePrecision;
     }
 
     /// <summary>
     /// Common initialization for order samples. A full-trading connection is established with the target exchange and an order book subscription is created in order to get access
     /// to the current order book snapshot. <see cref="BestBid"/> and <see cref="BestAsk"/> are filled based on the information from the order book.
-    /// <see cref="SelectedSymbolPair"/> is filled with the selected symbol pair to be traded on the target exchange and its <see cref="VolumePrecision">volume precision</see> is
+    /// <see cref="SelectedSymbolPair"/> is filled with the selected symbol pair to be traded on the target exchange and its <see cref="BaseVolumePrecision">volume precision</see> is
     /// also filled.
     /// </summary>
     /// <param name="scriptApi"> Trade script API with script environment.</param>
@@ -155,7 +155,7 @@ public class OrderSampleHelper : IAsyncDisposable
             await Console.Out.WriteLineAsync("Dispose order book subscription.").ConfigureAwait(false);
         }
 
-        OrderSampleHelper orderSampleHelper = new(exchangeInfo, tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, volumePrecision: limits.BaseVolumePrecision.Value);
+        OrderSampleHelper orderSampleHelper = new(exchangeInfo, tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, baseVolumePrecision: limits.BaseVolumePrecision.Value);
         return orderSampleHelper;
     }
 
