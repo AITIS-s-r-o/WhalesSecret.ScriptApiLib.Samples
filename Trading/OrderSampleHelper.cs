@@ -120,14 +120,14 @@ public class OrderSampleHelper : IAsyncDisposable
             throw new SanityCheckException(msg);
         }
 
-        if (limits.VolumePrecision is null)
+        if (limits.BaseVolumePrecision is null)
         {
             string msg = $"Volume precision is not known for symbol pair '{symbolPair}' on {exchangeMarket}.";
             await Console.Error.WriteLineAsync($"ERROR: {msg}").ConfigureAwait(false);
             throw new SanityCheckException(msg);
         }
 
-        await Console.Out.WriteLineAsync($"Volume precision for symbol pair '{symbolPair}' on {exchangeMarket} is {limits.VolumePrecision}.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync($"Volume precision for symbol pair '{symbolPair}' on {exchangeMarket} is {limits.BaseVolumePrecision}.").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"Get best bid and ask prices from an order book on {exchangeMarket}.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Create subscription for '{symbolPair}' order book on {exchangeMarket}.").ConfigureAwait(false);
@@ -155,7 +155,7 @@ public class OrderSampleHelper : IAsyncDisposable
             await Console.Out.WriteLineAsync("Dispose order book subscription.").ConfigureAwait(false);
         }
 
-        OrderSampleHelper orderSampleHelper = new(exchangeInfo, tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, volumePrecision: limits.VolumePrecision.Value);
+        OrderSampleHelper orderSampleHelper = new(exchangeInfo, tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, volumePrecision: limits.BaseVolumePrecision.Value);
         return orderSampleHelper;
     }
 
