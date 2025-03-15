@@ -1,6 +1,7 @@
 using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
+using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
 
@@ -18,41 +19,68 @@ Console.WriteLine("🐋 got connected!");
 DateTime endTime = DateTime.Now;
 DateTime startTime = endTime.AddDays(-3);
 
-CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(SymbolPair.BTC_USDT, CandleWidth.Hour1, startTime, endTime);
+CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(SymbolPair.BTC_USDT, CandleWidth.Minute1, startTime, endTime);
+
+await using ICandlestickSubscription subscription = await tradeClient.CreateCandlestickSubscriptionAsync(SymbolPair.BTC_USDT);
+Candle lastClosedCandle = subscription.GetLatestClosedCandlestick(CandleWidth.Minute1);
 
 // Compute RSI using:
 // <PackageReference Include="Skender.Stock.Indicators" Version="2.6.1" />
-RsiResult? lastRsi = ComputeRsi(candlestickData.Candles);
+List<Quote> quotes = new();
+foreach (Candle candle in candlestickData.Candles)
+    quotes.Add(QuoteFromCandle(candle));
 
-if (lastRsi is not null)
+Console.WriteLine();
+Console.WriteLine($"Last closed candle: {lastClosedCandle}");
+
+ReportRsi(quotes);
+
+// Loop until the program is terminated using CTRL+C.
+while (true)
 {
-    string action = lastRsi.Rsi switch
+    Console.WriteLine();
+    Console.WriteLine("Waiting for the next closed candle...");
+
+    try
     {
-        > 70 => "Sell",
-        < 30 => "Buy",
-        _ => "Hold"
+        lastClosedCandle = await subscription.WaitNextClosedCandlestickAsync(CandleWidth.Minute1);
+    }
+    catch (OperationCanceledException)
+    {
+        break;
+    }
+
+    Console.WriteLine($"New closed candle arrived: {lastClosedCandle}");
+    quotes.Add(QuoteFromCandle(lastClosedCandle));
+    ReportRsi(quotes);
+}
+
+static void ReportRsi(IEnumerable<Quote> quotes)
+{
+    IEnumerable<RsiResult> results = quotes.GetRsi();
+    RsiResult lastRsi = results.Last();
+
+    string interpretation = lastRsi.Rsi switch
+    {
+        < 30 => " (oversold!)",
+        > 70 => " (overbought!)",
+        _ => string.Empty
     };
 
-    Console.WriteLine($"Last RSI value is: {lastRsi?.Rsi}. The signal tells: {action}");
-}
-else
-{
-    Console.WriteLine($"No data to compute RSI.");
+    Console.WriteLine($"Current RSI: {lastRsi.Date} -> {lastRsi.Rsi}{interpretation}");
 }
 
-static RsiResult? ComputeRsi(IEnumerable<Candle> candles)
+static Quote QuoteFromCandle(Candle candle)
 {
-    IEnumerable<Quote> quotes = candles.Select(c => new Quote()
+    Quote quote = new()
     {
-        Date = c.Timestamp,
-        Open = c.OpenPrice,
-        High = c.HighPrice,
-        Low = c.LowPrice,
-        Close = c.ClosePrice,
-        Volume = c.BaseVolume,
-    });
+        Date = candle.Timestamp,
+        Open = candle.OpenPrice,
+        High = candle.HighPrice,
+        Low = candle.LowPrice,
+        Close = candle.ClosePrice,
+        Volume = candle.BaseVolume,
+    };
 
-    IEnumerable<RsiResult> results = quotes.GetRsi();
-
-    return results.Last();
+    return quote;
 }
