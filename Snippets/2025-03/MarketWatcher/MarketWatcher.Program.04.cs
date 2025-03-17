@@ -1,0 +1,20 @@
+using System.Diagnostics;
+using System.Web;
+
+// Telegram API token to authorize message sending.
+string apiToken = "XXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
+// Channel where to send a message to.
+string channelId = "@your_channel";
+
+string message = HttpUtility.UrlEncode("RSI signals oversold for BTC/USDT on Binance!");
+
+using (HttpClient client = new())
+{
+    string uri = $"https://api.telegram.org/bot{apiToken}/sendMessage?chat_id={channelId}&text={message}";
+    using HttpRequestMessage request = new(HttpMethod.Get, uri);
+    HttpResponseMessage response = client.Send(request);
+
+    string content = await response.Content.ReadAsStringAsync();
+    Debug.Assert(response.IsSuccessStatusCode, content);
+}
