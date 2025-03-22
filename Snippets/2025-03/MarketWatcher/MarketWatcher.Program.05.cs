@@ -63,12 +63,11 @@ while (true)
     lastClosedCandleTask ??= candlestickSubscription.WaitNextClosedCandlestickAsync(CandleWidth.Minute1);
 
     string priceStr = ToInvariantString(Math.Round(lastTicker.LastPrice!.Value, 2));
-    Console.WriteLine($"The latest price is: {priceStr} USDT");
+    Console.WriteLine($"The latest price is: {priceStr} USDT.");
 
     if (lastClosedCandleTask.IsCompleted)
     {
         Candle lastClosedCandle = await lastClosedCandleTask;
-
         quotes.Add(QuoteFromCandle(lastClosedCandle));
         lastClosedCandleTask = null;
 
