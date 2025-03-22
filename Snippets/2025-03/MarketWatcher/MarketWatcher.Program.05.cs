@@ -93,7 +93,7 @@ while (true)
             ? $"Bot says: RSI signals <b>{rsiStr}{interpretation}</b> for BTC/USDT on Binance!"
             : $"Bot says: RSI does <b>not</b> provide a clear signal for BTC/USDT on Binance! Current price is {priceStr} USDT. RSI value is {rsiStr}.";
 
-        await SendTelegramMessageAsync(message).ConfigureAwait(false);
+        await SendTelegramMessageAsync(message);
     }
 }
 
