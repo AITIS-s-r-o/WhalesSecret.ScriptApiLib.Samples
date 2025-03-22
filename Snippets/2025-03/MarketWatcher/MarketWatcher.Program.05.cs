@@ -62,17 +62,6 @@ while (true)
     // If there is no task to get the latest closed candle, create one.
     lastClosedCandleTask ??= candlestickSubscription.WaitNextClosedCandlestickAsync(CandleWidth.Minute1);
 
-    // Compute RSI.
-    RsiResult lastRsi = quotes.GetRsi().Last();
-    double rsiValue = Math.Round(lastRsi.Rsi!.Value, 2);
-
-    string interpretation = rsiValue switch
-    {
-        < 30 => " (oversold!)",
-        > 70 => " (overbought!)",
-        _ => string.Empty
-    };
-
     string priceStr = ToInvariantString(Math.Round(lastTicker.LastPrice!.Value, 2));
     Console.WriteLine($"The latest price is: {priceStr} USDT");
 
@@ -82,6 +71,17 @@ while (true)
 
         quotes.Add(QuoteFromCandle(lastClosedCandle));
         lastClosedCandleTask = null;
+
+        // Compute RSI.
+        RsiResult lastRsi = quotes.GetRsi().Last();
+        double rsiValue = Math.Round(lastRsi.Rsi!.Value, 2);
+
+        string interpretation = rsiValue switch
+        {
+            < 30 => " (oversold!)",
+            > 70 => " (overbought!)",
+            _ => string.Empty
+        };
 
         string rsiStr = ToInvariantString(rsiValue);
 
