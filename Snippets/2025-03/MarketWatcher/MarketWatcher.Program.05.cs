@@ -129,6 +129,6 @@ async Task SendTelegramMessageAsync(string message, bool htmlSyntax = true)
     using HttpRequestMessage request = new(HttpMethod.Get, uri);
     HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false);
 
-    string content = await response.Content.ReadAsStringAsync();
+    string content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
     Debug.Assert(response.IsSuccessStatusCode, content);
 }
