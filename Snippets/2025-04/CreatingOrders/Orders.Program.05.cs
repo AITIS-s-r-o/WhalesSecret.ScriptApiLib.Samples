@@ -17,4 +17,5 @@ scriptApi.SetCredentials(apiIdentity);
 ITradeApiClient client = await scriptApi.ConnectAsync(ExchangeMarket.BinanceSpot);
 Console.WriteLine("Ready to trade!");
 
+// License string is specified. No exception is thrown!
 ILiveLimitOrder order = await client.CreateLimitOrderAsync(SymbolPair.BTC_EUR, OrderSide.Sell, price: 75_000m, size: 1.0m);

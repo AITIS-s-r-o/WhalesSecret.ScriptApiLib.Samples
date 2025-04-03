@@ -91,22 +91,21 @@ while (true)
         Console.WriteLine($"RSI was recomputed: {rsiStr}{interpretation}");
         Console.WriteLine();
 
-        OrderSide? action = rsiValue switch
-        {
-            < 30 when (lastAction != OrderSide.Buy) => OrderSide.Buy,
-            > 70 when (lastAction != OrderSide.Sell) => OrderSide.Sell,
-            _ => null,
-        };
+        OrderSide? action = null;
+
+        if ((rsiValue < 30) && (lastAction != OrderSide.Buy)) action = OrderSide.Buy;
+        else if ((rsiValue > 70) && (lastAction != OrderSide.Sell)) action = OrderSide.Sell;
 
         if (action is not null)
         {
             lastAction = action;
 
-            ILiveMarketOrder liveMarketOrder = await tradeClient.CreateMarketOrderAsync(SymbolPair.BTC_EUR, action.Value, size: 0.00015m);
-            await liveMarketOrder.WaitForFillAsync();
+            ILiveMarketOrder order = await tradeClient.CreateMarketOrderAsync(SymbolPair.BTC_EUR, action.Value, size: 0.00015m);
+            await order.WaitForFillAsync();
 
+            // Notify us on Telegram that an order was placed.
             string message = $"Bot says: Based on the RSI signal <b>{rsiStr}{interpretation}</b> for BTC/EUR on Binance, a {action.Value} market order with size " +
-                $"{ToInvariantString(liveMarketOrder.Size)} was <b>placed</b>!";
+                $"{order.Size} was <b>placed</b>!";
 
             await SendTelegramMessageAsync(message);
         }
