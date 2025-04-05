@@ -31,10 +31,6 @@ public class InteractiveTrading : IScriptApiSample
         CreateOptions createOptions = new(license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, connectionTimeoutCts.Token).ConfigureAwait(false);
 
-        // Initialization of the market is required before connection can be created.
-        await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
-        ExchangeInfo exchangeInfo = await scriptApi.InitializeMarketAsync(exchangeMarket, connectionTimeoutCts.Token).ConfigureAwait(false);
-
         // Credentials must be set before we can create a private connection.
 
 #pragma warning disable CA2000 // Dispose objects before losing scope

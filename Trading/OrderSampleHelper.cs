@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -81,10 +82,6 @@ public class OrderSampleHelper : IAsyncDisposable
     /// <exception cref="SanityCheckException">Thrown if a fundamental assumption of the code was violated.</exception>
     public static async Task<OrderSampleHelper> InitializeAsync(ScriptApi scriptApi, ExchangeMarket exchangeMarket, CancellationToken cancellationToken)
     {
-        // Initialization of the market is required before connection can be created.
-        await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
-        ExchangeInfo exchangeInfo = await scriptApi.InitializeMarketAsync(exchangeMarket, cancellationToken).ConfigureAwait(false);
-
         // Credentials must be set before we can create a private connection.
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
@@ -104,6 +101,8 @@ public class OrderSampleHelper : IAsyncDisposable
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, ConnectionOptions.Default).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"Connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+
+        ExchangeInfo exchangeInfo = tradeClient.GetExchangeInfo();
 
         SymbolPair symbolPair = exchangeMarket switch
         {
@@ -132,28 +131,12 @@ public class OrderSampleHelper : IAsyncDisposable
         await Console.Out.WriteLineAsync($"Get best bid and ask prices from an order book on {exchangeMarket}.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Create subscription for '{symbolPair}' order book on {exchangeMarket}.").ConfigureAwait(false);
 
-        decimal bestBid, bestAsk;
-        await using (IOrderBookSubscription subscription = await tradeClient.CreateOrderBookSubscriptionAsync(symbolPair).ConfigureAwait(false))
-        {
-            await Console.Out.WriteLineAsync($"Order book subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{
-                subscription}'. Wait for the next order order book update.").ConfigureAwait(false);
+        SymbolPair[] symbolPairs = new SymbolPair[] { symbolPair };
+        IReadOnlyList<Ticker> tickers = await tradeClient.GetLatestTickersAsync(symbolPairs, cancellationToken).ConfigureAwait(false);
+        decimal bestBid = tickers[0].BestBidPrice;
+        decimal bestAsk = tickers[0].BestAskPrice;
 
-            OrderBook orderBook = await subscription.GetOrderBookAsync(getMode: OrderBookGetMode.WaitUntilNew, cancellationToken).ConfigureAwait(false);
-
-            if ((orderBook.Bids.Count == 0) || (orderBook.Asks.Count == 0))
-            {
-                string msg = $"Empty order book has been received for symbol pair '{symbolPair}' on {exchangeMarket}.";
-                await Console.Error.WriteLineAsync($"ERROR: {msg}").ConfigureAwait(false);
-                throw new SanityCheckException(msg);
-            }
-
-            bestBid = orderBook.Bids[0].Price;
-            bestAsk = orderBook.Asks[0].Price;
-
-            await Console.Out.WriteLineAsync($"Best bid price is {bestBid}, best ask price is {bestAsk}.").ConfigureAwait(false);
-
-            await Console.Out.WriteLineAsync("Dispose order book subscription.").ConfigureAwait(false);
-        }
+        await Console.Out.WriteLineAsync($"Best bid price is {bestBid}, best ask price is {bestAsk}.").ConfigureAwait(false);
 
         OrderSampleHelper orderSampleHelper = new(exchangeInfo, tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, baseVolumePrecision: limits.BaseVolumePrecision.Value);
         return orderSampleHelper;

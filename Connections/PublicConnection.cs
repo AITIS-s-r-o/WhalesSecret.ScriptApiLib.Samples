@@ -19,10 +19,6 @@ public class PublicConnection : IScriptApiSample
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        // Initialization of the market is required before connection can be created.
-        await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
-        _ = await scriptApi.InitializeMarketAsync(exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
-
         await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a public connection.").ConfigureAwait(false);
 
         // Market-data connection type is the only connection type that does not need exchange API credentials.

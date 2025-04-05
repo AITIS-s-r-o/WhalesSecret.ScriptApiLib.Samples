@@ -23,11 +23,6 @@ if (groupId is null)
 
 await using ScriptApi scriptApi = await ScriptApi.CreateAsync();
 
-Console.WriteLine("Initializing Binance exchange.");
-
-// Initialize information about various exchange assets and coins.
-await scriptApi.InitializeMarketAsync(ExchangeMarket.BinanceSpot);
-
 Console.WriteLine("Connecting...");
 
 // Connect to the exchange without API credentials to work with market data.
