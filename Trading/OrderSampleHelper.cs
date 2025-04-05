@@ -129,7 +129,6 @@ public class OrderSampleHelper : IAsyncDisposable
         await Console.Out.WriteLineAsync($"Volume precision for symbol pair '{symbolPair}' on {exchangeMarket} is {limits.BaseVolumePrecision}.").ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"Get best bid and ask prices from an order book on {exchangeMarket}.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Create subscription for '{symbolPair}' order book on {exchangeMarket}.").ConfigureAwait(false);
 
         SymbolPair[] symbolPairs = new SymbolPair[] { symbolPair };
         IReadOnlyList<Ticker> tickers = await tradeClient.GetLatestTickersAsync(symbolPairs, cancellationToken).ConfigureAwait(false);
