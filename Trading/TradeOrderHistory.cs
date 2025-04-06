@@ -54,7 +54,7 @@ public class TradeOrderHistory : IScriptApiSample
         {
             await Console.Out.WriteLineAsync("No orders found for today, place 2 market orders.").ConfigureAwait(false);
 
-            decimal baseOrderSize = exchangeMarket switch
+            decimal quoteOrderSize = exchangeMarket switch
             {
                 ExchangeMarket.BinanceSpot => 6.0m,
                 ExchangeMarket.KucoinSpot => 1.0m,
@@ -69,7 +69,7 @@ public class TradeOrderHistory : IScriptApiSample
                 .SetSymbolPair(symbolPair)
                 .SetClientOrderId(clientOrderId2)
                 .SetSizeInBaseSymbol(false)
-                .SetSize(baseOrderSize)
+                .SetSize(quoteOrderSize)
                 .Build();
 
             await Console.Out.WriteLineAsync($"Constructed market order request 1: {marketOrderRequest1}").ConfigureAwait(false);

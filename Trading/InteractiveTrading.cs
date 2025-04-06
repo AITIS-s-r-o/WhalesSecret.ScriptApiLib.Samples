@@ -8,7 +8,6 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
-using WhalesSecret.TradeScriptLib.Exchanges;
 
 namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
@@ -30,10 +29,6 @@ public class InteractiveTrading : IScriptApiSample
         // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, connectionTimeoutCts.Token).ConfigureAwait(false);
-
-        // Initialization of the market is required before connection can be created.
-        await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
-        ExchangeInfo exchangeInfo = await scriptApi.InitializeMarketAsync(exchangeMarket, connectionTimeoutCts.Token).ConfigureAwait(false);
 
         // Credentials must be set before we can create a private connection.
 

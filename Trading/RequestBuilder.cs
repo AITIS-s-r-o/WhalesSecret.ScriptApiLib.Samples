@@ -18,14 +18,12 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>
-/// <para>
 /// The order request builder uses <see cref="ExchangeInfo">exchange information</see> in order to prevent us submitting invalid order requests. For example, using the order
 /// request builder, it is not possible to place order for an unsupported symbol pair. Similarly, the builder takes care of necessary rounding. Each exchange imposes different rules
 /// on each tradable symbol pair and the order request builder makes it easy to comply with these requirements. For example, we can ask the order request builder to create an order
 /// to buy <c>5.123456</c> USD worth of BTC, but if the volume precision of the given symbol pair on the given exchange market is limited to 3 decimal places, when we build
 /// the order request, it will round the volume to <c>5.123</c> USD. At the same time, the original requested size is preserved, so if the order builder is then used to buy
 /// different asset, e.g. trading LTC/USD, if the volume precision there is 4 decimal places, the order request will have size set to <c>5.1235</c> USD worth of BTC.
-/// </para>
 /// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
 /// </remarks>
 public class RequestBuilder : IScriptApiSample
@@ -49,7 +47,7 @@ public class RequestBuilder : IScriptApiSample
         string clientOrderId3 = string.Create(CultureInfo.InvariantCulture, $"builder-sample-3-{DateTime.UtcNow.Ticks}");
 
         // Buy a small amount of bitcoin.
-        decimal baseOrderSize = exchangeMarket switch
+        decimal quoteOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => 6.0m,
             ExchangeMarket.KucoinSpot => 1.0m,
@@ -60,7 +58,7 @@ public class RequestBuilder : IScriptApiSample
         decimal limitPrice = Math.Floor(helper.BestBid / 5 * 4);
 
         // When using the order request builder, we do not need to round sizes and prices. The builder takes care of these requirements as well as other things.
-        decimal orderSize = baseOrderSize / limitPrice;
+        decimal orderSize = quoteOrderSize / limitPrice;
 
         await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
         LimitOrderRequest limitOrderRequest = limitBuilder
@@ -82,7 +80,7 @@ public class RequestBuilder : IScriptApiSample
         MarketOrderRequest marketOrderRequest1 = marketBuilder
             .SetClientOrderId(clientOrderId2)
             .SetSizeInBaseSymbol(false)
-            .SetSize(baseOrderSize)
+            .SetSize(quoteOrderSize)
             .Build();
 
         await Console.Out.WriteLineAsync($"Constructed market order request 1: {marketOrderRequest1}").ConfigureAwait(false);
