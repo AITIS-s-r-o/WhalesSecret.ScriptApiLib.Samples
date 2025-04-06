@@ -18,7 +18,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>
-/// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
+/// IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.
 /// </remarks>
 public class ListOpenOrders : IScriptApiSample
 {
@@ -39,7 +39,7 @@ public class ListOpenOrders : IScriptApiSample
         string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"activeOrders-1-{DateTime.UtcNow.Ticks}");
 
         // Buy a small amount of bitcoin.
-        decimal baseOrderSize = exchangeMarket switch
+        decimal quoteOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => 6.0m,
             ExchangeMarket.KucoinSpot => 1.0m,
@@ -50,7 +50,7 @@ public class ListOpenOrders : IScriptApiSample
         decimal limitPrice = Math.Floor(helper.BestBid / 5 * 4);
 
         // When using the order request builder, we do not need to round sizes and prices. The builder takes care of these requirements as well as other things.
-        decimal orderSize = baseOrderSize / limitPrice;
+        decimal orderSize = quoteOrderSize / limitPrice;
 
         await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
         LimitOrderRequest limitOrderRequest = limitBuilder

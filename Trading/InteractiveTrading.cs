@@ -8,7 +8,6 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
-using WhalesSecret.TradeScriptLib.Exchanges;
 
 namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 

@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
-using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using WhalesSecret.TradeScriptLib.Exceptions;
@@ -80,7 +79,8 @@ public class OrderSampleHelper : IAsyncDisposable
     /// <exception cref="OperationCanceledException">Thrown if the operation was canceled.</exception>
     /// <exception cref="OperationFailedException">Thrown if the operation failed.</exception>
     /// <exception cref="SanityCheckException">Thrown if a fundamental assumption of the code was violated.</exception>
-    public static async Task<OrderSampleHelper> InitializeAsync(ScriptApi scriptApi, ExchangeMarket exchangeMarket, CancellationToken cancellationToken)
+    public static async Task<OrderSampleHelper> InitializeAsync(ScriptApi scriptApi, ExchangeMarket exchangeMarket, CancellationToken cancellationToken,
+        ConnectionOptions? connectionOptions = null)
     {
         // Credentials must be set before we can create a private connection.
 
@@ -98,7 +98,8 @@ public class OrderSampleHelper : IAsyncDisposable
         await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
 
         // Default connection options use full-trading connection type, which means both public and private connections will be established with the exchange.
-        ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, ConnectionOptions.Default).ConfigureAwait(false);
+        connectionOptions ??= ConnectionOptions.Default;
+        ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync($"Connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
 
