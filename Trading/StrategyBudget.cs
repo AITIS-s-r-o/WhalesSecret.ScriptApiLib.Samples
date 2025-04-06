@@ -116,7 +116,7 @@ public class StrategyBudget : IScriptApiSample
         await Console.Out.WriteLineAsync("Wait until the market order is filled.").ConfigureAwait(false);
         await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("The first order has concluded.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("The first order was fully filled.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Wait 5 seconds before starting with the second order.").ConfigureAwait(false);
