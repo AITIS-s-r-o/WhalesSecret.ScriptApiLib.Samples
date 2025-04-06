@@ -79,8 +79,9 @@ public class StrategyBudget : IScriptApiSample
 
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = new(helper.ExchangeInfo);
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"budget-sample-1-{DateTime.UtcNow.Ticks}");
-        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"budget-sample-2-{DateTime.UtcNow.Ticks}");
+        // 
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"budget-sample-1{ITradingStrategyBudget.ClientOrderIdSuffix}");
+        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"budget-sample-2{ITradingStrategyBudget.ClientOrderIdSuffix}");
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
@@ -140,7 +141,7 @@ public class StrategyBudget : IScriptApiSample
 
         await Console.Out.WriteLineAsync("The second order has concluded. Now calculate profit and loss.").ConfigureAwait(false);
 
-        BudgetReport budgetReport = await tradeClient.GenerateReportAsync(timeoutCts.Token).ConfigureAwait(false);
+        BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
