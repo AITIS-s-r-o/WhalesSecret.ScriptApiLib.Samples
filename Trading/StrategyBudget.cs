@@ -118,9 +118,7 @@ public class StrategyBudget : IScriptApiSample
 
         await Console.Out.WriteLineAsync("The first order has concluded.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
         await Console.Out.WriteLineAsync("Wait 5 seconds before starting with the second order.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
         await Task.Delay(TimeSpan.FromSeconds(5), timeoutCts.Token).ConfigureAwait(false);
@@ -146,10 +144,9 @@ public class StrategyBudget : IScriptApiSample
         await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("The second order has concluded. Now calculate profit and loss.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(timeoutCts.Token).ConfigureAwait(false);
-
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         string report = $$"""
             Budget report:
@@ -165,6 +162,7 @@ public class StrategyBudget : IScriptApiSample
             """;
 
         await Console.Out.WriteLineAsync(report).ConfigureAwait(false);
+        await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
         await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
     }
