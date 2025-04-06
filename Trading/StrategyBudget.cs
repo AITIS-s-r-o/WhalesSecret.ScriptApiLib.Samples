@@ -119,7 +119,7 @@ public class StrategyBudget : IScriptApiSample
         await Console.Out.WriteLineAsync("The first order was fully filled.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Wait 5 seconds before starting with the second order.").ConfigureAwait(false);
+        await Console.Out.WriteLineAsync("Wait 5 seconds before placing the second order.").ConfigureAwait(false);
         await Console.Out.WriteLineAsync().ConfigureAwait(false);
         await Task.Delay(TimeSpan.FromSeconds(5), timeoutCts.Token).ConfigureAwait(false);
 
