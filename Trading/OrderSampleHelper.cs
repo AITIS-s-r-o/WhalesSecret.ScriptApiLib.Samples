@@ -69,8 +69,8 @@ public class OrderSampleHelper : IAsyncDisposable
     /// <summary>
     /// Common initialization for order samples. A full-trading connection is established with the target exchange and an order book subscription is created in order to get access
     /// to the current order book snapshot. <see cref="BestBid"/> and <see cref="BestAsk"/> are filled based on the information from the order book.
-    /// <see cref="SelectedSymbolPair"/> is filled with the selected symbol pair to be traded on the target exchange and its <see cref="BaseVolumePrecision">volume precision</see> is
-    /// also filled.
+    /// <see cref="SelectedSymbolPair"/> is filled with the selected symbol pair to be traded on the target exchange and its <see cref="BaseVolumePrecision">volume precision</see>
+    /// is also filled.
     /// </summary>
     /// <param name="scriptApi"> Trade script API with script environment.</param>
     /// <param name="exchangeMarket">Exchange market to connect to.</param>
