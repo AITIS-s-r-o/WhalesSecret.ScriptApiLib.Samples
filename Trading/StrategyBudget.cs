@@ -153,7 +153,7 @@ public class StrategyBudget : IScriptApiSample
               start time: {{budgetReport.StartTime}}
               end time: {{budgetReport.EndTime}}
               initial value: {{budgetReport.InitialValue}} {{primaryAsset}}
-              final value: {{budgetReport.FinalValue}} {{budgetReport.PrimaryAsset}}
+              final value: {{budgetReport.FinalValue}} {{primaryAsset}}
               profit/loss: {{budgetReport.TotalProfit}} {{primaryAsset}}
               initial primary asset holdings: {{budgetReport.InitialBudget[primaryAsset]}} {{primaryAsset}}
               initial secondary asset holdings: {{budgetReport.InitialBudget[secondaryAsset]}} {{secondaryAsset}}
