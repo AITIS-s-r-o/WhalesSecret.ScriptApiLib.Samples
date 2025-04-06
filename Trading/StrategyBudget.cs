@@ -157,8 +157,8 @@ public class StrategyBudget : IScriptApiSample
               profit/loss: {{budgetReport.TotalProfit}} {{primaryAsset}}
               initial primary asset holdings: {{budgetReport.InitialBudget[primaryAsset]}} {{primaryAsset}}
               initial secondary asset holdings: {{budgetReport.InitialBudget[secondaryAsset]}} {{secondaryAsset}}
-              final primary asset holdings: {{budgetReport.InitialBudget[primaryAsset]}} {{primaryAsset}}
-              final secondary asset holdings: {{budgetReport.InitialBudget[secondaryAsset]}} {{secondaryAsset}}
+              final primary asset holdings: {{budgetReport.FinalBudget[primaryAsset]}} {{primaryAsset}}
+              final secondary asset holdings: {{budgetReport.FinalBudget[secondaryAsset]}} {{secondaryAsset}}
             """;
 
         await Console.Out.WriteLineAsync(report).ConfigureAwait(false);
