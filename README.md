@@ -14,9 +14,6 @@ The core of this sample looks as follows:
 ```csharp
 await using ScriptApi scriptApi = await ScriptApi.CreateAsync().ConfigureAwait(false);
 
-// Initialization of the market is required before connection can be created.
-_ = await scriptApi.InitializeMarketAsync(exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
-
 // Market-data connection type is the only connection type that does not need exchange API credentials.
 ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
 await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
