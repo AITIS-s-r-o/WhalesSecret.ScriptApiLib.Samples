@@ -75,6 +75,7 @@ public class OrderSampleHelper : IAsyncDisposable
     /// <param name="scriptApi"> Trade script API with script environment.</param>
     /// <param name="exchangeMarket">Exchange market to connect to.</param>
     /// <param name="cancellationToken">Cancellation token with which the caller can cancel the operation.</param>
+    /// <param name="connectionOptions">Optionally, connection options to use for connecting to the exchange.</param>
     /// <returns>Helper container for order samples with connected trading client.</returns>
     /// <exception cref="OperationCanceledException">Thrown if the operation was canceled.</exception>
     /// <exception cref="OperationFailedException">Thrown if the operation failed.</exception>
