@@ -11,7 +11,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Exchanges;
 /// Sample that demonstrates what kind of information we can get from the exchange market initialization.
 /// <para>
 /// This sample demonstrates manual initialization of the exchange market without creating connection to the market. If connection is to be established, the better way of getting
-/// exchnage information is from the connected client using <see cref="ITradeApiClient.GetExchangeInfo"/>.
+/// exchange information is from the connected client using <see cref="ITradeApiClient.GetExchangeInfo"/>.
 /// </para>
 /// </summary>
 public class ExchangeInformation : IScriptApiSample
