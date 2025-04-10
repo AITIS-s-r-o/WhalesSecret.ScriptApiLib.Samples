@@ -524,11 +524,11 @@ internal class Program
                     .Append(ReportFileValueSeparator)
                     .Append(period.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture))
                     .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.FinalValue}")
+                    .Append(CultureInfo.InvariantCulture, $"{report.FinalValue}")
                     .Append(ReportFileValueSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{diff}")
                     .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.TotalProfit}")
+                    .Append(CultureInfo.InvariantCulture, $"{report.TotalProfit}")
                     .Append(ReportFileValueSeparator);
 
                 snapshot = report.FinalBudget;
