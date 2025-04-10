@@ -325,7 +325,7 @@ internal class Program
         int orderCounter = 0;
 
         DateTime nextOrder = DateTime.MinValue;
-        DateTime nextReport = DateTime.Now.Add(reportPeriod);
+        DateTime nextReport = DateTime.UtcNow.Add(reportPeriod);
 
         string reportFilePath = Path.Combine(appDataFolder, ReportFileName);
 
