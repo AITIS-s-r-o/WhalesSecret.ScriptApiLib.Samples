@@ -364,7 +364,7 @@ internal class Program
             if (delay > TimeSpan.Zero)
             {
                 if (delay == delayTillOrder) await PrintInfoAsync($"Waiting {delay} before placing the next order.").ConfigureAwait(false);
-                else await PrintInfoAsync($"Waiting {delay} before generating a budgetReport.").ConfigureAwait(false);
+                else await PrintInfoAsync($"Waiting {delay} before generating a budget report.").ConfigureAwait(false);
 
                 try
                 {
