@@ -516,19 +516,19 @@ internal class Program
             else
             {
                 BudgetReport report = budgetReports[i];
-                TimeSpan period = budgetReport.EndTime - budgetReport.StartTime;
-                decimal diff = budgetReport.FinalValue - prevValue;
+                TimeSpan period = report.EndTime - budgetReport.StartTime;
+                decimal diff = report.FinalValue - prevValue;
 
                 _ = fileContentBuilder
-                    .Append(budgetReport.EndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
+                    .Append(report.EndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
                     .Append(ReportFileValueSeparator)
                     .Append(period.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture))
                     .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.FinalValue} {primaryAsset}")
+                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.FinalValue}")
                     .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{diff} {primaryAsset}")
+                    .Append(CultureInfo.InvariantCulture, $"{diff}")
                     .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.TotalProfit} {primaryAsset}")
+                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.TotalProfit}")
                     .Append(ReportFileValueSeparator);
 
                 snapshot = report.FinalBudget;
