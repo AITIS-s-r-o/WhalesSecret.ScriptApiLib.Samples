@@ -544,7 +544,8 @@ internal class Program
                 if (snapshot.TryGetValue(assetName, out decimal value))
                     _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
 
-                _ = fileContentBuilder.Append(ReportFileValueSeparator);
+                if (assetNameIndex != assetNames.Length - 1)
+                    _ = fileContentBuilder.Append(ReportFileValueSeparator);
             }
 
             _ = fileContentBuilder.AppendLine();
