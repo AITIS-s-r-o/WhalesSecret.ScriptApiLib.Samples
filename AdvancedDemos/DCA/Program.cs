@@ -396,7 +396,7 @@ internal class Program
         ILiveMarketOrder order = await tradeClient.CreateOrderAsync(orderRequest, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<FillData> fillData = await order.WaitForFillAsync(cancellationToken).ConfigureAwait(false);
 
-        await PrintInfoAsync($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trades.").ConfigureAwait(false);
+        await PrintInfoAsync($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).").ConfigureAwait(false);
 
         clog.Debug("$");
     }
