@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -8,8 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft;
-using Microsoft.EntityFrameworkCore.ValueGeneration.Internal;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
@@ -77,7 +74,7 @@ internal class Program
         BudgetRequest? budgetRequest = null;
         int? reportPeriodSeconds = null;
 
-        if (args.Length == 5)
+        if (args.Length == 6)
         {
             string exchangeMarketStr = args[0];
             string symbolPairStr = args[1];
