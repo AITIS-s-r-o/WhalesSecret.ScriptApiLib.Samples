@@ -118,7 +118,7 @@ public class Program
         string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
         await Console.Out.WriteLineAsync($$"""
 
-                exchangeMarket - Exchange market to use in the sample. Supported values are {{markets}}
+                exchangeMarket - Exchange market to use in the sample. Supported values are {{markets}}.
             """).ConfigureAwait(false);
     }
 }
