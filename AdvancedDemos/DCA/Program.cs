@@ -507,7 +507,8 @@ internal class Program
                     .Append(ReportFileValueSeparator)
                     .Append("0")
                     .Append(ReportFileValueSeparator)
-                    .Append("0");
+                    .Append("0")
+                    .Append(ReportFileValueSeparator);
 
                 snapshot = budgetReport.InitialBudget;
 
