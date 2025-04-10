@@ -430,6 +430,7 @@ internal class Program
         await PrintInfoAsync(reportLog).ConfigureAwait(false);
 
         StringBuilder stringBuilder = new("Current budget:");
+        _ = stringBuilder.AppendLine();
 
         foreach ((string assetName, decimal amount) in budgetReport.FinalBudget)
             _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $" {assetName}: {amount}");
