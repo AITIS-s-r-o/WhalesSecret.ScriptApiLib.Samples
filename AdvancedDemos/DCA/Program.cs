@@ -1,15 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
+using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
+using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.Entities;
+using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
+using WhalesSecret.TradeScriptLib.Utils.Orders;
 
 namespace WhalesSecret.ScriptApiLib.DCA;
 
@@ -123,9 +129,13 @@ internal class Program
             return;
         }
 
+        await PrintInfoAsync("Press Ctrl+C to terminate the program.").ConfigureAwait(false);
+        await PrintInfoAsync().ConfigureAwait(false);
+
         await PrintInfoAsync($"Starting DCA on {exchangeMarket}, buying {quoteSize} {symbolPair.Value.QuoteSymbol} worth of {symbolPair.Value.BaseSymbol} every {
             periodSeconds} seconds.").ConfigureAwait(false);
         await PrintInfoAsync($"Budget request: {budgetRequest}").ConfigureAwait(false);
+        await PrintInfoAsync().ConfigureAwait(false);
 
         using CancellationTokenSource shutdownCancellationTokenSource = new();
         CancellationToken shutdownToken = shutdownCancellationTokenSource.Token;
@@ -167,13 +177,17 @@ internal class Program
     /// </summary>
     /// <param name="msg">Message to print.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintInfoAsync(string msg)
+    private static async Task PrintInfoAsync(string msg = "")
     {
         clog.Info(msg);
 
-        DateTime dateTime = DateTime.UtcNow;
-        string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-        await Console.Out.WriteLineAsync($"{dateTimeStr}: {msg}").ConfigureAwait(false);
+        if (msg.Length > 0)
+        {
+            DateTime dateTime = DateTime.UtcNow;
+            string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            await Console.Out.WriteLineAsync($"{dateTimeStr}: {msg}").ConfigureAwait(false);
+        }
+        else await Console.Out.WriteLineAsync().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -273,31 +287,94 @@ internal class Program
 
         scriptApi.SetCredentials(apiIdentity);
 
-        string msg = $"Connect to {exchangeMarket} exchange with full-trading access.";
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        clog.Info(msg);
+        await PrintInfoAsync($"Connect to {exchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
 
-        ConnectionOptions connectionOptions = new(ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync, budgetRequest: budgetRequest);
+        ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
+            budgetRequest: budgetRequest);
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        OrderRequestBuilder<MarketOrderRequest> builder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
+        _ = builder
+            .SetSymbolPair(symbolPair)
+            .SetSide(OrderSide.Buy)
+            .SetSizeInBaseSymbol(sizeInBaseSymbol: false)
+            .SetSize(quoteSize);
+
+        int orderCounter = 0;
+
+        DateTime nextOrder = DateTime.MinValue;
+
+        while (true)
+        {
+            DateTime time = DateTime.UtcNow;
+            if (time >= nextOrder)
+            {
+                orderCounter++;
+
+                MarketOrderRequest orderRequest = builder
+                    .SetClientOrderId($"dca_{orderCounter:00000000}{ITradingStrategyBudget.ClientOrderIdSuffix}")
+                    .Build();
+
+                await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
+
+                nextOrder = time.Add(period);
+                await PrintInfoAsync($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
+            }
+
+            TimeSpan delay = nextOrder - DateTime.UtcNow;
+            await PrintInfoAsync($"Waiting {delay} before next round.").ConfigureAwait(false);
+
+            try
+            {
+                await Task.Delay(period, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                await PrintInfoAsync().ConfigureAwait(false);
+                await PrintInfoAsync("Shutdown detected.").ConfigureAwait(false);
+                break;
+            }
+        }
 
         clog.Info("$");
     }
 
-    /// <inheritdoc cref="ConnectionOptions.OnConnectedDelegateAsync"/>
-    private static Task OnConnectedAsync(ITradeApiClient tradeApiClient)
+    /// <summary>
+    /// Creates a buy order for the given symbol pair and waits for the order to be filled.
+    /// </summary>
+    /// <param name="tradeClient">Connected client</param>
+    /// <param name="symbolPair">Symbol pair to DCA.</param>
+    /// <param name="period">Time period in seconds between the orders.</param>
+    /// <param name="quoteSize">Order size in quote symbol.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PlaceOrderAsync(ITradeApiClient tradeClient, MarketOrderRequest orderRequest, CancellationToken cancellationToken)
     {
-        // Just log the event.
-        clog.Info("*$");
-        return Task.CompletedTask;
+        clog.Debug($" {nameof(tradeClient)}='{tradeClient}',{nameof(orderRequest)}='{orderRequest}'");
+
+        ILiveMarketOrder order = await tradeClient.CreateOrderAsync(orderRequest, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<FillData> fillData = await order.WaitForFillAsync(cancellationToken).ConfigureAwait(false);
+
+        await PrintInfoAsync($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trades.").ConfigureAwait(false);
+
+        clog.Debug("$");
+    }
+
+    /// <inheritdoc cref="ConnectionOptions.OnConnectedDelegateAsync"/>
+    private static async Task OnConnectedAsync(ITradeApiClient tradeApiClient)
+    {
+        // Just log the event.            
+        await PrintInfoAsync().ConfigureAwait(false);
+        await PrintInfoAsync("Connection to the exchange has been established successfully.").ConfigureAwait(false);
+        await PrintInfoAsync().ConfigureAwait(false);
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnDisconnectedDelegateAsync"/>
-    private static Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
+    private static async Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
     {
         // Just log the event.
-        clog.Info("*$");
-        return Task.CompletedTask;
+        await PrintInfoAsync().ConfigureAwait(false);
+        await PrintInfoAsync("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!").ConfigureAwait(false);
+        await PrintInfoAsync().ConfigureAwait(false);
     }
 }
