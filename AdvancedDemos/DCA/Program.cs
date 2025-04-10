@@ -346,9 +346,10 @@ internal class Program
                 await PrintInfoAsync($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
             }
 
+            time = DateTime.UtcNow;
             if (time >= nextReport)
             {
-                await PrintInfoAsync($"Generating budgetReport ...").ConfigureAwait(false);
+                await PrintInfoAsync($"Generating budget report ...").ConfigureAwait(false);
                 await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
 
                 nextReport = time.Add(reportPeriod);
