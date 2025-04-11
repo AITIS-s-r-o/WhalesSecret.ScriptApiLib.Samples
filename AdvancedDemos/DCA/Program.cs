@@ -21,7 +21,14 @@ using WhalesSecret.TradeScriptLib.Utils.Orders;
 namespace WhalesSecret.ScriptApiLib.DCA;
 
 /// <summary>
-/// Main application class that contains program entry point.
+/// DCA (Direct Cost Averaging) trading bot. This bot periodically places market orders in order to buy the selected base asset for the constant amount of selected quote asset.
+/// <para>
+/// For example, if the symbol pair is <c>BTC/EUR</c>, the quote size is <c>10</c>, and the period is <c>3600</c> seconds, the bot will try to buy 10 <c>EUR</c> worth of BTC every
+/// hour.
+/// </para>
+/// <para>
+/// The bot also create reports about its performance and writes the report history it into a CSV file.
+/// </para>
 /// </summary>
 internal class Program
 {
@@ -535,7 +542,7 @@ internal class Program
         for (int i = 0; i < assetNames.Length; i++)
         {
             _ = fileContentBuilder
-                .Append(CultureInfo.InvariantCulture, $"Balance {assetNames[i]}")
+                .Append(CultureInfo.InvariantCulture, $"Budget Balance {assetNames[i]}")
                 .Append(ReportFileValueSeparator);
         }
 
