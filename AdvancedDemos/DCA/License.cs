@@ -9,7 +9,7 @@ namespace WhalesSecret.ScriptApiLib.DCA;
 /// </remarks>
 public static class License
 {
-    /// <summary>Whale's Secret license.</summary>
+    /// <summary>Whale's Secret license, or <c>null</c> to use the free mode.</summary>
     /// <remarks>Change this to your Whale's Secret License to unlock unlimited order sizes.</remarks>
     public const string? WsLicense = null;
 }
