@@ -181,6 +181,26 @@ internal class Program
             await StartDcaAsync(appDataFolder, exchangeMarket.Value, symbolPair.Value, period: TimeSpan.FromSeconds(periodSeconds.Value), quoteSize.Value, budgetRequest,
                 reportPeriod: TimeSpan.FromSeconds(reportPeriodSeconds.Value), shutdownToken).ConfigureAwait(false);
         }
+        catch (Exception e)
+        {
+            bool handled = false;
+
+            if (e is OperationCanceledException)
+            {
+                if (shutdownToken.IsCancellationRequested)
+                {
+                    await PrintInfoAsync().ConfigureAwait(false);
+                    await PrintInfoAsync("Shutdown detected.").ConfigureAwait(false);
+                    handled = true;
+                }
+            }
+
+            if (!handled)
+            {
+                clog.Error($"Exception occurred: {e}");
+                throw;
+            }
+        }
         finally
         {
             // Uninstall Ctrl+C / SIGINT handler.
@@ -286,6 +306,18 @@ internal class Program
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <exception cref="AlreadyExistsException">Thrown if another instance is already operating on the given data folder.</exception>
+    /// <exception cref="BudgetCalculationException">Thrown if a trading strategy budget is associated with the trade API client and it is not possible to calculate whether
+    /// an order would exceed it if it was placed.</exception>
+    /// <exception cref="BudgetExceededException">Thrown if a trading strategy budget is associated with the trade API client and placing the order would exceed the budget.
+    /// </exception>
+    /// <exception cref="ConnectionInitializationException">Thrown if the connection could not be fully established and initialized with the remote exchange server.</exception>
+    /// <exception cref="ExchangeIsUnderMaintenanceException">Thrown if the exchange is in the maintenance mode and does not accept new connections.</exception>
+    /// <exception cref="FileAccessException">Thrown if it is not possible to create the data folder.</exception>
+    /// <exception cref="InvalidProductLicenseException">Thrown if the license provided in the options is invalid.</exception>
+    /// <exception cref="MalfunctionException">Thrown if the initialization of core components fails or another unexpected error occurred.</exception>
+    /// <exception cref="OperationCanceledException">Thrown if the operation was cancelled including cancellation due to shutdown or object disposal.</exception>
+    /// <exception cref="OperationFailedException">Thrown if the request could not be sent to the exchange.</exception>
     private static async Task StartDcaAsync(string appDataFolder, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize,
         BudgetRequest budgetRequest, TimeSpan reportPeriod, CancellationToken cancellationToken)
     {
@@ -372,14 +404,13 @@ internal class Program
                 }
                 catch (OperationCanceledException)
                 {
-                    await PrintInfoAsync().ConfigureAwait(false);
-                    await PrintInfoAsync("Shutdown detected.").ConfigureAwait(false);
-                    break;
+                    clog.Debug("Cancelation detected.");
+
+                    clog.Debug("$");
+                    throw;
                 }
             }
         }
-
-        clog.Debug("$");
     }
 
     /// <summary>
@@ -389,14 +420,30 @@ internal class Program
     /// <param name="orderRequest">Request for the order to place.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <exception cref="BudgetCalculationException">Thrown if a trading strategy budget is associated with the trade API client and it is not possible to calculate whether
+    /// an order would exceed it if it was placed.</exception>
+    /// <exception cref="BudgetExceededException">Thrown if a trading strategy budget is associated with the trade API client and placing the order would exceed the budget.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">Thrown if the operation was cancelled including cancellation due to shutdown or object disposal.</exception>
+    /// <exception cref="OperationFailedException">Thrown if the request could not be sent to the exchange.</exception>
     private static async Task PlaceOrderAsync(ITradeApiClient tradeClient, MarketOrderRequest orderRequest, CancellationToken cancellationToken)
     {
         clog.Debug($" {nameof(tradeClient)}='{tradeClient}',{nameof(orderRequest)}='{orderRequest}'");
 
-        ILiveMarketOrder order = await tradeClient.CreateOrderAsync(orderRequest, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<FillData> fillData = await order.WaitForFillAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            ILiveMarketOrder order = await tradeClient.CreateOrderAsync(orderRequest, cancellationToken).ConfigureAwait(false);
+            IReadOnlyList<FillData> fillData = await order.WaitForFillAsync(cancellationToken).ConfigureAwait(false);
 
-        await PrintInfoAsync($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).").ConfigureAwait(false);
+            await PrintInfoAsync($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).").ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            if ((e is OperationCanceledException) || (e is BudgetExceededException) || (e is BudgetCalculationException))
+                throw;
+
+            throw new OperationFailedException($"Placing order request '{orderRequest}' on the exchange failed.", e);
+        }
 
         clog.Debug("$");
     }
@@ -408,6 +455,8 @@ internal class Program
     /// <param name="tradeClient">Connected client.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <exception cref="OperationCanceledException">Thrown if the operation was canceled.</exception>
+    /// <exception cref="OperationFailedException">Thrown if it was not possible to calculate the value of the budget or write the report to a file.</exception>
     private static async Task GenerateReportAsync(string reportFilePath, ITradeApiClient tradeClient, CancellationToken cancellationToken)
     {
         clog.Debug($" {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}='{tradeClient}'");
@@ -456,6 +505,7 @@ internal class Program
     /// Since it is possible that the initial budget request does not contain all assets, the list of assets can change over time. Therefore, we have to always write all reports
     /// to the file from scratch, to make sure all columns match with the header.
     /// </remarks>
+    /// <exception cref="OperationFailedException">Thrown if writing the report to a file failed.</exception>
     private static async Task ReportToFileAsync(string reportFilePath, BudgetReport budgetReport)
     {
         clog.Debug($" {nameof(reportFilePath)}='{reportFilePath}',{nameof(budgetReport)}='{budgetReport}'");
@@ -553,8 +603,17 @@ internal class Program
 
         string fileContents = fileContentBuilder.ToString();
 
-        // No cancellation token here to avoid losing data in case user presses Ctrl+C at the time of writing.
-        await File.WriteAllTextAsync(reportFilePath, fileContents, CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            // No cancellation token here to avoid losing data in case user presses Ctrl+C at the time of writing.
+            await File.WriteAllTextAsync(reportFilePath, fileContents, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            clog.Error($"Exception occurred while writing reports to the report file '{reportFilePath}': {e}");
+
+            throw new OperationFailedException($"Writing reports to the report file '{reportFilePath}' failed.", e);
+        }
 
         clog.Debug("$");
     }
