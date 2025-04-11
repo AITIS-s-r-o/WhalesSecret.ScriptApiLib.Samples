@@ -62,6 +62,10 @@ internal class Program
     /// </list>
     /// </para>
     /// <para>Run the program without any arguments to see the supported values for each argument.</para>
+    /// <para>
+    /// An example to run the app is: <c>WhalesSecret.ScriptApiLib.DCA BinanceSpot BTC/EUR 3600 10 "BTC=0.001,EUR=1000" 86400</c>. This will buy <c>10</c> EUR worth of BTC every
+    /// hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is <c>0.001</c> BTC and <c>1000</c> EUR.
+    /// </para>
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task Main(string[] args)
