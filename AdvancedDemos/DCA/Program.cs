@@ -137,7 +137,7 @@ internal class Program
         {
             string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
 
-            await Console.Out.WriteLineAsync($$"""
+            Console.WriteLine($$"""
                 Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(DCA)}} <exchangeMarket> <symbolPair> <periodSeconds> <quoteSize> <budget> <reportPeriodSeconds>
 
                     exchangeMarket - Exchange market to use in the sample. Supported values are {{markets}}.
@@ -148,21 +148,21 @@ internal class Program
                 " "}}and the amount, separated by an equal sign. E.g. "EUR=100,BTC=0.1" would allocate budget with primary asset EUR that can has 100 EUR and 0.1 BTC{{
                 " "}}available.
                     reportPeriodSeconds - Time period in seconds before the first budgetReport is generated and between reports are generated.
-                """).ConfigureAwait(false);
+                """);
 
-            clog.Info($"$<USAGE>");
+            clog.Info("$<USAGE>");
             clog.FlushAndShutDown();
 
             return;
         }
 
-        await PrintInfoAsync("Press Ctrl+C to terminate the program.").ConfigureAwait(false);
-        await PrintInfoAsync().ConfigureAwait(false);
+        PrintInfo("Press Ctrl+C to terminate the program.");
+        PrintInfo();
 
-        await PrintInfoAsync($"Starting DCA on {exchangeMarket}, buying {quoteSize} {symbolPair.Value.QuoteSymbol} worth of {symbolPair.Value.BaseSymbol} every {
-            periodSeconds} seconds. Reports will be generated every {reportPeriodSeconds} seconds.").ConfigureAwait(false);
-        await PrintInfoAsync($"Budget request: {budgetRequest}").ConfigureAwait(false);
-        await PrintInfoAsync().ConfigureAwait(false);
+        PrintInfo($"Starting DCA on {exchangeMarket}, buying {quoteSize} {symbolPair.Value.QuoteSymbol} worth of {symbolPair.Value.BaseSymbol} every {
+            periodSeconds} seconds. Reports will be generated every {reportPeriodSeconds} seconds.");
+        PrintInfo($"Budget request: {budgetRequest}");
+        PrintInfo();
 
         using CancellationTokenSource shutdownCancellationTokenSource = new();
         CancellationToken shutdownToken = shutdownCancellationTokenSource.Token;
@@ -196,8 +196,8 @@ internal class Program
             {
                 if (shutdownToken.IsCancellationRequested)
                 {
-                    await PrintInfoAsync().ConfigureAwait(false);
-                    await PrintInfoAsync("Shutdown detected.").ConfigureAwait(false);
+                    PrintInfo();
+                    PrintInfo("Shutdown detected.");
                     handled = true;
                 }
             }
@@ -222,8 +222,7 @@ internal class Program
     /// Prints information level message to the console and to the log. Message timestamp is added when printing to the console.
     /// </summary>
     /// <param name="msg">Message to print.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintInfoAsync(string msg = "")
+    private static void PrintInfo(string msg = "")
     {
         clog.Info(msg);
 
@@ -231,9 +230,9 @@ internal class Program
         {
             DateTime dateTime = DateTime.UtcNow;
             string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-            await Console.Out.WriteLineAsync($"{dateTimeStr}: {msg}").ConfigureAwait(false);
+            Console.WriteLine($"{dateTimeStr}: {msg}");
         }
-        else await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        else Console.WriteLine();
     }
 
     /// <summary>
@@ -346,13 +345,13 @@ internal class Program
 
         scriptApi.SetCredentials(apiIdentity);
 
-        await PrintInfoAsync($"Connect to {exchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
+        PrintInfo($"Connect to {exchangeMarket} exchange with full-trading access.");
 
         ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
             budgetRequest: budgetRequest);
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await PrintInfoAsync($"Connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        PrintInfo($"Connection to {exchangeMarket} has been established successfully.");
 
         OrderRequestBuilder<MarketOrderRequest> builder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
         _ = builder
@@ -382,17 +381,17 @@ internal class Program
                 await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
 
                 nextOrder = time.Add(period);
-                await PrintInfoAsync($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
+                PrintInfo($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.");
             }
 
             time = DateTime.UtcNow;
             if (time >= nextReport)
             {
-                await PrintInfoAsync($"Generating budget report ...").ConfigureAwait(false);
+                PrintInfo($"Generating budget report ...");
                 await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
 
                 nextReport = time.Add(reportPeriod);
-                await PrintInfoAsync($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
+                PrintInfo($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
             }
 
             time = DateTime.UtcNow;
@@ -402,8 +401,8 @@ internal class Program
 
             if (delay > TimeSpan.Zero)
             {
-                if (delay == delayTillOrder) await PrintInfoAsync($"Waiting {delay} before placing the next order.").ConfigureAwait(false);
-                else await PrintInfoAsync($"Waiting {delay} before generating the next budget report.").ConfigureAwait(false);
+                if (delay == delayTillOrder) PrintInfo($"Waiting {delay} before placing the next order.");
+                else PrintInfo($"Waiting {delay} before generating the next budget report.");
 
                 try
                 {
@@ -442,7 +441,7 @@ internal class Program
             ILiveMarketOrder order = await tradeClient.CreateOrderAsync(orderRequest, cancellationToken).ConfigureAwait(false);
             IReadOnlyList<FillData> fillData = await order.WaitForFillAsync(cancellationToken).ConfigureAwait(false);
 
-            await PrintInfoAsync($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).").ConfigureAwait(false);
+            PrintInfo($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).");
         }
         catch (Exception e)
         {
@@ -485,7 +484,7 @@ internal class Program
               fees value paid: {{totalFeesValueStr}} {{budgetReport.PrimaryAsset}}
             """;
 
-        await PrintInfoAsync(reportLog).ConfigureAwait(false);
+        PrintInfo(reportLog);
 
         StringBuilder stringBuilder = new("Current budget:");
         _ = stringBuilder.AppendLine();
@@ -496,8 +495,7 @@ internal class Program
         _ = stringBuilder.AppendLine();
 
         string currentBudgetLog = stringBuilder.ToString();
-
-        await PrintInfoAsync(currentBudgetLog).ConfigureAwait(false);
+        PrintInfo(currentBudgetLog);
 
         await ReportToFileAsync(reportFilePath, budgetReport).ConfigureAwait(false);
 
@@ -650,20 +648,24 @@ internal class Program
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnConnectedDelegateAsync"/>
-    private static async Task OnConnectedAsync(ITradeApiClient tradeApiClient)
+    private static Task OnConnectedAsync(ITradeApiClient tradeApiClient)
     {
         // Just log the event.
-        await PrintInfoAsync().ConfigureAwait(false);
-        await PrintInfoAsync("Connection to the exchange has been re-established successfully.").ConfigureAwait(false);
-        await PrintInfoAsync().ConfigureAwait(false);
+        PrintInfo();
+        PrintInfo("Connection to the exchange has been re-established successfully.");
+        PrintInfo();
+
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnDisconnectedDelegateAsync"/>
-    private static async Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
+    private static Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
     {
         // Just log the event.
-        await PrintInfoAsync().ConfigureAwait(false);
-        await PrintInfoAsync("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!").ConfigureAwait(false);
-        await PrintInfoAsync().ConfigureAwait(false);
+        PrintInfo();
+        PrintInfo("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!");
+        PrintInfo();
+
+        return Task.CompletedTask;
     }
 }
