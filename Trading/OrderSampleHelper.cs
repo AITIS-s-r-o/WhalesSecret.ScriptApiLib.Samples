@@ -128,7 +128,7 @@ public class OrderSampleHelper : IAsyncDisposable
             throw new SanityCheckException(msg);
         }
 
-        Console.WriteLine($"Volume precision for symbol pair '{symbolPair}' on {exchangeMarket} is {limits.BaseVolumePrecision}.").ConfigureAwait(false);
+        Console.WriteLine($"Volume precision for symbol pair '{symbolPair}' on {exchangeMarket} is {limits.BaseVolumePrecision}.");
 
         Console.WriteLine($"Get best bid and ask prices from an order book on {exchangeMarket}.");
 

@@ -24,7 +24,7 @@ public class OrderBookArbitrage : IScriptApiSample
         ExchangeMarket primaryMarket = exchangeMarket;
         ExchangeMarket secondaryMarket = exchangeMarket == ExchangeMarket.BinanceSpot ? ExchangeMarket.KucoinSpot : ExchangeMarket.BinanceSpot;
 
-        Console.WriteLine($"Connect to {primaryMarket} and {secondaryMarket} exchanges with public connections.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {primaryMarket} and {secondaryMarket} exchanges with public connections.");
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
 
         Task<ITradeApiClient>[] connectTasks = new Task<ITradeApiClient>[2];

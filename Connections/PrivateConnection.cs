@@ -35,7 +35,7 @@ public class PrivateConnection : IScriptApiSample
 
         scriptApi.SetCredentials(apiIdentity);
 
-        Console.WriteLine($"Connect to {exchangeMarket} exchange with a private connection.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with a private connection.");
 
         // Trading connection type means that only a private connection is established. Full-trading would create two connections, public and private.
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.Trading);
