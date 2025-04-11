@@ -212,7 +212,7 @@ internal class Program
             Console.CancelKeyPress -= controlCancelHandler;
         }
 
-        clog.Info($"$");
+        clog.Info("$");
         clog.FlushAndShutDown();
     }
 
