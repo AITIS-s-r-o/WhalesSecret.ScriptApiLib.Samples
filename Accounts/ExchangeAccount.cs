@@ -41,12 +41,12 @@ public class ExchangeAccount : IScriptApiSample
 
         scriptApi.SetCredentials(apiIdentity);
 
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a private connection.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with a private connection.");
 
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.Trading);
         await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Private connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Private connection to {exchangeMarket} has been established successfully.");
 
         // As the connection is established, we can consume the exchange account information. Without specification of a sub-account, the primary sub-account is used.
         ExchangeAccountInformation info = tradeClient.GetLatestExchangeAccountInformation();
@@ -55,26 +55,25 @@ public class ExchangeAccount : IScriptApiSample
         // updates. However, if updates were awaited, the timestamp would become meaningful.
         if (info.Timestamp != DateTime.MinValue)
         {
-            await Console.Out.WriteLineAsync($"The following information is valid at UTC time {info.Timestamp}.").ConfigureAwait(false);
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine($"The following information is valid at UTC time {info.Timestamp}.");
+            Console.WriteLine();
         }
 
         if (info.MakerFee is not null)
-            await Console.Out.WriteLineAsync($"Your basic maker fee is {info.MakerFee * 100m} %.").ConfigureAwait(false);
+            Console.WriteLine($"Your basic maker fee is {info.MakerFee * 100m} %.");
 
         if (info.TakerFee is not null)
-            await Console.Out.WriteLineAsync($"Your basic taker fee is {info.TakerFee * 100m} %.").ConfigureAwait(false);
+            Console.WriteLine($"Your basic taker fee is {info.TakerFee * 100m} %.");
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync($"List of wallet balances on the primary sub-account:").ConfigureAwait(false);
+        Console.WriteLine($"List of wallet balances on the primary sub-account:");
         foreach ((string symbolName, AccountSymbolInformation accountSymbolInformation) in info.SymbolsInformation)
         {
-            await Console.Out.WriteLineAsync($"  {symbolName}: {accountSymbolInformation.AvailableBalance} / {accountSymbolInformation.TotalBalance} is available.")
-                .ConfigureAwait(false);
+            Console.WriteLine($"  {symbolName}: {accountSymbolInformation.AvailableBalance} / {accountSymbolInformation.TotalBalance} is available.");
         }
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

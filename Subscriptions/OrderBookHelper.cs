@@ -15,32 +15,29 @@ public static class OrderBookHelper
     /// </summary>
     /// <param name="orderBook">Order book to print.</param>
     /// <param name="sideSize">Maximal number of bids and asks to print.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public static async Task PrintOrderBookAsync(OrderBook orderBook, int sideSize = 5)
+    public static void PrintOrderBook(OrderBook orderBook, int sideSize = 5)
     {
         SymbolPair symbolPair = orderBook.SymbolPair;
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
         for (int i = sideSize - 1; i >= 0; i--)
         {
             if (orderBook.Asks.Count < i)
                 continue;
 
-            await Console.Out.WriteLineAsync($"  ask #{i + 1}: {orderBook.Asks[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Asks[i].Price} {symbolPair.QuoteSymbol}")
-                .ConfigureAwait(false);
+            Console.WriteLine($"  ask #{i + 1}: {orderBook.Asks[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Asks[i].Price} {symbolPair.QuoteSymbol}");
         }
 
-        await Console.Out.WriteLineAsync("  ---------------------------------------").ConfigureAwait(false);
+        Console.WriteLine("  ---------------------------------------");
 
         for (int i = 0; i < sideSize; i++)
         {
             if (orderBook.Bids.Count < i)
                 break;
 
-            await Console.Out.WriteLineAsync($"  bid #{i + 1}: {orderBook.Bids[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Bids[i].Price} {symbolPair.QuoteSymbol}")
-                .ConfigureAwait(false);
+            Console.WriteLine($"  bid #{i + 1}: {orderBook.Bids[i].Quantity} {symbolPair.BaseSymbol} @ {orderBook.Bids[i].Price} {symbolPair.QuoteSymbol}");
         }
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
     }
 }

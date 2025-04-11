@@ -19,21 +19,21 @@ public class PublicConnection : IScriptApiSample
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a public connection.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with a public connection.");
 
         // Market-data connection type is the only connection type that does not need exchange API credentials.
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
         await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Public connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Public connection to {exchangeMarket} has been established successfully.");
 
         // As the connection is established, we can use the connected client to, for example, query the time of the exchange.
         DateTime utcExchangeTime = tradeClient.GetExchangeUtcDateTime();
         TimeSpan diff = utcExchangeTime - DateTime.UtcNow;
 
-        await Console.Out.WriteLineAsync($"Current UTC time of the {exchangeMarket} exchange is {utcExchangeTime}. The difference between the exchange time and the local time is {
-            diff}.").ConfigureAwait(false);
+        Console.WriteLine($"Current UTC time of the {exchangeMarket} exchange is {utcExchangeTime}. The difference between the exchange time and the local time is {
+            diff}.");
 
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

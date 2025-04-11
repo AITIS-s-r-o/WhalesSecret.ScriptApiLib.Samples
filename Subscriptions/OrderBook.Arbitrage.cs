@@ -24,7 +24,7 @@ public class OrderBookArbitrage : IScriptApiSample
         ExchangeMarket primaryMarket = exchangeMarket;
         ExchangeMarket secondaryMarket = exchangeMarket == ExchangeMarket.BinanceSpot ? ExchangeMarket.KucoinSpot : ExchangeMarket.BinanceSpot;
 
-        await Console.Out.WriteLineAsync($"Connect to {primaryMarket} and {secondaryMarket} exchanges with public connections.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {primaryMarket} and {secondaryMarket} exchanges with public connections.").ConfigureAwait(false);
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
 
         Task<ITradeApiClient>[] connectTasks = new Task<ITradeApiClient>[2];
@@ -37,18 +37,18 @@ public class OrderBookArbitrage : IScriptApiSample
         await using ITradeApiClient primaryTradeApiClient = await connectTasks[0].ConfigureAwait(false);
         await using ITradeApiClient secondaryTradeApiClient = await connectTasks[1].ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Public connections to {primaryMarket} and {secondaryMarket} have been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Public connections to {primaryMarket} and {secondaryMarket} have been established successfully.");
 
         SymbolPair symbolPair = SymbolPair.BTC_USDT;
 
-        await Console.Out.WriteLineAsync($"Create order book subscriptions for symbol pair '{symbolPair}' on {primaryMarket} and {secondaryMarket}.").ConfigureAwait(false);
+        Console.WriteLine($"Create order book subscriptions for symbol pair '{symbolPair}' on {primaryMarket} and {secondaryMarket}.");
 
         Task<IOrderBookSubscription>[] subscriptionTasks = new Task<IOrderBookSubscription>[2];
 
         subscriptionTasks[0] = primaryTradeApiClient.CreateOrderBookSubscriptionAsync(symbolPair);
         subscriptionTasks[1] = secondaryTradeApiClient.CreateOrderBookSubscriptionAsync(symbolPair);
 
-        await Console.Out.WriteLineAsync($"'{symbolPair}' order book subscriptions on {primaryMarket} and {secondaryMarket} have been created successfully.").ConfigureAwait(false);
+        Console.WriteLine($"'{symbolPair}' order book subscriptions on {primaryMarket} and {secondaryMarket} have been created successfully.");
 
         IOrderBookSubscription primarySubscription = await subscriptionTasks[0].ConfigureAwait(false);
         IOrderBookSubscription secondarySubscription = await subscriptionTasks[1].ConfigureAwait(false);
@@ -110,14 +110,14 @@ public class OrderBookArbitrage : IScriptApiSample
                                 bestOpportunity = opportunity;
                             }
 
-                            await Console.Out.WriteLineAsync($"{primaryMarket} best bid: {primaryBestBid.Quantity} {symbolPair.BaseSymbol} @ {primaryBestBid.Price} {
-                                symbolPair.QuoteSymbol}").ConfigureAwait(false);
+                            Console.WriteLine($"{primaryMarket} best bid: {primaryBestBid.Quantity} {symbolPair.BaseSymbol} @ {primaryBestBid.Price} {
+                                symbolPair.QuoteSymbol}");
 
-                            await Console.Out.WriteLineAsync($"{secondaryMarket} best ask: {secondaryBestAsk.Quantity} {symbolPair.BaseSymbol} @ {secondaryBestAsk.Price} {
-                                symbolPair.QuoteSymbol}").ConfigureAwait(false);
+                            Console.WriteLine($"{secondaryMarket} best ask: {secondaryBestAsk.Quantity} {symbolPair.BaseSymbol} @ {secondaryBestAsk.Price} {
+                                symbolPair.QuoteSymbol}");
 
-                            await Console.Out.WriteLineAsync(opportunity).ConfigureAwait(false);
-                            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+                            Console.WriteLine(opportunity);
+                            Console.WriteLine();
                         }
                     }
 
@@ -142,14 +142,14 @@ public class OrderBookArbitrage : IScriptApiSample
                                 bestOpportunity = opportunity;
                             }
 
-                            await Console.Out.WriteLineAsync($"{secondaryMarket} best bid: {secondaryBestBid.Quantity} {symbolPair.BaseSymbol} @ {secondaryBestBid.Price} {
-                                symbolPair.QuoteSymbol}").ConfigureAwait(false);
+                            Console.WriteLine($"{secondaryMarket} best bid: {secondaryBestBid.Quantity} {symbolPair.BaseSymbol} @ {secondaryBestBid.Price} {
+                                symbolPair.QuoteSymbol}");
 
-                            await Console.Out.WriteLineAsync($"{primaryMarket} best ask: {primaryBestAsk.Quantity} {symbolPair.BaseSymbol} @ {primaryBestAsk.Price} {
-                                symbolPair.QuoteSymbol}").ConfigureAwait(false);
+                            Console.WriteLine($"{primaryMarket} best ask: {primaryBestAsk.Quantity} {symbolPair.BaseSymbol} @ {primaryBestAsk.Price} {
+                                symbolPair.QuoteSymbol}");
 
-                            await Console.Out.WriteLineAsync(opportunity).ConfigureAwait(false);
-                            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+                            Console.WriteLine(opportunity);
+                            Console.WriteLine();
                         }
                     }
                 }
@@ -161,14 +161,14 @@ public class OrderBookArbitrage : IScriptApiSample
 
             if ((counter % 100) == 0)
             {
-                await Console.Out.WriteLineAsync($"After {counter} iterations, best opportunity we've seen so far was:").ConfigureAwait(false);
-                await Console.Out.WriteLineAsync(bestOpportunity).ConfigureAwait(false);
-                await Console.Out.WriteLineAsync().ConfigureAwait(false);
+                Console.WriteLine($"After {counter} iterations, best opportunity we've seen so far was:");
+                Console.WriteLine(bestOpportunity);
+                Console.WriteLine();
             }
 
             counter++;
         }
 
-        await Console.Out.WriteLineAsync("Disposing both order book subscription subsets, trade API client, and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing both order book subscription subsets, trade API client, and script API.");
     }
 }

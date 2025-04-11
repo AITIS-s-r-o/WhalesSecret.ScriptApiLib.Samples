@@ -22,11 +22,11 @@ public class OrderBookSet : IScriptApiSample
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a public connection.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with a public connection.");
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
         await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Public connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Public connection to {exchangeMarket} has been established successfully.");
 
         SymbolPair[] symbolPairs = new SymbolPair[]
         {
@@ -35,33 +35,33 @@ public class OrderBookSet : IScriptApiSample
             SymbolPair.LTC_USDT,
         };
 
-        await Console.Out.WriteLineAsync($"Create order book subscriptions for {symbolPairs.Length} symbol pairs on {exchangeMarket}.").ConfigureAwait(false);
+        Console.WriteLine($"Create order book subscriptions for {symbolPairs.Length} symbol pairs on {exchangeMarket}.");
         await using IOrderBookSubscriptionSet subscriptionSet = await tradeClient.CreateOrderBookSubscriptionsAsync(symbolPairs).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"{symbolPairs.Length} order book subscriptions on {exchangeMarket} has been created successfully.").ConfigureAwait(false);
+        Console.WriteLine($"{symbolPairs.Length} order book subscriptions on {exchangeMarket} has been created successfully.");
 
-        await Console.Out.WriteLineAsync("Start batch monitoring.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Start batch monitoring.");
+        Console.WriteLine();
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet.StartBatchMonitoring(timeoutCts.Token))
         {
-            await Console.Out.WriteLineAsync("Wait for 10 order book updates from any symbol pair.").ConfigureAwait(false);
+            Console.WriteLine("Wait for 10 order book updates from any symbol pair.");
             for (int i = 0; i < 10; i++)
             {
                 // Note that we are not guaranteed to get any number of updates from any particular symbol pair. Also note that when a subscription is created, we get an initial
                 // state, which is propagated as an update, but it may be preceded with any number of updates of earlier subscribed symbol pairs of the same set.
                 OrderBook orderBook = await subscriptionSet.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
-                await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New order book received:").ConfigureAwait(false);
+                Console.WriteLine($"  {DateTime.UtcNow} | New order book received:");
             
-                await OrderBookHelper.PrintOrderBookAsync(orderBook).ConfigureAwait(false);
+                OrderBookHelper.PrintOrderBook(orderBook);
             }
             
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine();
 
-            await Console.Out.WriteLineAsync("Dispose batch monitoring to be able to remove subscription from the set.").ConfigureAwait(false);
+            Console.WriteLine("Dispose batch monitoring to be able to remove subscription from the set.");
         }
 
-        await Console.Out.WriteLineAsync("Split subscription set into 2 subsets.").ConfigureAwait(false);
+        Console.WriteLine("Split subscription set into 2 subsets.");
         IOrderBookSubscriptionSet? subscriptionSet2 = await subscriptionSet.TryRemoveSubscriptionSubsetAsync(new SymbolPair[] { symbolPairs[1], symbolPairs[2] })
             .ConfigureAwait(false);
 
@@ -70,26 +70,26 @@ public class OrderBookSet : IScriptApiSample
 
         await using IOrderBookSubscriptionSet subscriptionSet2ToDispose = subscriptionSet2;
 
-        await Console.Out.WriteLineAsync("Start batch monitoring for the the second subset.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Start batch monitoring for the the second subset.");
+        Console.WriteLine();
 
         await using (IAsyncDisposable batchMonitoring = subscriptionSet2.StartBatchMonitoring(timeoutCts.Token))
         {
-            await Console.Out.WriteLineAsync("Print first 10 order books for the 2 symbol pairs of the second subset.").ConfigureAwait(false);
+            Console.WriteLine("Print first 10 order books for the 2 symbol pairs of the second subset.");
             for (int i = 0; i < 10; i++)
             {
                 // Note that here, we are not guaranteed to get any number of updates from every symbol pair.
                 OrderBook orderBook = await subscriptionSet2.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
-                await Console.Out.WriteLineAsync($"  {DateTime.UtcNow} | New order book received:").ConfigureAwait(false);
+                Console.WriteLine($"  {DateTime.UtcNow} | New order book received:");
 
-                await OrderBookHelper.PrintOrderBookAsync(orderBook).ConfigureAwait(false);
+                OrderBookHelper.PrintOrderBook(orderBook);
             }
 
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine();
 
-            await Console.Out.WriteLineAsync("Dispose batch monitoring of the second subset.").ConfigureAwait(false);
+            Console.WriteLine("Dispose batch monitoring of the second subset.");
         }
 
-        await Console.Out.WriteLineAsync("Disposing both order book subscription subsets, trade API client, and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing both order book subscription subsets, trade API client, and script API.");
     }
 }
