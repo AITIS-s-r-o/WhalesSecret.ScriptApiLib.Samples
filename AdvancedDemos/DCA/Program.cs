@@ -466,6 +466,7 @@ internal class Program
         string initialValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.InitialValue}");
         string finalValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.FinalValue}");
         string totalProfitStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalProfit}");
+        string totalFeesValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalFeesValue}");
 
         string reportLog = $$"""
             Budget report:
@@ -474,6 +475,7 @@ internal class Program
               initial value: {{initialValueStr}} {{budgetReport.PrimaryAsset}}
               final value: {{finalValueStr}} {{budgetReport.PrimaryAsset}}
               profit/loss: {{totalProfitStr}} {{budgetReport.PrimaryAsset}}
+              fees value paid: {{totalFeesValueStr}} {{budgetReport.PrimaryAsset}}
             """;
 
         await PrintInfoAsync(reportLog).ConfigureAwait(false);
@@ -532,9 +534,18 @@ internal class Program
 
         for (int i = 0; i < assetNames.Length; i++)
         {
-            _ = fileContentBuilder.Append(assetNames[i]);
+            _ = fileContentBuilder
+                .Append(CultureInfo.InvariantCulture, $"Balance {assetNames[i]}")
+                .Append(ReportFileValueSeparator);
+        }
 
-            if (i != assetNames.Length - 1)
+        string[] feeAssetNames = budgetReport.FeesPaid.Keys.Order().ToArray();
+
+        for (int i = 0; i < feeAssetNames.Length; i++)
+        {
+            _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"Fees Paid {assetNames[i]}");
+
+            if (i != feeAssetNames.Length - 1)
                 _ = fileContentBuilder.Append(ReportFileValueSeparator);
         }
 
@@ -545,6 +556,7 @@ internal class Program
         for (int i = -1; i < budgetReports.Count; i++)
         {
             BudgetSnapshot snapshot;
+            BudgetSnapshot feesPaid;
 
             if (i == -1)
             {
@@ -555,12 +567,13 @@ internal class Program
                     .Append(ReportFileValueSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{budgetReport.InitialValue}")
                     .Append(ReportFileValueSeparator)
-                    .Append("0")
+                    .Append('0')
                     .Append(ReportFileValueSeparator)
-                    .Append("0")
+                    .Append('0')
                     .Append(ReportFileValueSeparator);
 
                 snapshot = budgetReport.InitialBudget;
+                feesPaid = new();
 
                 prevValue = budgetReport.InitialValue;
             }
@@ -583,6 +596,7 @@ internal class Program
                     .Append(ReportFileValueSeparator);
 
                 snapshot = report.FinalBudget;
+                feesPaid = report.FeesPaid;
 
                 prevValue = report.FinalValue;
             }
@@ -594,7 +608,17 @@ internal class Program
                 if (snapshot.TryGetValue(assetName, out decimal value))
                     _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
 
-                if (assetNameIndex != assetNames.Length - 1)
+                _ = fileContentBuilder.Append(ReportFileValueSeparator);
+            }
+
+            for (int feeAssetNameIndex = 0; feeAssetNameIndex < feeAssetNames.Length; feeAssetNameIndex++)
+            {
+                string assetName = feeAssetNames[feeAssetNameIndex];
+
+                if (feesPaid.TryGetValue(assetName, out decimal value))
+                    _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
+
+                if (feeAssetNameIndex != feeAssetNames.Length - 1)
                     _ = fileContentBuilder.Append(ReportFileValueSeparator);
             }
 
