@@ -26,9 +26,7 @@ namespace WhalesSecret.ScriptApiLib.DCA;
 /// For example, if the symbol pair is <c>BTC/EUR</c>, the quote size is <c>10</c>, and the period is <c>3600</c> seconds, the bot will try to buy 10 <c>EUR</c> worth of BTC every
 /// hour.
 /// </para>
-/// <para>
-/// The bot also create reports about its performance and writes the report history it into a CSV file.
-/// </para>
+/// <para>The bot also create reports about its performance and writes the report history it into a CSV file.</para>
 /// </summary>
 internal class Program
 {
