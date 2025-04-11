@@ -48,7 +48,7 @@ internal class Program
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
 
     /// <summary>
-    /// Application that fetches new ticker data and displays it.
+    /// Application that trades a Direct Cost Averaging (DCA) strategy.
     /// </summary>
     /// <param name="args">Command-line arguments.
     /// <para>The program must be started with 6 arguments given in this order:
