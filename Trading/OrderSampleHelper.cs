@@ -117,14 +117,14 @@ public class OrderSampleHelper : IAsyncDisposable
         if (!exchangeInfo.SymbolPairLimits.TryGetValue(symbolPair, out ExchangeSymbolPairLimits? limits))
         {
             string msg = $"Symbol pair '{symbolPair}' is not supported by {exchangeMarket}.";
-            await Console.Error.WriteLineAsync($"ERROR: {msg}").ConfigureAwait(false);
+            Console.Error.WriteLine($"ERROR: {msg}");
             throw new SanityCheckException(msg);
         }
 
         if (limits.BaseVolumePrecision is null)
         {
             string msg = $"Volume precision is not known for symbol pair '{symbolPair}' on {exchangeMarket}.";
-            await Console.Error.WriteLineAsync($"ERROR: {msg}").ConfigureAwait(false);
+            Console.Error.WriteLine($"ERROR: {msg}");
             throw new SanityCheckException(msg);
         }
 
