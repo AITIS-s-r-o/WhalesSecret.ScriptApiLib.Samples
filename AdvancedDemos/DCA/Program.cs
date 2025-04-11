@@ -332,7 +332,7 @@ internal class Program
             nameof(quoteSize)}={quoteSize},{nameof(budgetRequest)}='{budgetRequest}',{nameof(reportPeriod)}={reportPeriod}");
 
         // In order to unlock large orders, a valid license has to be used.
-        CreateOptions createOptions = new(appDataFolder: appDataFolder, connectToBinanceSandbox: true, license: License.WsLicense);
+        CreateOptions createOptions = new(appDataFolder: appDataFolder, license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
