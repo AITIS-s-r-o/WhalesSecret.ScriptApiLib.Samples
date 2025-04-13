@@ -125,7 +125,7 @@ public class Parameters
         return string.Format
         (
             CultureInfo.InvariantCulture,
-            "[{0}={1},{2}={3},{4}={5}]",
+            "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}=`{13}`,{14}={15}]",
             nameof(this.AppDataFolder), this.AppDataFolder,
             nameof(this.ExchangeMarket), this.ExchangeMarket,
             nameof(this.SymbolPair), this.SymbolPair,
