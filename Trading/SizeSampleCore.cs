@@ -57,13 +57,13 @@ public static class SizeSampleCore
         ILiveLimitOrder liveOrder = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Limit order '{liveOrder}' is live now. Cancel it.").ConfigureAwait(false);
+        Console.WriteLine($"Limit order '{liveOrder}' is live now. Cancel it.");
         await tradeClient.CancelOrderAsync(liveOrder, timeoutCts.Token).ConfigureAwait(false);
 
         // As the cancellation succeeded, this is just a sanity check that should complete almost instantly.
-        await Console.Out.WriteLineAsync("Wait for the order to be terminated.").ConfigureAwait(false);
+        Console.WriteLine("Wait for the order to be terminated.");
         _ = await liveOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

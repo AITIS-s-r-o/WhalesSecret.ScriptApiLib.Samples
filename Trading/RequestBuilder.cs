@@ -19,10 +19,10 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// </summary>
 /// <remarks>
 /// The order request builder uses <see cref="ExchangeInfo">exchange information</see> in order to prevent us submitting invalid order requests. For example, using the order
-/// request builder, it is not possible to place order for an unsupported symbol pair. Similarly, the builder takes care of necessary rounding. Each exchange imposes different rules
-/// on each tradable symbol pair and the order request builder makes it easy to comply with these requirements. For example, we can ask the order request builder to create an order
-/// to buy <c>5.123456</c> USD worth of BTC, but if the volume precision of the given symbol pair on the given exchange market is limited to 3 decimal places, when we build
-/// the order request, it will round the volume to <c>5.123</c> USD. At the same time, the original requested size is preserved, so if the order builder is then used to buy
+/// request builder, it is not possible to place order for an unsupported symbol pair. Similarly, the builder takes care of necessary rounding. Each exchange imposes different
+/// rules on each tradable symbol pair and the order request builder makes it easy to comply with these requirements. For example, we can ask the order request builder to create
+/// an order to buy <c>5.123456</c> USD worth of BTC, but if the volume precision of the given symbol pair on the given exchange market is limited to 3 decimal places, when we
+/// build the order request, it will round the volume to <c>5.123</c> USD. At the same time, the original requested size is preserved, so if the order builder is then used to buy
 /// different asset, e.g. trading LTC/USD, if the volume precision there is 4 decimal places, the order request will have size set to <c>5.1235</c> USD worth of BTC.
 /// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
 /// </remarks>
@@ -60,7 +60,7 @@ public class RequestBuilder : IScriptApiSample
         // When using the order request builder, we do not need to round sizes and prices. The builder takes care of these requirements as well as other things.
         decimal orderSize = quoteOrderSize / limitPrice;
 
-        await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
+        Console.WriteLine("Build a limit order request.");
         LimitOrderRequest limitOrderRequest = limitBuilder
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
@@ -70,12 +70,12 @@ public class RequestBuilder : IScriptApiSample
             .SetPrice(limitPrice)
             .Build();
 
-        await Console.Out.WriteLineAsync($"Constructed limit order request: {limitOrderRequest}").ConfigureAwait(false);
+        Console.WriteLine($"Constructed limit order request: {limitOrderRequest}");
 
         // The builder remembers all the settings used for the limit order and these settings are preserved, if possible, even when we convert the builder to a builder for
         // a different type of order. Therefore, we do not need to set the order side or the symbol pair again. We would not need to set the size either, but we want to demonstrate
         // here that market orders can be placed with size specified in quote symbol (i.e. we can request buying 5 USD worth of BTC, instead of requesting buying 0.0000xxxx BTC.
-        await Console.Out.WriteLineAsync("Build market order request 1.").ConfigureAwait(false);
+        Console.WriteLine("Build market order request 1.");
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = limitBuilder.ConvertTo<MarketOrderRequest>();
         MarketOrderRequest marketOrderRequest1 = marketBuilder
             .SetClientOrderId(clientOrderId2)
@@ -83,40 +83,40 @@ public class RequestBuilder : IScriptApiSample
             .SetSize(quoteOrderSize)
             .Build();
 
-        await Console.Out.WriteLineAsync($"Constructed market order request 1: {marketOrderRequest1}").ConfigureAwait(false);
+        Console.WriteLine($"Constructed market order request 1: {marketOrderRequest1}");
 
-        await Console.Out.WriteLineAsync("Build market order request 2.").ConfigureAwait(false);
+        Console.WriteLine("Build market order request 2.");
         MarketOrderRequest marketOrderRequest2 = marketBuilder
             .SetClientOrderId(clientOrderId3)
             .SetSide(OrderSide.Sell)
             .Build();
 
-        await Console.Out.WriteLineAsync($"Constructed market order request 2: {marketOrderRequest2}").ConfigureAwait(false);
+        Console.WriteLine($"Constructed market order request 2: {marketOrderRequest2}");
 
-        await Console.Out.WriteLineAsync("Place the three orders.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Place the three orders.");
+        Console.WriteLine();
 
         ILiveLimitOrder limitOrder = await tradeClient.CreateOrderAsync(limitOrderRequest, timeoutCts.Token).ConfigureAwait(false);
         ILiveMarketOrder marketOrder1 = await tradeClient.CreateOrderAsync(marketOrderRequest1, timeoutCts.Token).ConfigureAwait(false);
         ILiveMarketOrder marketOrder2 = await tradeClient.CreateOrderAsync(marketOrderRequest2, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Limit order '{limitOrder}' is live.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Market order '{marketOrder1} is live.");
-        await Console.Out.WriteLineAsync($"Market order '{marketOrder2} is live.");
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine($"Limit order '{limitOrder}' is live.");
+        Console.WriteLine($"Market order '{marketOrder1} is live.");
+        Console.WriteLine($"Market order '{marketOrder2} is live.");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Cancel the limit order.");
+        Console.WriteLine("Cancel the limit order.");
         await tradeClient.CancelOrderAsync(limitOrder, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Wait until the limit order is closed.").ConfigureAwait(false);
+        Console.WriteLine("Wait until the limit order is closed.");
         _ = await limitOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Wait until the market order 1 is filled.").ConfigureAwait(false);
+        Console.WriteLine("Wait until the market order 1 is filled.");
         await marketOrder1.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Wait until the market order 2 is filled.").ConfigureAwait(false);
+        Console.WriteLine("Wait until the market order 2 is filled.");
         await marketOrder2.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

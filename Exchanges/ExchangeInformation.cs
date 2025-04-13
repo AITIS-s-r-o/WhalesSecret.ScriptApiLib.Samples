@@ -24,20 +24,19 @@ public class ExchangeInformation : IScriptApiSample
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
         // Initialization of the market is required before connection can be created.
-        await Console.Out.WriteLineAsync($"Initialize exchange market {exchangeMarket}.").ConfigureAwait(false);
+        Console.WriteLine($"Initialize exchange market {exchangeMarket}.");
         ExchangeInfo exchangeInfo = await scriptApi.InitializeMarketAsync(exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Difference between the exchange time and the local time of the {exchangeMarket} exchange is {exchangeInfo.TimeShift}.")
-            .ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine($"Difference between the exchange time and the local time of the {exchangeMarket} exchange is {exchangeInfo.TimeShift}.");
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"The following symbol pairs are supported by {exchangeMarket}:").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine($"The following symbol pairs are supported by {exchangeMarket}:");
 
         foreach ((SymbolPair symbolPair, ExchangeSymbolPairLimits limits) in exchangeInfo.SymbolPairLimits)
-            await Console.Out.WriteLineAsync($"  {symbolPair}: {limits}").ConfigureAwait(false);
+            Console.WriteLine($"  {symbolPair}: {limits}");
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync("Disposing script API.").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine("Disposing script API.");
     }
 }

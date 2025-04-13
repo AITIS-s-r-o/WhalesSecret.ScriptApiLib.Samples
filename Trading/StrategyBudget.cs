@@ -92,8 +92,8 @@ public class StrategyBudget : IScriptApiSample
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync("Build a market order request for the first order.").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine("Build a market order request for the first order.");
         MarketOrderRequest marketOrderRequest = marketBuilder
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
@@ -102,49 +102,49 @@ public class StrategyBudget : IScriptApiSample
             .SetSize(quoteOrderSize)
             .Build();
 
-        await Console.Out.WriteLineAsync($"Constructed market order request: {marketOrderRequest}").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine($"Constructed market order request: {marketOrderRequest}");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Place the order.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Place the order.");
+        Console.WriteLine();
 
         ILiveMarketOrder marketOrder = await tradeClient.CreateOrderAsync(marketOrderRequest, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Market order '{marketOrder} is live.");
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine($"Market order '{marketOrder} is live.");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Wait until the market order is filled.").ConfigureAwait(false);
+        Console.WriteLine("Wait until the market order is filled.");
         await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("The first order was fully filled.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("The first order was fully filled.");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Wait 5 seconds before placing the second order.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Wait 5 seconds before placing the second order.");
+        Console.WriteLine();
         await Task.Delay(TimeSpan.FromSeconds(5), timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Build a market order request for the second order.").ConfigureAwait(false);
+        Console.WriteLine("Build a market order request for the second order.");
         marketOrderRequest = marketBuilder
             .SetClientOrderId(clientOrderId2)
             .SetSide(OrderSide.Sell)
             .Build();
 
-        await Console.Out.WriteLineAsync($"Constructed market order request: {marketOrderRequest}").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine($"Constructed market order request: {marketOrderRequest}");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Place the order.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Place the order.");
+        Console.WriteLine();
 
         marketOrder = await tradeClient.CreateOrderAsync(marketOrderRequest, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Market order '{marketOrder} is live.");
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine($"Market order '{marketOrder} is live.");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Wait until the market order is filled.").ConfigureAwait(false);
+        Console.WriteLine("Wait until the market order is filled.");
         await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("The second order has concluded. Now calculate profit and loss.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("The second order has concluded. Now calculate profit and loss.");
+        Console.WriteLine();
 
         BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(timeoutCts.Token).ConfigureAwait(false);
 
@@ -161,9 +161,9 @@ public class StrategyBudget : IScriptApiSample
               final secondary asset holdings: {{budgetReport.FinalBudget[secondaryAsset]}} {{secondaryAsset}}
             """;
 
-        await Console.Out.WriteLineAsync(report).ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine(report);
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

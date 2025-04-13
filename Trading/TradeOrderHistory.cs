@@ -44,15 +44,15 @@ public class TradeOrderHistory : IScriptApiSample
 
         if (exchangeMarket == ExchangeMarket.BinanceSpot)
         {
-            await Console.Out.WriteLineAsync($"WARNING: When this sample is run for the first time for {exchangeMarket}, exchange account initialization needs to be done. This"
-                + " operation may take several minutes to complete.").ConfigureAwait(false);
+            Console.WriteLine($"WARNING: When this sample is run for the first time for {exchangeMarket}, exchange account initialization needs to be done. This"
+                + " operation may take several minutes to complete.");
         }
 
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
         IReadOnlyList<IOrder> orders = await tradeClient.GetOrdersAsync(today, OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
         if (orders.Count == 0)
         {
-            await Console.Out.WriteLineAsync("No orders found for today, place 2 market orders.").ConfigureAwait(false);
+            Console.WriteLine("No orders found for today, place 2 market orders.");
 
             decimal quoteOrderSize = exchangeMarket switch
             {
@@ -61,7 +61,7 @@ public class TradeOrderHistory : IScriptApiSample
                 _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
             };
 
-            await Console.Out.WriteLineAsync("Build market order request 1.").ConfigureAwait(false);
+            Console.WriteLine("Build market order request 1.");
             OrderRequestBuilder<MarketOrderRequest> marketBuilder = limitBuilder.ConvertTo<MarketOrderRequest>();
             MarketOrderRequest marketOrderRequest1 = marketBuilder
                 .SetClientOrderId(clientOrderId)
@@ -72,30 +72,30 @@ public class TradeOrderHistory : IScriptApiSample
                 .SetSize(quoteOrderSize)
                 .Build();
 
-            await Console.Out.WriteLineAsync($"Constructed market order request 1: {marketOrderRequest1}").ConfigureAwait(false);
+            Console.WriteLine($"Constructed market order request 1: {marketOrderRequest1}");
 
-            await Console.Out.WriteLineAsync("Build market order request 2.").ConfigureAwait(false);
+            Console.WriteLine("Build market order request 2.");
             MarketOrderRequest marketOrderRequest2 = marketBuilder
                 .SetClientOrderId(clientOrderId2)
                 .SetSide(OrderSide.Sell)
                 .Build();
 
-            await Console.Out.WriteLineAsync($"Constructed market order request 2: {marketOrderRequest2}").ConfigureAwait(false);
+            Console.WriteLine($"Constructed market order request 2: {marketOrderRequest2}");
 
-            await Console.Out.WriteLineAsync("Place both orders.").ConfigureAwait(false);
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine("Place both orders.");
+            Console.WriteLine();
 
             ILiveMarketOrder marketOrder1 = await tradeClient.CreateOrderAsync(marketOrderRequest1, timeoutCts.Token).ConfigureAwait(false);
             ILiveMarketOrder marketOrder2 = await tradeClient.CreateOrderAsync(marketOrderRequest2, timeoutCts.Token).ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync($"Market order '{marketOrder1} is live.");
-            await Console.Out.WriteLineAsync($"Market order '{marketOrder2} is live.");
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine($"Market order '{marketOrder1} is live.");
+            Console.WriteLine($"Market order '{marketOrder2} is live.");
+            Console.WriteLine();
 
-            await Console.Out.WriteLineAsync("Wait until the market order 1 is filled.").ConfigureAwait(false);
+            Console.WriteLine("Wait until the market order 1 is filled.");
             await marketOrder1.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
-            await Console.Out.WriteLineAsync("Wait until the market order 2 is filled.").ConfigureAwait(false);
+            Console.WriteLine("Wait until the market order 2 is filled.");
             await marketOrder2.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
             orders = await tradeClient.GetOrdersAsync(today, OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
@@ -103,18 +103,18 @@ public class TradeOrderHistory : IScriptApiSample
 
         IReadOnlyList<ITrade> trades = await tradeClient.GetTradesAsync(today, TradeFilterOptions.AllTrades, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Following orders were found for {today}:").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine($"Following orders were found for {today}:");
         for (int i = 0; i < orders.Count; i++)
-            await Console.Out.WriteLineAsync($"  #{i + 1}: {orders[i]}").ConfigureAwait(false);
+            Console.WriteLine($"  #{i + 1}: {orders[i]}");
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Following trades were found for {today}:").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine($"Following trades were found for {today}:");
         for (int i = 0; i < trades.Count; i++)
-            await Console.Out.WriteLineAsync($"  #{i + 1}: {trades[i]}").ConfigureAwait(false);
+            Console.WriteLine($"  #{i + 1}: {trades[i]}");
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

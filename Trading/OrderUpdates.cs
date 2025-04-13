@@ -46,62 +46,62 @@ public class OrderUpdates : IScriptApiSample
         // Rounding is necessary to get accepted on exchanges.
         decimal orderSize = Math.Round(exchangeOrderSize / limitPrice, decimals: helper.BaseVolumePrecision);
 
-        await Console.Out.WriteLineAsync("Creating the first limit order.").ConfigureAwait(false);
+        Console.WriteLine("Creating the first limit order.");
         string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"updates-sample-1-{DateTime.UtcNow.Ticks}");
         ILiveLimitOrder liveOrder = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Limit order '{liveOrder}' is live now.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine($"Limit order '{liveOrder}' is live now.");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Start background task that consumes order's updates.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Start background task that consumes order's updates.");
+        Console.WriteLine();
 
         using CancellationTokenSource ordersUpdatesCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token);
         Task ordersUpdatesTask = Task.Run(async () =>
         {
-            await Console.Out.WriteLineAsync("[UPD] Background task started.").ConfigureAwait(false);
+            Console.WriteLine("[UPD] Background task started.");
 
             try
             {
                 await foreach (IOrdersUpdate update in tradeClient.GetOrdersUpdateAsync(ordersUpdatesCts.Token).ConfigureAwait(false))
                 {
-                    await Console.Out.WriteLineAsync($$"""
+                    Console.WriteLine($$"""
                         
                         [UPD] Order update received: {{update}}
                         
-                        """).ConfigureAwait(false);
+                        """);
                         
                 }
             }
             catch (OperationCanceledException)
             {
-                await Console.Out.WriteLineAsync("[UPD] Background task cancelled.").ConfigureAwait(false);
+                Console.WriteLine("[UPD] Background task cancelled.");
             }
 
-            await Console.Out.WriteLineAsync("[UPD] Background task ended.").ConfigureAwait(false);
+            Console.WriteLine("[UPD] Background task ended.");
         }, timeoutCts.Token);
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync("Creating the second limit order.").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine("Creating the second limit order.");
         clientOrderId = string.Create(CultureInfo.InvariantCulture, $"updates-sample-2-{DateTime.UtcNow.Ticks}");
         ILiveLimitOrder liveOrder2 = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Second limit order '{liveOrder}' is live now.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine($"Second limit order '{liveOrder}' is live now.");
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Cancel all orders.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Cancel all orders.");
+        Console.WriteLine();
 
         await tradeClient.CancelAllOrdersAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Send cancellation to the background task.").ConfigureAwait(false);
+        Console.WriteLine("Send cancellation to the background task.");
         await ordersUpdatesCts.CancelAsync().ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Wait for the background task to finish.").ConfigureAwait(false);
+        Console.WriteLine("Wait for the background task to finish.");
         await ordersUpdatesTask.ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

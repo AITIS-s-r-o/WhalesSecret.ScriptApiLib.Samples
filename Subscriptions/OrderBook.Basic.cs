@@ -20,28 +20,27 @@ public class OrderBookBasic : IScriptApiSample
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a public connection.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with a public connection.");
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
         await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Public connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Public connection to {exchangeMarket} has been established successfully.");
 
         SymbolPair symbolPair = SymbolPair.BTC_USDT;
-        await Console.Out.WriteLineAsync($"Create subscription for '{symbolPair}' order book on {exchangeMarket}.").ConfigureAwait(false);
+        Console.WriteLine($"Create subscription for '{symbolPair}' order book on {exchangeMarket}.");
         await using IOrderBookSubscription subscription = await tradeClient.CreateOrderBookSubscriptionAsync(symbolPair).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Order book subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{subscription}'.")
-            .ConfigureAwait(false);
+        Console.WriteLine($"Order book subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{subscription}'.");
 
-        await Console.Out.WriteLineAsync($"Wait for next order book update for {symbolPair}.").ConfigureAwait(false);
+        Console.WriteLine($"Wait for next order book update for {symbolPair}.");
         OrderBook orderBook = await subscription.GetOrderBookAsync(getMode: OrderBookGetMode.WaitUntilNew, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Up-to-date order book snapshot '{orderBook}' has been received.").ConfigureAwait(false);
+        Console.WriteLine($"Up-to-date order book snapshot '{orderBook}' has been received.");
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
-        await OrderBookHelper.PrintOrderBookAsync(orderBook).ConfigureAwait(false);
+        OrderBookHelper.PrintOrderBook(orderBook);
 
-        await Console.Out.WriteLineAsync("Disposing order book subscription, trade API client, and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing order book subscription, trade API client, and script API.");
     }
 }
