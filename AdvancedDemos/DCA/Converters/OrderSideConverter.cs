@@ -19,10 +19,10 @@ public class OrderSideConverter : JsonConverter<OrderSide>
 
         string? value = reader.GetString();
         if (value is null)
-            throw new JsonException($"Order side cannot be null.");
+            throw new JsonException("Order side cannot be null.");
 
         if (!Enum.TryParse(value, out OrderSide orderSide))
-            throw new JsonException($"Invalid order side format.");
+            throw new JsonException("Invalid order side format.");
 
         if (!Enum.IsDefined(orderSide))
             throw new JsonException($"'{orderSide}' does not represent a supported order side.");
