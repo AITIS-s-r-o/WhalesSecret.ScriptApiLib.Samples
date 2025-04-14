@@ -70,7 +70,7 @@ public class Parameters
     /// </summary>
     /// <param name="filePath">Path to the JSON file.</param>
     /// <returns>An instance of <see cref="Parameters"/> populated with data from the JSON file.</returns>
-    /// <exception cref="FileAccessException">Thrown if the file can not be read.</exception>
+    /// <exception cref="FileAccessException">Thrown if the file cannot be read.</exception>
     /// <exception cref="JsonException">Thrown if the JSON is invalid, cannot be deserialized, or deserializes to <c>null</c>.</exception>
     public static Parameters LoadFromJson(string filePath)
     {
