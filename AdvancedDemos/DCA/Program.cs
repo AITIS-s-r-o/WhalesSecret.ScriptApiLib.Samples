@@ -21,10 +21,11 @@ using WhalesSecret.TradeScriptLib.Utils.Orders;
 namespace WhalesSecret.ScriptApiLib.DCA;
 
 /// <summary>
-/// DCA (Direct Cost Averaging) trading bot. This bot periodically places market orders in order to buy the selected base asset for the constant amount of selected quote asset.
+/// DCA (Direct Cost Averaging) trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected
+/// quote asset.
 /// <para>
-/// For example, if the symbol pair is <c>BTC/EUR</c>, the quote size is <c>10</c>, and the period is <c>3600</c> seconds, the bot will try to buy 10 <c>EUR</c> worth of BTC every
-/// hour.
+/// For example, if the symbol pair is <c>BTC/EUR</c>, the quote size is <c>10</c>, and the period is <c>3600</c> seconds, the bot will try to buy (or sell) 10 <c>EUR</c> worth of
+/// BTC every hour.
 /// </para>
 /// <para>The bot also create reports about its performance and writes the report history it into a CSV file.</para>
 /// </summary>
@@ -49,22 +50,31 @@ internal class Program
     /// Application that trades a Direct Cost Averaging (DCA) strategy.
     /// </summary>
     /// <param name="args">Command-line arguments.
-    /// <para>The program must be started with 6 arguments given in this order:
-    /// <list type="table">
-    /// <item><c>exchangeMarket</c> – <see cref="ExchangeMarket">Exchange market</see> to DCA at.</item>
-    /// <item><c>symbolPair</c> – Symbol pair to DCA, e.g. <c>BTC/EUR</c>.</item>
-    /// <item><c>periodSeconds</c> – Time period in seconds between the orders, e.g. <c>3600</c> for 1 hour period. First order is placed just after start.</item>
-    /// <item><c>quoteSize</c> – Order size in quote symbol, e.g. <c>10</c> to buy <c>10</c> EUR worth of BTC with each trade.</item>
-    /// <item><c>budget</c> – Comma-separated list of budget allocations for each asset with the primary asset being first. Each budget allocation is a pair of asset name
-    /// and the amount, separated by an equal sign. E.g. <c>EUR=100,BTC=0.1</c> would allocate budget with primary asset EUR that can has <c>100</c> EUR and <c>0.1</c> BTC
-    /// available.</item>
-    /// <item><c>reportPeriodSeconds</c> - Time period in seconds before the first report is generated and between reports are generated.</item>
-    /// </list>
+    /// <para>The program must be started with 1 argument - the input parameters JSON file path.</para>
+    /// <para>Example input file:
+    /// <code>
+    /// {
+    ///   "AppDataPath": "Data",
+    ///   "ExchangeMarket": "BinanceSpot",
+    ///   "SymbolPair": "BTC/EUR",
+    ///   "Period": "00:00:10",
+    ///   "QuoteSize": 10.0,
+    ///   "OrderSide": "Buy",
+    ///   "BudgetRequest": {
+    ///     "StrategyName": "DCA",
+    ///     "PrimaryAsset": "EUR",
+    ///     "InitialBudget": {
+    ///       "EUR": 1000,
+    ///       "BTC": 0.001
+    ///     }
+    ///   },
+    ///   "ReportPeriod": "00:00:30"
+    /// }
+    /// </code>
     /// </para>
-    /// <para>Run the program without any arguments to see the supported values for each argument.</para>
     /// <para>
-    /// An example to run the app is: <c>WhalesSecret.ScriptApiLib.DCA BinanceSpot BTC/EUR 3600 10 "BTC=0.001,EUR=1000" 86400</c>. This will buy <c>10</c> EUR worth of BTC every
-    /// hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is <c>0.001</c> BTC and <c>1000</c> EUR.
+    /// With this input the program will will buy <c>10</c> EUR worth of BTC every hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is
+    /// <c>0.001</c> BTC and <c>1000</c> EUR.
     /// </para>
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
@@ -74,82 +84,12 @@ internal class Program
 
         clog.Info($"* {nameof(args)}={args.LogJoin()}");
 
-        string? error = null;
-
-        ExchangeMarket? exchangeMarket = null;
-        SymbolPair? symbolPair = null;
-        int? periodSeconds = null;
-        decimal? quoteSize = null;
-        BudgetRequest? budgetRequest = null;
-        int? reportPeriodSeconds = null;
-
-        if (args.Length == 6)
-        {
-            string exchangeMarketStr = args[0];
-            string symbolPairStr = args[1];
-            string periodSecondsStr = args[2];
-            string quoteSizeStr = args[3];
-            string budgetStr = args[4];
-            string reportPeriodSecondsStr = args[5];
-
-            if (!Enum.TryParse(exchangeMarketStr, out ExchangeMarket exchangeMarketParsed))
-            {
-                error = $"'{exchangeMarketStr}' is not a valid exchange market.";
-            }
-            else if (!SymbolPair.TryParseToString(symbolPairStr, out SymbolPair? symbolPairParsed))
-            {
-                error = $"'{symbolPairStr}' is not a valid symbol pair.";
-            }
-            else if (!int.TryParse(periodSecondsStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int periodSecondsParsed))
-            {
-                error = $"'{periodSecondsStr}' is not a valid period in seconds.";
-            }
-            else if (!decimal.TryParse(quoteSizeStr, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal quoteSizeParsed))
-            {
-                error = $"'{quoteSizeStr}' is not a valid quote size.";
-            }
-            else if (!TryParseBudget(budgetStr, out BudgetRequest? budgetRequestParsed))
-            {
-                error = $"'{budgetStr}' is not a valid budget description.";
-            }
-            else if (!int.TryParse(reportPeriodSecondsStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int reportPeriodSecondsParsed))
-            {
-                error = $"'{reportPeriodSecondsStr}' is not a valid period in seconds.";
-            }
-            else
-            {
-                exchangeMarket = exchangeMarketParsed;
-                symbolPair = symbolPairParsed;
-                periodSeconds = periodSecondsParsed;
-                quoteSize = quoteSizeParsed;
-                budgetRequest = budgetRequestParsed;
-                reportPeriodSeconds = reportPeriodSecondsParsed;
-            }
-        }
-
-        if (error is not null)
-        {
-            await Console.Error.WriteLineAsync($$"""
-                ERROR: {{error}}
-
-                """).ConfigureAwait(false);
-        }
-
-        if ((exchangeMarket is null) || (symbolPair is null) || (periodSeconds is null) || (quoteSize is null) || (budgetRequest is null) || (reportPeriodSeconds is null))
+        if (args.Length != 1)
         {
             string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
 
             Console.WriteLine($$"""
-                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(DCA)}} <exchangeMarket> <symbolPair> <periodSeconds> <quoteSize> <budget> <reportPeriodSeconds>
-
-                    exchangeMarket - Exchange market to use in the sample. Supported values are {{markets}}.
-                    symbolPair - Symbol pair to DCA, e.g. "BTC/EUR".
-                    periodSeconds - Time period in seconds between the orders, e.g. "3600" for 1 hour period. First order is placed just after start.
-                    quoteSize - Order size in quote symbol, e.g. "10" to buy 10 EUR worth of BTC with each trade.
-                    budget - Comma-separated list of budget allocations for each asset with the primary asset being first. Each budget allocation is a pair of asset name{{
-                " "}}and the amount, separated by an equal sign. E.g. "EUR=100,BTC=0.1" would allocate budget with primary asset EUR that can has 100 EUR and 0.1 BTC{{
-                " "}}available.
-                    reportPeriodSeconds - Time period in seconds before the first budgetReport is generated and between reports are generated.
+                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(DCA)}} <parametersFilePath>
                 """);
 
             clog.Info("$<USAGE>");
@@ -158,12 +98,15 @@ internal class Program
             return;
         }
 
+        string parametersFilePath = args[0];
+        Parameters parameters = Parameters.LoadFromJson(parametersFilePath);
+
         PrintInfo("Press Ctrl+C to terminate the program.");
         PrintInfo();
 
-        PrintInfo($"Starting DCA on {exchangeMarket}, buying {quoteSize} {symbolPair.Value.QuoteSymbol} worth of {symbolPair.Value.BaseSymbol} every {
-            periodSeconds} seconds. Reports will be generated every {reportPeriodSeconds} seconds.");
-        PrintInfo($"Budget request: {budgetRequest}");
+        PrintInfo($"Starting DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {
+            parameters.SymbolPair.BaseSymbol} every {parameters.Period}. Reports will be generated every {parameters.ReportPeriod}.");
+        PrintInfo($"Budget request: {parameters.BudgetRequest}");
         PrintInfo();
 
         using CancellationTokenSource shutdownCancellationTokenSource = new();
@@ -185,10 +128,7 @@ internal class Program
 
         try
         {
-            string appPath = Directory.GetParent(AppContext.BaseDirectory)!.FullName;
-            string appDataFolder = Path.Combine(appPath, "Data");
-            await StartDcaAsync(appDataFolder, exchangeMarket.Value, symbolPair.Value, period: TimeSpan.FromSeconds(periodSeconds.Value), quoteSize.Value, budgetRequest,
-                reportPeriod: TimeSpan.FromSeconds(reportPeriodSeconds.Value), shutdownToken).ConfigureAwait(false);
+            await StartDcaAsync(parameters, shutdownToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -305,13 +245,7 @@ internal class Program
     /// <summary>
     /// Starts the DCA trading bot.
     /// </summary>
-    /// <param name="appDataFolder">Path to the application data folder.</param>
-    /// <param name="exchangeMarket">Exchange market to DCA at.</param>
-    /// <param name="symbolPair">Symbol pair to DCA.</param>
-    /// <param name="period">Time period in between the orders.</param>
-    /// <param name="quoteSize">Order size in quote symbol.</param>
-    /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
-    /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
+    /// <param name="parameters">Program parameters.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     /// <exception cref="AlreadyExistsException">Thrown if another instance is already operating on the given data folder.</exception>
@@ -326,48 +260,46 @@ internal class Program
     /// <exception cref="MalfunctionException">Thrown if the initialization of core components fails or another unexpected error occurred.</exception>
     /// <exception cref="OperationCanceledException">Thrown if the operation was cancelled including cancellation due to shutdown or object disposal.</exception>
     /// <exception cref="OperationFailedException">Thrown if the request could not be sent to the exchange.</exception>
-    private static async Task StartDcaAsync(string appDataFolder, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize,
-        BudgetRequest budgetRequest, TimeSpan reportPeriod, CancellationToken cancellationToken)
+    private static async Task StartDcaAsync(Parameters parameters, CancellationToken cancellationToken)
     {
-        clog.Debug($"* {nameof(appDataFolder)}='{appDataFolder}',{nameof(exchangeMarket)}={exchangeMarket},{nameof(symbolPair)}='{symbolPair}',{nameof(period)}={period},{
-            nameof(quoteSize)}={quoteSize},{nameof(budgetRequest)}='{budgetRequest}',{nameof(reportPeriod)}={reportPeriod}");
+        clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
         // In order to unlock large orders, a valid license has to be used.
-        CreateOptions createOptions = new(appDataFolder: appDataFolder, license: License.WsLicense);
+        CreateOptions createOptions = new(appDataFolder: parameters.AppDataPath, license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
-        IApiIdentity apiIdentity = exchangeMarket switch
+        IApiIdentity apiIdentity = parameters.ExchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => Credentials.GetBinanceHmacApiIdentity(),
             ExchangeMarket.KucoinSpot => Credentials.GetKucoinApiIdentity(),
-            _ => throw new SanityCheckException($"Unsupported exchange market {exchangeMarket} provided."),
+            _ => throw new SanityCheckException($"Unsupported exchange market {parameters.ExchangeMarket} provided."),
         };
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
         scriptApi.SetCredentials(apiIdentity);
 
-        PrintInfo($"Connect to {exchangeMarket} exchange with full-trading access.");
+        PrintInfo($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.");
 
         ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
-            budgetRequest: budgetRequest);
-        ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
+            budgetRequest: parameters.BudgetRequest);
+        ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        PrintInfo($"Connection to {exchangeMarket} has been established successfully.");
+        PrintInfo($"Connection to {parameters.ExchangeMarket} has been established successfully.");
 
         OrderRequestBuilder<MarketOrderRequest> builder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
         _ = builder
-            .SetSymbolPair(symbolPair)
+            .SetSymbolPair(parameters.SymbolPair)
             .SetSide(OrderSide.Buy)
             .SetSizeInBaseSymbol(sizeInBaseSymbol: false)
-            .SetSize(quoteSize);
+            .SetSize(parameters.QuoteSize);
 
         int orderCounter = 0;
 
         DateTime nextOrder = DateTime.MinValue;
-        DateTime nextReport = DateTime.UtcNow.Add(reportPeriod);
+        DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
 
-        string reportFilePath = Path.Combine(appDataFolder, ReportFileName);
+        string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
 
         while (true)
         {
@@ -382,7 +314,7 @@ internal class Program
 
                 await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
 
-                nextOrder = time.Add(period);
+                nextOrder = time.Add(parameters.Period);
                 PrintInfo($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.");
             }
 
@@ -392,7 +324,7 @@ internal class Program
                 PrintInfo($"Generating budget report ...");
                 await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
 
-                nextReport = time.Add(reportPeriod);
+                nextReport = time.Add(parameters.ReportPeriod);
                 PrintInfo($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
             }
 
@@ -408,7 +340,7 @@ internal class Program
 
                 try
                 {
-                    await Task.Delay(period, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(parameters.Period, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
