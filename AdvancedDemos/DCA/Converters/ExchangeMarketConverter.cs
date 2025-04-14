@@ -18,10 +18,10 @@ public class ExchangeMarketConverter : JsonConverter<ExchangeMarket>
 
         string? value = reader.GetString();
         if (value is null)
-            throw new JsonException($"Exchange market cannot be null.");
+            throw new JsonException("Exchange market cannot be null.");
 
         if (!Enum.TryParse(value, out ExchangeMarket market))
-            throw new JsonException($"Invalid exchange market format.");
+            throw new JsonException("Invalid exchange market format.");
 
         if (!Enum.IsDefined(market))
             throw new JsonException($"'{market}' does not represent a supported exchange market.");

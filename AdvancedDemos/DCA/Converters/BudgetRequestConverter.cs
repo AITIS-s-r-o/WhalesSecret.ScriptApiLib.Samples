@@ -32,10 +32,15 @@ public class BudgetRequestConverter : JsonConverter<BudgetRequest>
         if ((initialBudgetObj is not JsonElement initialBudgetElement) || (initialBudgetElement.ValueKind != JsonValueKind.Object))
             throw new JsonException("Initial budget must be an object.");
 
-        string strategyName = strategyNameElement.ToString();
-        string primaryAsset = primaryAssetElement.ToString();
+        string? strategyName = strategyNameElement.GetString();
+        if (strategyName is null)
+            throw new JsonException("Strategy name must not be null.");
 
-        Dictionary<string, decimal>? initialBudget = JsonSerializer.Deserialize<Dictionary<string, decimal>>(initialBudgetObj.ToString()!, options);
+        string? primaryAsset = primaryAssetElement.GetString();
+        if (primaryAsset is null)
+            throw new JsonException("Primary asset must not be null.");
+
+        Dictionary<string, decimal>? initialBudget = JsonSerializer.Deserialize<Dictionary<string, decimal>>(initialBudgetElement.GetRawText(), options);
 
         if (initialBudget is null)
             throw new JsonException("Invalid initial budget format.");
