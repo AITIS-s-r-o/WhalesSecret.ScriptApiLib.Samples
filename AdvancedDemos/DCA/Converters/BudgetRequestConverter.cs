@@ -18,9 +18,9 @@ public class BudgetRequestConverter : JsonConverter<BudgetRequest>
         Dictionary<string, object>? budgetData = JsonSerializer.Deserialize<Dictionary<string, object>>(ref reader, options);
 
         if ((budgetData is null)
-            || !budgetData.TryGetValue("StrategyName", out object? strategyNameObj)
-            || !budgetData.TryGetValue("PrimaryAsset", out object? primaryAssetObj)
-            || !budgetData.TryGetValue("InitialBudget", out object? initialBudgetObj))
+            || !budgetData.TryGetValue(nameof(BudgetRequest.StrategyName), out object? strategyNameObj)
+            || !budgetData.TryGetValue(nameof(BudgetRequest.PrimaryAsset), out object? primaryAssetObj)
+            || !budgetData.TryGetValue(nameof(BudgetRequest.InitialBudget), out object? initialBudgetObj))
             throw new JsonException("Invalid budget request format.");
 
         if ((strategyNameObj is not JsonElement strategyNameElement) || (strategyNameElement.ValueKind != JsonValueKind.String))
