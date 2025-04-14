@@ -17,7 +17,7 @@ namespace WhalesSecret.ScriptApiLib.DCA;
 public class Parameters
 {
     /// <summary>Path to the application data folder.</summary>
-    public string AppDataFolder { get; }
+    public string AppDataPath { get; }
 
     /// <summary>Exchange market to DCA at.</summary>
     public ExchangeMarket ExchangeMarket { get; }
@@ -43,7 +43,7 @@ public class Parameters
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="appDataFolder">Path to the application data folder.</param>
+    /// <param name="appDataPath">Path to the application data folder.</param>
     /// <param name="exchangeMarket">Exchange market to DCA at.</param>
     /// <param name="symbolPair">Symbol pair to DCA.</param>
     /// <param name="period">Time period in between the orders.</param>
@@ -52,10 +52,10 @@ public class Parameters
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
     [JsonConstructor]
-    public Parameters(string appDataFolder, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize, OrderSide orderSide,
+    public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize, OrderSide orderSide,
         BudgetRequest budgetRequest, TimeSpan reportPeriod)
     {
-        this.AppDataFolder = appDataFolder;
+        this.AppDataPath = appDataPath;
         this.ExchangeMarket = exchangeMarket;
         this.SymbolPair = symbolPair;
         this.Period = period;
@@ -66,7 +66,7 @@ public class Parameters
     }
 
     /// <summary>
-    /// Loads parameters from a JSON file and deserializes them into a Parameters instance.
+    /// Loads parameters from a JSON file and deserializes them into a <see cref="Parameters"/> instance.
     /// </summary>
     /// <param name="filePath">Path to the JSON file.</param>
     /// <returns>An instance of <see cref="Parameters"/> populated with data from the JSON file.</returns>
@@ -126,7 +126,7 @@ public class Parameters
         (
             CultureInfo.InvariantCulture,
             "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}=`{13}`,{14}={15}]",
-            nameof(this.AppDataFolder), this.AppDataFolder,
+            nameof(this.AppDataPath), this.AppDataPath,
             nameof(this.ExchangeMarket), this.ExchangeMarket,
             nameof(this.SymbolPair), this.SymbolPair,
             nameof(this.Period), this.Period,

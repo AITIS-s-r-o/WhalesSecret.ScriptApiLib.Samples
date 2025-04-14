@@ -54,7 +54,7 @@ internal class Program
     /// <para>Example input file:
     /// <code>
     /// {
-    ///   "AppDataFolder": "Data",
+    ///   "AppDataPath": "Data",
     ///   "ExchangeMarket": "BinanceSpot",
     ///   "SymbolPair": "BTC/EUR",
     ///   "Period": "00:00:10",
@@ -265,7 +265,7 @@ internal class Program
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
         // In order to unlock large orders, a valid license has to be used.
-        CreateOptions createOptions = new(appDataFolder: parameters.AppDataFolder, license: License.WsLicense);
+        CreateOptions createOptions = new(appDataFolder: parameters.AppDataPath, license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
@@ -299,7 +299,7 @@ internal class Program
         DateTime nextOrder = DateTime.MinValue;
         DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
 
-        string reportFilePath = Path.Combine(parameters.AppDataFolder, ReportFileName);
+        string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
 
         while (true)
         {
