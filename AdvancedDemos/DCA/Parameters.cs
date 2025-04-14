@@ -55,6 +55,9 @@ public class Parameters
     public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize, OrderSide orderSide,
         BudgetRequest budgetRequest, TimeSpan reportPeriod)
     {
+        if (appDataPath is null)
+            throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
+
         this.AppDataPath = appDataPath;
         this.ExchangeMarket = exchangeMarket;
         this.SymbolPair = symbolPair;
