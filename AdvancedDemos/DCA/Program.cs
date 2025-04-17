@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -104,8 +103,7 @@ internal class Program
         PrintInfo("Press Ctrl+C to terminate the program.");
         PrintInfo();
 
-        PrintInfo($"Starting DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {
-            parameters.SymbolPair.BaseSymbol} every {parameters.Period}. Reports will be generated every {parameters.ReportPeriod}.");
+        PrintInfo($"Starting DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {parameters.SymbolPair.BaseSymbol} every {parameters.Period}. Reports will be generated every {parameters.ReportPeriod}.");
         PrintInfo($"Budget request: {parameters.BudgetRequest}");
         PrintInfo();
 
@@ -175,71 +173,6 @@ internal class Program
             Console.WriteLine($"{dateTimeStr}: {msg}");
         }
         else Console.WriteLine();
-    }
-
-    /// <summary>
-    /// Parses input budget string from the command line.
-    /// </summary>
-    /// <param name="str">String to parse.</param>
-    /// <param name="budgetRequest">If the function succeeds, this is filled with the parsed configuration.</param>
-    /// <returns><c>true</c> if parsing was successful, <c>false</c> if the format of the string to parse was invalid.</returns>
-    private static bool TryParseBudget(string str, [NotNullWhen(true)] out BudgetRequest? budgetRequest)
-    {
-        clog.Debug($"* {nameof(str)}='{str}'");
-
-        bool result = false;
-        budgetRequest = null;
-
-        string[] assetAllocations = str.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (assetAllocations.Length > 0)
-        {
-            bool error = false;
-
-            string? primaryAsset = null;
-            BudgetSnapshot initialBudget = new();
-
-            foreach (string assetAllocation in assetAllocations)
-            {
-                string[] parts = assetAllocation.Split('=', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-                if (parts.Length != 2)
-                {
-                    clog.Error($"'{assetAllocation}' has invalid format, expected \"assetName=value\".");
-                    error = true;
-                    break;
-                }
-
-                string assetName = parts[0];
-                string amountStr = parts[1];
-
-                if (primaryAsset is null)
-                    primaryAsset = assetName;
-
-                if (!decimal.TryParse(amountStr, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal amount))
-                {
-                    clog.Error($"'{amountStr}' is not a valid decimal number.");
-                    error = true;
-                    break;
-                }
-
-                if (!initialBudget.TryAdd(assetName, amount))
-                {
-                    clog.Error($"'{assetName}' is present more than once.");
-                    error = true;
-                    break;
-                }
-            }
-
-            if (!error && (primaryAsset is not null))
-            {
-                budgetRequest = new(StrategyName, primaryAsset, initialBudget);
-                result = true;
-            }
-        }
-        else clog.Error("Budget is empty.");
-
-        clog.Debug($"$={result},{nameof(budgetRequest)}='{budgetRequest}'");
-        return result;
     }
 
     /// <summary>
