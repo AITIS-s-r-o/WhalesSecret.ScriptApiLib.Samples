@@ -453,12 +453,16 @@ internal class Program
             {
                 BudgetReport report = budgetReports[i];
                 TimeSpan period = report.EndTime - budgetReport.StartTime;
+                string periodStr = period >= TimeSpan.FromDays(1)
+                    ? period.ToString(@"d\.hh\:mm\:ss", CultureInfo.InvariantCulture)
+                    : period.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
+
                 decimal diff = report.FinalValue - prevValue;
 
                 _ = fileContentBuilder
                     .Append(report.EndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
                     .Append(ReportFileValueSeparator)
-                    .Append(period.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture))
+                    .Append(periodStr)
                     .Append(ReportFileValueSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{report.FinalValue}")
                     .Append(ReportFileValueSeparator)
