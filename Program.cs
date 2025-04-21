@@ -47,6 +47,7 @@ public class Program
         new object[] { "Trading/Order.Open.List", typeof(ListOpenOrders), "Sample that demonstrates how to get a list of open orders. Requires credentials." },
         new object[] { "Trading/TradeOrder.History", typeof(TradeOrderHistory), "Demonstrates getting historical trades and orders records. Requires credentials." },
         new object[] { "Trading/Budget", typeof(StrategyBudget), "Demonstrates working with trading strategy budget. Requires credentials." },
+        new object[] { "Trading/BracketedOrder", typeof(BracketedOrder), "Sample that demonstrates placing bracketed order. Requires credentials." },
         new object[] { "Trading/Interactive", typeof(InteractiveTrading), "Sample that demonstrates creating orders and cancelling them in an interactive mode. Requires "
             + "credentials." },
     };
