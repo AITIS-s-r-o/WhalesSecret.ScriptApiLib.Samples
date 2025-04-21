@@ -67,16 +67,13 @@ public class BracketedOrder : IScriptApiSample
 
         OrderRequestBuilder<MarketOrderRequest> marketBuilder = new(helper.ExchangeInfo);
 
-        // The client order ID suffix is a special requirement when the budget is used. We can either use null client order ID in our requests, or we need to specify the suffix,
-        // which will be altered by the budget. The suffix is used to uniquely identify the orders that are created by trade API client with the budget.
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"budget-sample-1{ITradingStrategyBudget.ClientOrderIdSuffix}");
-        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"budget-sample-2{ITradingStrategyBudget.ClientOrderIdSuffix}");
+        string clientOrderId = "brackord";
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
         {
-            ExchangeMarket.BinanceSpot => 6.0m,
-            ExchangeMarket.KucoinSpot => 1.0m,
+            ExchangeMarket.BinanceSpot => 10.0m,
+            ExchangeMarket.KucoinSpot => 4.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
