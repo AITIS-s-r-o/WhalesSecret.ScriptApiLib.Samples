@@ -87,15 +87,20 @@ public class BracketedOrder : IScriptApiSample
             .SetSize(quoteOrderSize)
             .Build();
 
-        decimal stopLossPrice = helper.BestAsk - 200;
-        decimal takeProfitPrice = helper.BestAsk + 200;
+        // We will place market buy order and put 50% stop-loss to be at 100 EUR (or USDT) below the last best ask price (roughly the price we expect to buy for) and a second
+        // stop-loss, 50% again, at 200 EUR below the best ask price. We also put a 30% take-profit to be at 200 EUR (or USDT) above the last best ask and 70% take-profit at
+        // 400 EUR above the best ask price.
+        decimal stopLossPrice2 = helper.BestAsk - 200;
+        decimal stopLossPrice1 = helper.BestAsk - 100;
+        decimal takeProfitPrice1 = helper.BestAsk + 200;
+        decimal takeProfitPrice2 = helper.BestAsk + 400;
 
-        // We will place market buy order and put a stop-loss to be at 200 EUR (or USDT) below the last best ask price (roughly the price we expect to buy for) and we also put
-        // a take-profit to be at 200 EUR (or USDT) above the last best ask.
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[]
         {
-             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice, workingOrderRequest.Size),
-             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice, workingOrderRequest.Size),
+             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice2, 50m),
+             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice1, 50m),
+             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice1, 30m),
+             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice2, 70m),
         };
 
         await using ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, timeoutCts.Token)
