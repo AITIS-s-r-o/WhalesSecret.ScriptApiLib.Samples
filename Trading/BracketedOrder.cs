@@ -117,6 +117,7 @@ public class BracketedOrder : IScriptApiSample
         // Install Ctrl+C / SIGINT handler.
         ConsoleCancelEventHandler controlCancelHandler = (object? sender, ConsoleCancelEventArgs e) =>
         {
+            Console.WriteLine("Ctrl+C / SIGINT detected.");
             // If cancellation of the control event is set to true, the process won't terminate automatically and we will have control over the shutdown.
             e.Cancel = true;
 
@@ -128,7 +129,14 @@ public class BracketedOrder : IScriptApiSample
         try
         {
             await liveBracketedOrder.TerminatedEvent.WaitAsync(terminateTokenSource.Token).ConfigureAwait(false);
-            Console.WriteLine($"Live bracketed order '{liveBracketedOrder}' has been terminated.");
+
+            BracketedOrderState state = liveBracketedOrder.State;
+            string msg = liveBracketedOrder.StatusMessage;
+            if (liveBracketedOrder.State == BracketedOrderState.BracketOrdersFilled) Console.WriteLine($"Live bracketed order '{liveBracketedOrder}' has been terminated. {msg}");
+            else Console.WriteLine($"Error occurred, live bracketed order '{liveBracketedOrder}' terminated in state {liveBracketedOrder.State}.");
+
+            Console.WriteLine(msg);
+            Console.WriteLine();
         }
         catch (OperationCanceledException)
         {
