@@ -133,7 +133,7 @@ public class BracketedOrder : IScriptApiSample
             BracketedOrderState state = liveBracketedOrder.State;
             string msg = liveBracketedOrder.StatusMessage;
             if (liveBracketedOrder.State == BracketedOrderState.BracketOrdersFilled) Console.WriteLine($"Live bracketed order '{liveBracketedOrder}' has been terminated. {msg}");
-            else Console.WriteLine($"Error occurred, live bracketed order '{liveBracketedOrder}' terminated in state {liveBracketedOrder.State}.");
+            else Console.WriteLine($"Error occurred, live bracketed order '{liveBracketedOrder}' terminated in state {liveBracketedOrder.State}. {msg}");
 
             Console.WriteLine();
         }
