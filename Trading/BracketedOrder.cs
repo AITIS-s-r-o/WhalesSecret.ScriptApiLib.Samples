@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
+using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets.Updates;
 using WhalesSecret.TradeScriptLib.Entities;
@@ -108,6 +110,21 @@ public class BracketedOrder : IScriptApiSample
         OnBracketedOrderUpdateAsync onBracketedOrderUpdate = (IBracketedOrderUpdate update) =>
         {
             Console.WriteLine($"Bracket order update: {update}");
+
+            IReadOnlyList<FillData>? fills = update switch
+            {
+                WorkingOrderFill workingOrderFill => workingOrderFill.Fills,
+                BracketOrderFill bracketOrderFill => bracketOrderFill.Fills,
+                ClosePositionOrderFill closePositionOrderFill => closePositionOrderFill.Fills,
+                _ => null,
+            };
+
+            if (fills is not null)
+            {
+                for (int i = 0; i < fills.Count; i++)
+                    Console.WriteLine($"  Fill #{i + 1}: {fills[i]}");
+            }
+
             Console.WriteLine();
             return Task.CompletedTask;
         };
