@@ -13,7 +13,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
-public class CancelAllOrderes : IScriptApiSample
+public class CancelAllOrders : IScriptApiSample
 {
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
