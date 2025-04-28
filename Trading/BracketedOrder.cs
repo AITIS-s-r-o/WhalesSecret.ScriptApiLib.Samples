@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets;
+using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets.Updates;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Utils.Orders;
+using static WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets.IBracketedOrdersFactory;
 
 namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
@@ -103,8 +105,15 @@ public class BracketedOrder : IScriptApiSample
              new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice2, 70m),
         };
 
-        await using ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, timeoutCts.Token)
-            .ConfigureAwait(false);
+        OnBracketedOrderUpdateAsync onBracketedOrderUpdate = (IBracketedOrderUpdate update) =>
+        {
+            Console.WriteLine($"Bracket order update: {update}");
+            Console.WriteLine();
+            return Task.CompletedTask;
+        };
+
+        await using ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, onBracketedOrderUpdate,
+            timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine($"Working market order request '{workingOrderRequest}' has been placed into the live bracketed order '{liveBracketedOrder}'.");
         Console.WriteLine();
@@ -130,17 +139,19 @@ public class BracketedOrder : IScriptApiSample
         {
             await liveBracketedOrder.TerminatedEvent.WaitAsync(terminateTokenSource.Token).ConfigureAwait(false);
 
-            BracketedOrderState state = liveBracketedOrder.State;
+            Console.WriteLine();
+
+            BracketedOrderStatus state = liveBracketedOrder.Status;
             string msg = liveBracketedOrder.StatusMessage;
-            if (liveBracketedOrder.State == BracketedOrderState.BracketOrdersFilled) Console.WriteLine($"Live bracketed order '{liveBracketedOrder}' has been terminated. {msg}");
-            else Console.WriteLine($"Error occurred, live bracketed order '{liveBracketedOrder}' terminated in state {liveBracketedOrder.State}. {msg}");
+            if (liveBracketedOrder.Status == BracketedOrderStatus.BracketOrdersFilled) Console.WriteLine($"Live bracketed order '{liveBracketedOrder}' has been terminated. {msg}");
+            else Console.WriteLine($"Error occurred, live bracketed order '{liveBracketedOrder}' terminated in state {liveBracketedOrder.Status}. {msg}");
 
             Console.WriteLine();
         }
         catch (OperationCanceledException)
         {
             Console.WriteLine("Break detected, closing position.");
-            await liveBracketedOrder.ClosePositionAsync().ConfigureAwait(false);
+            await liveBracketedOrder.ClosePositionAsync(waitForClosePositionFill: true, CancellationToken.None).ConfigureAwait(false);
 
             Console.WriteLine("Position has been closed.");
             Console.WriteLine();
