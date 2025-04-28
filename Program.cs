@@ -45,6 +45,7 @@ public class Program
         new object[] { "Trading/Order.Builder", typeof(RequestBuilder), "Basic order request builder sample. Demonstrates how orders can be build using the builder pattern."
             + " Requires credentials." },
         new object[] { "Trading/Order.Open.List", typeof(ListOpenOrders), "Sample that demonstrates how to get a list of open orders. Requires credentials." },
+        new object[] { "Trading/Order.CancelAll", typeof(CancelAllOrders), "Basic order's sample that demonstrates how to cancel all orders. Requires credentials."},
         new object[] { "Trading/TradeOrder.History", typeof(TradeOrderHistory), "Demonstrates getting historical trades and orders records. Requires credentials." },
         new object[] { "Trading/Budget", typeof(StrategyBudget), "Demonstrates working with trading strategy budget. Requires credentials." },
         new object[] { "Trading/BracketedOrder", typeof(BracketedOrder), "Sample that demonstrates placing bracketed order. Requires credentials." },
