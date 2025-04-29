@@ -79,7 +79,7 @@ public class BracketedOrder : IScriptApiSample
         decimal quoteOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => 20.0m,
-            ExchangeMarket.KucoinSpot => 10.0m,
+            ExchangeMarket.KucoinSpot => 5.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
