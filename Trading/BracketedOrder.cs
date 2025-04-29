@@ -45,7 +45,8 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 /// </para>
 /// <para>
 /// A single bracketed order may have up to <see cref="IBracketOrdersManager.MaxBracketOrders"/> bracket orders. The number of stop-loss orders does not need to match the number of
-/// take-profit orders. Nor do their sizes need to match. However, the sum of the sizes on each side must not exceed the size of the working order.
+/// take-profit orders. Nor do their sizes in percent need to match. However, the sum of their sizes in percent on each side must not exceed <c>100%</c>. The actual size is
+/// calculated as a percentage from the filled size of the working order.
 /// </para>
 /// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
 /// </remarks>
