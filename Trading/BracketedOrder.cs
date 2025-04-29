@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
-using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets;
@@ -19,7 +17,9 @@ namespace WhalesSecret.ScriptApiLib.Samples.Trading;
 
 /// <summary>
 /// Sample that demonstrates how to use bracketed orders.
-/// <para>
+/// </summary>
+/// <seealso cref="ILiveBracketedOrder"/>
+/// <remarks>
 /// Bracketed order is a synthetic order type that opens a trading position with a so called working order, and then attempts to close the position with, so called, bracket orders
 /// that either lock a profit or a loss. Bracketed order also includes a closing order request that is executed when the position is to be closed "manually", i.e. not relying on
 /// the bracket orders. The closing order is a market order with opposite side to the working order.
@@ -71,8 +71,6 @@ public class BracketedOrder : IScriptApiSample
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
-        OrderRequestBuilder<MarketOrderRequest> marketBuilder = new(helper.ExchangeInfo);
-
         string clientOrderId = "brackord";
 
         // Buy a small amount of bitcoin.
@@ -85,7 +83,7 @@ public class BracketedOrder : IScriptApiSample
 
         Console.WriteLine();
         Console.WriteLine("Build a market order request for the first order.");
-        MarketOrderRequest workingOrderRequest = marketBuilder
+        MarketOrderRequest workingOrderRequest = new OrderRequestBuilder<MarketOrderRequest>(helper.ExchangeInfo)
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
             .SetSymbolPair(symbolPair)
