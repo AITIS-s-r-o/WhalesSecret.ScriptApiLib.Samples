@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
+using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets.Updates;
@@ -65,7 +66,8 @@ public class BracketedOrder : IScriptApiSample
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
-        await using OrderSampleHelper helper = await OrderSampleHelper.InitializeAsync(scriptApi, exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
+        ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading);
+        await using OrderSampleHelper helper = await OrderSampleHelper.InitializeAsync(scriptApi, exchangeMarket, timeoutCts.Token, connectionOptions).ConfigureAwait(false);
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
