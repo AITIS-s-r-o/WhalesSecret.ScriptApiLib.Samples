@@ -111,7 +111,7 @@ public class BracketedOrder : IScriptApiSample
 
         OnBracketedOrderUpdateAsync onBracketedOrderUpdate = (IBracketedOrderUpdate update) =>
         {
-            Console.WriteLine($"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}| Bracket order update: {update}");
+            Console.WriteLine($"{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}: Bracket order update: {update}");
 
             IReadOnlyList<FillData>? fills = update switch
             {
