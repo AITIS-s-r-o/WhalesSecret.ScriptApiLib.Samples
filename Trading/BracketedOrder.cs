@@ -83,7 +83,7 @@ public class BracketedOrder : IScriptApiSample
         };
 
         Console.WriteLine();
-        Console.WriteLine("Build a market order request for the first order.");
+        Console.WriteLine("Build a market order request for the working order to enter your trading position.");
         MarketOrderRequest workingOrderRequest = new OrderRequestBuilder<MarketOrderRequest>(helper.ExchangeInfo)
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
@@ -102,10 +102,10 @@ public class BracketedOrder : IScriptApiSample
 
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[]
         {
-             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice2, 50m),
-             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice1, 50m),
-             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice1, 30m),
-             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice2, 70m),
+             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice2, sizePercent: 50m),
+             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice1, sizePercent:50m),
+             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice1, sizePercent:30m),
+             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice2, sizePercent:70m),
         };
 
         OnBracketedOrderUpdateAsync onBracketedOrderUpdate = (IBracketedOrderUpdate update) =>
