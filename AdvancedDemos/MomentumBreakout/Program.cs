@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -21,11 +22,44 @@ using WhalesSecret.TradeScriptLib.Utils.Orders;
 namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout;
 
 /// <summary>
-/// DCA (Direct Cost Averaging) trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected
-/// quote asset.
+/// Momentum Breakout trading bot. This bot monitors short-period and long-period Exponential Moving Averages (EMAs) and looks for momentum breakouts. Each trade must be confirmed
+/// by Relative Strength Index (RSI) indicator to avoid buying in overbought conditions and selling in oversold conditions. Further, we require certain minimal volume to confirm
+/// strength of the breakout. The bot also uses Average True Range (ATR) to measure volatility and set dynamic stop-loss and take-profit levels.
 /// <para>
-/// For example, if the symbol pair is <c>BTC/EUR</c>, the quote size is <c>10</c>, and the period is <c>3600</c> seconds, the bot will try to buy (or sell) 10 <c>EUR</c> worth of
-/// BTC every hour.
+/// The trade entry rules for the long positions:
+/// <list type="bullet">
+/// <item>Trend Condition: The <see cref="Parameters.ShortEmaLookback"/>-period EMA is above the <see cref="Parameters.LongEmaLookback"/>-period EMA (bullish trend).</item>
+/// <item>Breakout Condition: Price breaks above the high of the previous <see cref="Parameters.BreakoutLookback"/> candles by at least <see cref="Parameters.BreakoutAtrSize"/>
+/// times ATR.</item>
+/// <item>Momentum Confirmation: RSI (with period <see cref="Parameters.RsiLookback"/>) is above 50 but below 70 (to avoid overbought conditions).</item>
+/// <item>Volume Confirmation: Current candle volume is at least <see cref="Parameters.VolumeAvgSize"/> times the average volume of the last <see cref="Parameters.VolumeLookback"/>
+/// candles.</item>
+/// <item>Volatility Confirmation: Avoid trading during low volatility, that is ATR less than <see cref="Parameters.VolatilityAvgSize"/> times the average ATR over
+/// <see cref="Parameters.VolatilityLookback"/> candles.</item>
+/// </list>
+/// </para>
+/// <para>
+/// The trade entry rules for the short positions:
+/// <list type="bullet">
+/// <item>Trend Condition: The <see cref="Parameters.ShortEmaLookback"/>-period EMA is above the <see cref="Parameters.LongEmaLookback"/>-period EMA (bearish trend).</item>
+/// <item>Breakout Condition: Price breaks below the low of the previous <see cref="Parameters.BreakoutLookback"/> candles by at least <see cref="Parameters.BreakoutAtrSize"/>
+/// times ATR.</item>
+/// <item>Momentum Confirmation: RSI (with period <see cref="Parameters.RsiLookback"/>) is below 50 but above 30 (to avoid oversold conditions).</item>
+/// <item>Volume Confirmation: Current candle volume is at least <see cref="Parameters.VolumeAvgSize"/> times the average volume of the last <see cref="Parameters.VolumeLookback"/>
+/// candles.</item>
+/// <item>Volatility Confirmation: Avoid trading during low volatility, that is ATR less than <see cref="Parameters.VolatilityAvgSize"/> times the average ATR over
+/// <see cref="Parameters.VolatilityLookback"/> candles.</item>
+/// </list>
+/// </para>
+/// <para>The bot makes a maximum of <see cref="Parameters.MaxTradesPerDay"/> trades per day.</para>
+/// <para>
+/// Each position uses <see cref="Parameters.StopLossCount"/> stop-loss orders and <see cref="Parameters.TakeProfitCount"/> take-profit orders. The first stop-loss order is
+/// placed at the distance of <see cref="Parameters.FirstStopLossAtr"/> times ATR from the entry price. The first take-profit order is placed at the distance of
+/// <see cref="Parameters.FirstTakeProfitAtr"/> times ATR from the entry price. The next stop-loss orders are placed at <see cref="Parameters.NextStopLossAtrIncrement"/> times ATR
+/// from the previous stop-loss. The next take-profit order are placed at <see cref="Parameters.NextTakeProfitAtrIncrement"/> times ATR from the previous take-profit.
+/// </para>
+/// <para>
+/// Each trade uses the size that is <see cref="Parameters.PositionSize"/> times the original available budget for the base symbol of <see cref="Parameters.SymbolPair"/>.
 /// </para>
 /// <para>The bot also create reports about its performance and writes the report history it into a CSV file.</para>
 /// </summary>
@@ -36,9 +70,6 @@ internal class Program
 
     /// <summary>Name of the report file.</summary>
     private const string ReportFileName = $"{StrategyName}-budgetReport.csv";
-
-    /// <summary>Separator of values on a single row in the report file.</summary>
-    private const char ReportFileValueSeparator = ',';
 
     /// <summary>All budget reports that have been generated during the program's lifetime.</summary>
     private static readonly List<BudgetReport> budgetReports = new();
@@ -89,7 +120,7 @@ internal class Program
             string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
 
             Console.WriteLine($$"""
-                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}}.{{nameof(AdvancedDemos)}}.{{nameof(DCA)}} <parametersFilePath>
+                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}}.{{nameof(AdvancedDemos)}}.{{nameof(MomentumBreakout)}} <parametersFilePath>
                 """);
 
             clog.Info("$<USAGE>");
@@ -104,8 +135,7 @@ internal class Program
         PrintInfo("Press Ctrl+C to terminate the program.");
         PrintInfo();
 
-        PrintInfo($"Starting DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {parameters.SymbolPair.BaseSymbol} every {parameters.Period}. Reports will be generated every {parameters.ReportPeriod}.");
-        PrintInfo($"Budget request: {parameters.BudgetRequest}");
+        PrintInfo($"Strategy parameters: {parameters}");
         PrintInfo();
 
         using CancellationTokenSource shutdownCancellationTokenSource = new();
@@ -127,7 +157,7 @@ internal class Program
 
         try
         {
-            await StartDcaAsync(parameters, shutdownToken).ConfigureAwait(false);
+            await StartStrategyAsync(parameters, shutdownToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -194,7 +224,7 @@ internal class Program
     /// <exception cref="MalfunctionException">Thrown if the initialization of core components fails or another unexpected error occurred.</exception>
     /// <exception cref="OperationCanceledException">Thrown if the operation was cancelled including cancellation due to shutdown or object disposal.</exception>
     /// <exception cref="OperationFailedException">Thrown if the request could not be sent to the exchange.</exception>
-    private static async Task StartDcaAsync(Parameters parameters, CancellationToken cancellationToken)
+    private static async Task StartStrategyAsync(Parameters parameters, CancellationToken cancellationToken)
     {
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
@@ -220,15 +250,6 @@ internal class Program
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
 
         PrintInfo($"Connection to {parameters.ExchangeMarket} has been established successfully.");
-
-        OrderRequestBuilder<MarketOrderRequest> builder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
-        _ = builder
-            .SetSymbolPair(parameters.SymbolPair)
-            .SetSide(OrderSide.Buy)
-            .SetSizeInBaseSymbol(sizeInBaseSymbol: false)
-            .SetSize(parameters.QuoteSize);
-
-        int orderCounter = 0;
 
         DateTime nextOrder = DateTime.MinValue;
         DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
@@ -336,34 +357,8 @@ internal class Program
         clog.Debug($" {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}='{tradeClient}'");
 
         BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(cancellationToken).ConfigureAwait(false);
-
-        string initialValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.InitialValue}");
-        string finalValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.FinalValue}");
-        string totalProfitStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalProfit}");
-        string totalFeesValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalFeesValue}");
-
-        string reportLog = $$"""
-            Budget report:
-              start time: {{budgetReport.StartTime}} UTC
-              end time: {{budgetReport.EndTime}} UTC
-              initial value: {{initialValueStr}} {{budgetReport.PrimaryAsset}}
-              final value: {{finalValueStr}} {{budgetReport.PrimaryAsset}}
-              profit/loss: {{totalProfitStr}} {{budgetReport.PrimaryAsset}}
-              fees value paid: {{totalFeesValueStr}} {{budgetReport.PrimaryAsset}}
-            """;
-
+        string reportLog = Reports.BudgetReportToString(budgetReport);
         PrintInfo(reportLog);
-
-        StringBuilder stringBuilder = new("Current budget:");
-        _ = stringBuilder.AppendLine();
-
-        foreach ((string assetName, decimal amount) in budgetReport.FinalBudget)
-            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $" {assetName}: {amount}");
-
-        _ = stringBuilder.AppendLine();
-
-        string currentBudgetLog = stringBuilder.ToString();
-        PrintInfo(currentBudgetLog);
 
         await ReportToFileAsync(reportFilePath, budgetReport).ConfigureAwait(false);
 
@@ -387,127 +382,12 @@ internal class Program
 
         budgetReports.Add(budgetReport);
 
-        StringBuilder fileContentBuilder = new();
-        string primaryAsset = budgetReport.PrimaryAsset;
-
-        // Compose the header from the latest report.
-        _ = fileContentBuilder
-            .Append("Report Date Time (UTC)")
-            .Append(ReportFileValueSeparator)
-            .Append("Total Report Period")
-            .Append(ReportFileValueSeparator)
-            .Append(CultureInfo.InvariantCulture, $"Value ({primaryAsset})")
-            .Append(ReportFileValueSeparator)
-            .Append(CultureInfo.InvariantCulture, $"Diff last report ({primaryAsset})")
-            .Append(ReportFileValueSeparator)
-            .Append(CultureInfo.InvariantCulture, $"P/L ({primaryAsset})")
-            .Append(ReportFileValueSeparator);
-
-        string[] assetNames = budgetReport.FinalBudget.Keys.Order().ToArray();
-
-        for (int i = 0; i < assetNames.Length; i++)
-        {
-            _ = fileContentBuilder
-                .Append(CultureInfo.InvariantCulture, $"Budget Balance {assetNames[i]}")
-                .Append(ReportFileValueSeparator);
-        }
-
-        string[] feeAssetNames = budgetReport.FeesPaid.Keys.Order().ToArray();
-
-        for (int i = 0; i < feeAssetNames.Length; i++)
-        {
-            _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"Fees Paid {assetNames[i]}");
-
-            if (i != feeAssetNames.Length - 1)
-                _ = fileContentBuilder.Append(ReportFileValueSeparator);
-        }
-
-        _ = fileContentBuilder.AppendLine();
-
-        decimal prevValue = 0;
-
-        for (int i = -1; i < budgetReports.Count; i++)
-        {
-            BudgetSnapshot snapshot;
-            BudgetSnapshot feesPaid;
-
-            if (i == -1)
-            {
-                // Second row is the initial budget line
-                _ = fileContentBuilder
-                    .Append(budgetReport.StartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
-                    .Append(ReportFileValueSeparator)
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.InitialValue}")
-                    .Append(ReportFileValueSeparator)
-                    .Append('0')
-                    .Append(ReportFileValueSeparator)
-                    .Append('0')
-                    .Append(ReportFileValueSeparator);
-
-                snapshot = budgetReport.InitialBudget;
-                feesPaid = new();
-
-                prevValue = budgetReport.InitialValue;
-            }
-            else
-            {
-                BudgetReport report = budgetReports[i];
-                TimeSpan period = report.EndTime - budgetReport.StartTime;
-                string periodStr = period >= TimeSpan.FromDays(1)
-                    ? period.ToString(@"d\.hh\:mm\:ss", CultureInfo.InvariantCulture)
-                    : period.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
-
-                decimal diff = report.FinalValue - prevValue;
-
-                _ = fileContentBuilder
-                    .Append(report.EndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
-                    .Append(ReportFileValueSeparator)
-                    .Append(periodStr)
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{report.FinalValue}")
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{diff}")
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{report.TotalProfit}")
-                    .Append(ReportFileValueSeparator);
-
-                snapshot = report.FinalBudget;
-                feesPaid = report.FeesPaid;
-
-                prevValue = report.FinalValue;
-            }
-
-            for (int assetNameIndex = 0; assetNameIndex < assetNames.Length; assetNameIndex++)
-            {
-                string assetName = assetNames[assetNameIndex];
-
-                if (snapshot.TryGetValue(assetName, out decimal value))
-                    _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
-
-                _ = fileContentBuilder.Append(ReportFileValueSeparator);
-            }
-
-            for (int feeAssetNameIndex = 0; feeAssetNameIndex < feeAssetNames.Length; feeAssetNameIndex++)
-            {
-                string assetName = feeAssetNames[feeAssetNameIndex];
-
-                if (feesPaid.TryGetValue(assetName, out decimal value))
-                    _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
-
-                if (feeAssetNameIndex != feeAssetNames.Length - 1)
-                    _ = fileContentBuilder.Append(ReportFileValueSeparator);
-            }
-
-            _ = fileContentBuilder.AppendLine();
-        }
-
-        string fileContents = fileContentBuilder.ToString();
+        string budgetReportsCsv = Reports.BudgetReportsToCsvString(budgetReports);
 
         try
         {
             // No cancellation token here to avoid losing data in case user presses Ctrl+C at the time of writing.
-            await File.WriteAllTextAsync(reportFilePath, fileContents, CancellationToken.None).ConfigureAwait(false);
+            await File.WriteAllTextAsync(reportFilePath, budgetReportsCsv, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception e)
         {
