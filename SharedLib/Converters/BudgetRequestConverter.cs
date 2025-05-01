@@ -5,7 +5,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 
-namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA.Converters;
+namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.Converters;
 
 /// <summary>
 /// Custom JSON converter of <see cref="BudgetRequest"/>.
