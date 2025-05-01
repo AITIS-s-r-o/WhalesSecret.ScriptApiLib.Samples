@@ -1,4 +1,4 @@
-namespace WhalesSecret.ScriptApiLib.Samples.AccessLib;
+namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
 /// <summary>
 /// Container with Whale's Secret license to unlock premium functionality of ScriptApiLib.

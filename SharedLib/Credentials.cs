@@ -2,7 +2,7 @@ using System;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Entities;
 
-namespace WhalesSecret.ScriptApiLib.Samples.AccessLib;
+namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
 /// <summary>
 /// Container of exchange API credentials for samples that need to establish a private connection.
