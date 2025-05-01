@@ -104,7 +104,7 @@ public class Program
         }
 
         Console.WriteLine($$"""
-            Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}} <sampleName> <exchangeMarket>
+            Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}}.{{nameof(BasicSamples)}} <sampleName> <exchangeMarket>
 
                 sampleName - Name of the sample to run. Following values are supported:
 
