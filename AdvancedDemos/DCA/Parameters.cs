@@ -3,7 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA.Converters;
+using WhalesSecret.ScriptApiLib.Samples.SharedLib.Converters;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
