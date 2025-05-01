@@ -89,7 +89,7 @@ internal class Program
             string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
 
             Console.WriteLine($$"""
-                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(DCA)}} <parametersFilePath>
+                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}}.{{nameof(AdvancedDemos)}}.{{nameof(DCA)}} <parametersFilePath>
                 """);
 
             clog.Info("$<USAGE>");
