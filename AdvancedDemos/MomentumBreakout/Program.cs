@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -17,7 +14,6 @@ using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
-using WhalesSecret.TradeScriptLib.Utils.Orders;
 
 namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout;
 
@@ -261,7 +257,7 @@ internal class Program
             DateTime time = DateTime.UtcNow;
             if (time >= nextOrder)
             {
-                orderCounter++;
+             /*   orderCounter++;
 
                 MarketOrderRequest orderRequest = builder
                     .SetClientOrderId($"dca_{orderCounter:00000000}{ITradingStrategyBudget.ClientOrderIdSuffix}")
@@ -270,7 +266,7 @@ internal class Program
                 await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
 
                 nextOrder = time.Add(parameters.Period);
-                PrintInfo($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.");
+                PrintInfo($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.");*/
             }
 
             time = DateTime.UtcNow;
@@ -295,7 +291,7 @@ internal class Program
 
                 try
                 {
-                    await Task.Delay(parameters.Period, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {

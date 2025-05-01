@@ -299,7 +299,7 @@ public class Parameters
     public override string ToString()
     {
         string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},{30}={31}"
-            + ",{32}={33},{34}=`{35}`,{36}={37}]";
+            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}=`{45}`,{46}={47}]";
         return string.Format
         (
             CultureInfo.InvariantCulture,
@@ -315,10 +315,17 @@ public class Parameters
             nameof(this.BreakoutAtrSize), this.BreakoutAtrSize,
             nameof(this.VolumeLookback), this.VolumeLookback,
             nameof(this.VolumeAvgSize), this.VolumeAvgSize,
+            nameof(this.VolatilityLookback), this.VolatilityLookback,
+            nameof(this.VolatilityAvgSize), this.VolatilityAvgSize,
             nameof(this.MaxTradesPerDay), this.MaxTradesPerDay,
             nameof(this.CandleWidth), this.CandleWidth,
             nameof(this.StopLossCount), this.StopLossCount,
             nameof(this.TakeProfitCount), this.TakeProfitCount,
+            nameof(this.FirstStopLossAtr), this.FirstStopLossAtr,
+            nameof(this.NextStopLossAtrIncrement), this.NextStopLossAtrIncrement,
+            nameof(this.FirstTakeProfitAtr), this.FirstTakeProfitAtr,
+            nameof(this.NextTakeProfitAtrIncrement), this.NextTakeProfitAtrIncrement,
+            nameof(this.PositionSize), this.PositionSize,
             nameof(this.BudgetRequest), this.BudgetRequest,
             nameof(this.ReportPeriod), this.ReportPeriod
         );
