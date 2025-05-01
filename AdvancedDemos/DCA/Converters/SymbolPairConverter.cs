@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using WhalesSecret.TradeScriptLib.Entities;
 
-namespace WhalesSecret.ScriptApiLib.DCA.Converters;
+namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA.Converters;
 
 /// <summary>
 /// Custom JSON converter of <see cref="SymbolPair"/>.

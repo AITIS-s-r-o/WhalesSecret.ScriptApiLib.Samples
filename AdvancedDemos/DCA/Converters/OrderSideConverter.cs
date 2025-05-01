@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 
-namespace WhalesSecret.ScriptApiLib.DCA.Converters;
+namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA.Converters;
 
 /// <summary>
 /// Custom JSON converter of <see cref="OrderSide"/>.

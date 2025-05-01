@@ -3,13 +3,13 @@ using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using WhalesSecret.ScriptApiLib.DCA.Converters;
+using WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA.Converters;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 
-namespace WhalesSecret.ScriptApiLib.DCA;
+namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA;
 
 /// <summary>
 /// Description of program parameters.
