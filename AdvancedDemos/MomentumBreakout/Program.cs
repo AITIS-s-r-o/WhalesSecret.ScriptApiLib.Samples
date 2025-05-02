@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
@@ -72,6 +73,9 @@ internal class Program
 
     /// <summary>Class logger.</summary>
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
+
+    /// <summary>Telegram API instance, or <c>null</c> if not initialized yet.</summary>
+    private static Telegram? telegram;
 
     /// <summary>
     /// Application that trades a Direct Cost Averaging (DCA) strategy.
@@ -203,6 +207,23 @@ internal class Program
     }
 
     /// <summary>
+    /// Prints information level message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
+    /// </summary>
+    /// <param name="msg">Message to print.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PrintInfoTelegramAsync(string msg = "")
+    {
+        PrintInfo(msg);
+
+        if (telegram is not null)
+        {
+            string? error = await telegram.SendMessageAsync(msg).ConfigureAwait(false);
+            if (error is not null)
+                clog.Error($"Sending message to Telegram failed. {error}");
+        }
+    }
+
+    /// <summary>
     /// Starts the DCA trading bot.
     /// </summary>
     /// <param name="parameters">Program parameters.</param>
@@ -239,13 +260,16 @@ internal class Program
 
         scriptApi.SetCredentials(apiIdentity);
 
-        PrintInfo($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.");
+        telegram = new(groupId: "-1004799704376");
+        await using Telegram telegramToDispose = telegram;
+
+        await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
 
         ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
             budgetRequest: parameters.BudgetRequest);
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        PrintInfo($"Connection to {parameters.ExchangeMarket} has been established successfully.");
+        await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.").ConfigureAwait(false);
 
         DateTime nextOrder = DateTime.MinValue;
         DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
@@ -272,11 +296,11 @@ internal class Program
             time = DateTime.UtcNow;
             if (time >= nextReport)
             {
-                PrintInfo($"Generating budget report ...");
+                await PrintInfoTelegramAsync($"Generating budget report ...").ConfigureAwait(false);
                 await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
 
                 nextReport = time.Add(parameters.ReportPeriod);
-                PrintInfo($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
+                await PrintInfoTelegramAsync($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
             }
 
             time = DateTime.UtcNow;
@@ -354,7 +378,7 @@ internal class Program
 
         BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(cancellationToken).ConfigureAwait(false);
         string reportLog = Reports.BudgetReportToString(budgetReport);
-        PrintInfo(reportLog);
+        await PrintInfoTelegramAsync(reportLog).ConfigureAwait(false);
 
         await ReportToFileAsync(reportFilePath, budgetReport).ConfigureAwait(false);
 
@@ -396,24 +420,20 @@ internal class Program
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnConnectedDelegateAsync"/>
-    private static Task OnConnectedAsync(ITradeApiClient tradeApiClient)
+    private static async Task OnConnectedAsync(ITradeApiClient tradeApiClient)
     {
         // Just log the event.
         PrintInfo();
-        PrintInfo("Connection to the exchange has been re-established successfully.");
+        await PrintInfoTelegramAsync("Connection to the exchange has been re-established successfully.").ConfigureAwait(false);
         PrintInfo();
-
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnDisconnectedDelegateAsync"/>
-    private static Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
+    private static async Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
     {
         // Just log the event.
         PrintInfo();
-        PrintInfo("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!");
+        await PrintInfoTelegramAsync("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!").ConfigureAwait(false);
         PrintInfo();
-
-        return Task.CompletedTask;
     }
 }
