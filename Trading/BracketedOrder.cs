@@ -103,9 +103,9 @@ public class BracketedOrder : IScriptApiSample
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[]
         {
              new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice2, sizePercent: 50m),
-             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice1, sizePercent:50m),
-             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice1, sizePercent:30m),
-             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice2, sizePercent:70m),
+             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice1, sizePercent: 50m),
+             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice1, sizePercent: 30m),
+             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice2, sizePercent: 70m),
         };
 
         OnBracketedOrderUpdateAsync onBracketedOrderUpdate = (IBracketedOrderUpdate update) =>
