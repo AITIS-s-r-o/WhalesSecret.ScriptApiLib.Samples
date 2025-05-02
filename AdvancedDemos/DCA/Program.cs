@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Exchanges;
+using WhalesSecret.ScriptApiLib.Samples.SharedLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
@@ -17,7 +18,7 @@ using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
 using WhalesSecret.TradeScriptLib.Utils.Orders;
 
-namespace WhalesSecret.ScriptApiLib.DCA;
+namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA;
 
 /// <summary>
 /// DCA (Direct Cost Averaging) trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected
@@ -88,7 +89,7 @@ internal class Program
             string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
 
             Console.WriteLine($$"""
-                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(DCA)}} <parametersFilePath>
+                Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}}.{{nameof(AdvancedDemos)}}.{{nameof(DCA)}} <parametersFilePath>
                 """);
 
             clog.Info("$<USAGE>");
