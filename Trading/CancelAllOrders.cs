@@ -18,7 +18,7 @@ public class CancelAllOrders : IScriptApiSample
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
     {
-        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(10));
+        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(1));
 
         // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
@@ -26,7 +26,6 @@ public class CancelAllOrders : IScriptApiSample
 
         await using OrderSampleHelper helper = await OrderSampleHelper.InitializeAsync(scriptApi, exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
         ITradeApiClient tradeClient = helper.TradeApiClient;
-        SymbolPair symbolPair = helper.SelectedSymbolPair;
 
         Console.WriteLine("List open orders.");
         IReadOnlyList<ILiveOrder> liveOrders = await tradeClient.GetOpenOrdersAsync(OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
