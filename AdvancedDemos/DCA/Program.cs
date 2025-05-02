@@ -115,7 +115,7 @@ internal class Program
         {
             clog.Info("[CCEH] *");
 
-            // If cancellation of the control event is set to true, the process won't terminate automatically and we will have a control over the shutdown.
+            // If cancellation of the control event is set to true, the process won't terminate automatically and we will have control over the shutdown.
             e.Cancel = true;
             shutdownCancellationTokenSource.Cancel();
 
