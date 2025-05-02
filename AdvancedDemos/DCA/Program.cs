@@ -256,7 +256,7 @@ internal class Program
                 await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
 
                 nextReport = time.Add(parameters.ReportPeriod);
-                PrintInfo($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
+                PrintInfo($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
             }
 
             time = DateTime.UtcNow;

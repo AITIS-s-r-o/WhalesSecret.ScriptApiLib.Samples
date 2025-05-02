@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
@@ -207,6 +207,23 @@ internal class Program
     }
 
     /// <summary>
+    /// Prints error level message to the console and to the log. Message timestamp is added when printing to the console.
+    /// </summary>
+    /// <param name="msg">Message to print.</param>
+    private static void PrintError(string msg = "")
+    {
+        clog.Error(msg);
+
+        if (msg.Length > 0)
+        {
+            DateTime dateTime = DateTime.UtcNow;
+            string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            Console.WriteLine($"{dateTimeStr}: ERROR {msg}");
+        }
+        else Console.WriteLine();
+    }
+
+    /// <summary>
     /// Prints information level message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
     /// </summary>
     /// <param name="msg">Message to print.</param>
@@ -218,6 +235,23 @@ internal class Program
         if (telegram is not null)
         {
             string? error = await telegram.SendMessageAsync(msg).ConfigureAwait(false);
+            if (error is not null)
+                clog.Error($"Sending message to Telegram failed. {error}");
+        }
+    }
+
+    /// <summary>
+    /// Prints error level message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
+    /// </summary>
+    /// <param name="msg">Message to print.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PrintErrorTelegramAsync(string msg = "")
+    {
+        PrintError(msg);
+
+        if (telegram is not null)
+        {
+            string? error = await telegram.SendMessageAsync($"<b>ERROR:</b> {msg}").ConfigureAwait(false);
             if (error is not null)
                 clog.Error($"Sending message to Telegram failed. {error}");
         }
@@ -260,9 +294,10 @@ internal class Program
 
         scriptApi.SetCredentials(apiIdentity);
 
-        telegram = new(groupId: "-1004799704376");
+        telegram = new(groupId: "INSERT YOUR TELEGRAM GROUP ID");
         await using Telegram telegramToDispose = telegram;
 
+        await PrintIntroAsync(parameters).ConfigureAwait(false);
         await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
 
         ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
@@ -271,10 +306,11 @@ internal class Program
 
         await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.").ConfigureAwait(false);
 
+        string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
+        Task reportTask = RunReportTaskAsync(tradeClient, reportFilePath, parameters.ReportPeriod, cancellationToken);
+
         DateTime nextOrder = DateTime.MinValue;
         DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
-
-        string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
 
         while (true)
         {
@@ -300,7 +336,7 @@ internal class Program
                 await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
 
                 nextReport = time.Add(parameters.ReportPeriod);
-                await PrintInfoTelegramAsync($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
+                await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
             }
 
             time = DateTime.UtcNow;
@@ -326,6 +362,87 @@ internal class Program
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Background task that creates report with the provided frequency.
+    /// </summary>
+    /// <param name="reportFilePath">Name of the file to generate reports.</param>
+    /// <param name="tradeClient">Connected client.</param>
+    /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task RunReportTaskAsync(string reportFilePath, ITradeApiClient tradeClient, TimeSpan reportPeriod, CancellationToken cancellationToken)
+    {
+        clog.Debug($" * {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}={tradeClient},{nameof(reportPeriod)}={reportPeriod}");
+
+        DateTime nextReport = DateTime.UtcNow.Add(reportPeriod);
+
+        while (true)
+        {
+            DateTime time = DateTime.UtcNow;
+
+            if (time >= nextReport)
+            {
+                await PrintInfoTelegramAsync($"Generating budget report ...").ConfigureAwait(false);
+
+                try
+                {
+                    await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    await PrintInfoTelegramAsync($"Exception occurred while trying to generate report: {e}.").ConfigureAwait(false);
+                }
+
+                nextReport = time.Add(reportPeriod);
+                await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
+            }
+
+            TimeSpan delay = nextReport - time;
+
+            if (delay > TimeSpan.Zero)
+            {
+                PrintInfo($"Waiting {delay} before generating the next budget report.");
+
+                try
+                {
+                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    clog.Debug("Cancelation detected.");
+                    break;
+                }
+            }
+        }
+
+        clog.Debug("$");
+    }
+
+    /// <summary>
+    /// Prints bot's settings to the log, console, and to the Telegram.
+    /// </summary>
+    /// <param name="parameters">Bot's parameters.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PrintIntroAsync(Parameters parameters)
+    {
+        clog.Debug($"* {nameof(parameters)}='{parameters}'");
+
+        await PrintInfoTelegramAsync($"Bot started with parameters: {parameters}").ConfigureAwait(false);
+
+        StringBuilder stringBuilder = new();
+        _ = stringBuilder
+            .AppendLine("Current budget:")
+            .AppendLine();
+
+        foreach ((string assetName, decimal amount) in parameters.BudgetRequest.InitialBudget)
+            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $" {assetName}: {amount}");
+
+        string initialBudget = stringBuilder.ToString();
+        await PrintInfoTelegramAsync($"Initial budget: {initialBudget}").ConfigureAwait(false);
+
+        clog.Debug("$");
     }
 
     /// <summary>
