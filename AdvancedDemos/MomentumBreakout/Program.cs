@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
@@ -12,6 +15,7 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.Entities;
+using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
@@ -38,7 +42,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout;
 /// <para>
 /// The trade entry rules for the short positions:
 /// <list type="bullet">
-/// <item>Trend Condition: The <see cref="Parameters.ShortEmaLookback"/>-period EMA is above the <see cref="Parameters.LongEmaLookback"/>-period EMA (bearish trend).</item>
+/// <item>Trend Condition: The <see cref="Parameters.ShortEmaLookback"/>-period EMA is below the <see cref="Parameters.LongEmaLookback"/>-period EMA (bearish trend).</item>
 /// <item>Breakout Condition: Price breaks below the low of the previous <see cref="Parameters.BreakoutLookback"/> candles by at least <see cref="Parameters.BreakoutAtrSize"/>
 /// times ATR.</item>
 /// <item>Momentum Confirmation: RSI (with period <see cref="Parameters.RsiLookback"/>) is below 50 but above 30 (to avoid oversold conditions).</item>
@@ -307,9 +311,52 @@ internal class Program
         await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.").ConfigureAwait(false);
 
         string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
-        Task reportTask = RunReportTaskAsync(tradeClient, reportFilePath, parameters.ReportPeriod, cancellationToken);
+        Task reportTask = RunReportTaskAsync(reportFilePath, tradeClient, parameters.ReportPeriod, cancellationToken);
 
-        DateTime nextOrder = DateTime.MinValue;
+        int candlesNeeded = parameters.LongEmaLookback;
+        if (parameters.RsiLookback > candlesNeeded)
+            candlesNeeded = parameters.RsiLookback;
+
+        if (parameters.VolumeLookback > candlesNeeded)
+            candlesNeeded = parameters.VolumeLookback;
+
+        if (parameters.VolatilityLookback > candlesNeeded)
+            candlesNeeded = parameters.VolatilityLookback;
+
+        CandleWidth candleWidth = parameters.CandleWidth;
+        if (!CandleWidthToTimeSpan(candleWidth, out TimeSpan? candleTimeSpan))
+            throw new SanityCheckException($"Unable to convert candle width {candleWidth} to timespan.");
+
+        TimeSpan historyNeeded = candleTimeSpan.Value * (candlesNeeded + 1);
+        DateTime now = DateTime.Now;
+        DateTime startTime = now.Add(-historyNeeded);
+        CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(parameters.SymbolPair, candleWidth, startTime: startTime, endTime: now, cancellationToken)
+            .ConfigureAwait(false);
+
+        List<Quote> quotes = new(capacity: candlestickData.Candles.Count + 100);
+        foreach (Candle candle in candlestickData.Candles)
+            quotes.Add(QuoteFromCandle(candle));
+
+        IEnumerable<EmaResult> shortEmaResult = quotes.GetEma(parameters.ShortEmaLookback);
+        IEnumerable<EmaResult> longEmaResult = quotes.GetEma(parameters.LongEmaLookback);
+        IEnumerable<RsiResult> rsiResult = quotes.GetRsi(parameters.RsiLookback);
+        IEnumerable<AtrResult> atrResult = quotes.GetAtr(parameters.AtrLookback);
+
+        double? currentShortEma = shortEmaResult.Last()?.Ema;
+        double? currentLongEma = longEmaResult.Last()?.Ema;
+        double? currentRsi = rsiResult.Last()?.Rsi;
+        double? currentAtr = atrResult.Last()?.Atr;
+
+        // High price over last breakout-lookback period.
+        decimal breakoutHigh = candlestickData.Candles.TakeLast(parameters.BreakoutLookback).Max(c => c.HighPrice);
+
+        if ((currentShortEma is not null) && (currentLongEma is not null))
+        {
+
+        }
+        else clog.Warn("Unable to calculate current EMAs.");
+
+            DateTime nextOrder = DateTime.MinValue;
         DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
 
         while (true)
@@ -534,6 +581,64 @@ internal class Program
         }
 
         clog.Debug("$");
+    }
+
+    /// <summary>
+    /// Converts Whale's Secret candle representation to OHLCV data format for <see href="https://dotnet.stockindicators.dev/">Skender.Stock.Indicators</see>.
+    /// </summary>
+    /// <param name="candle">Whale's Secret candle to convert.</param>
+    /// <returns><see href="https://dotnet.stockindicators.dev/">Skender.Stock.Indicators</see> quote representing the candle.</returns>
+    private static Quote QuoteFromCandle(Candle candle)
+    {
+        Quote quote = new()
+        {
+            Date = candle.Timestamp,
+            Open = candle.OpenPrice,
+            High = candle.HighPrice,
+            Low = candle.LowPrice,
+            Close = candle.ClosePrice,
+            Volume = candle.BaseVolume,
+        };
+
+        return quote;
+    }
+
+    /// <summary>
+    /// Converts <see cref="CandleWidth"/> to <see cref="TimeSpan"/>.
+    /// </summary>
+    /// <param name="candleWidth">Candle width to convert.</param>
+    /// <param name="timeSpan">
+    /// If the function succeeds, this is filled with the time span that corresponds to the input candle width. All candle widths have their precise corresponding time span except
+    /// for <see cref="CandleWidth.Month1"/>, which is defined as <c>31</c> days long time span. This is to make sure that the returned time span is the longest possible time span
+    /// for the input candle width.
+    /// </param>
+    /// <returns>
+    /// <c>true</c> if the conversion is possible, <c>false</c> otherwise. The only case when <c>false</c> is returned is when the input candle width is set to
+    /// <see cref="CandleWidth.Other"/>.
+    /// </returns>
+    public static bool CandleWidthToTimeSpan(CandleWidth candleWidth, [NotNullWhen(true)] out TimeSpan? timeSpan)
+    {
+        timeSpan = candleWidth switch
+        {
+            CandleWidth.Minute1 => TimeSpan.FromMinutes(1),
+            CandleWidth.Minutes3 => TimeSpan.FromMinutes(3),
+            CandleWidth.Minutes5 => TimeSpan.FromMinutes(5),
+            CandleWidth.Minutes15 => TimeSpan.FromMinutes(15),
+            CandleWidth.Minutes30 => TimeSpan.FromMinutes(30),
+            CandleWidth.Hour1 => TimeSpan.FromHours(1),
+            CandleWidth.Hours2 => TimeSpan.FromHours(2),
+            CandleWidth.Hours4 => TimeSpan.FromHours(4),
+            CandleWidth.Hours6 => TimeSpan.FromHours(6),
+            CandleWidth.Hours8 => TimeSpan.FromHours(8),
+            CandleWidth.Hours12 => TimeSpan.FromHours(12),
+            CandleWidth.Day1 => TimeSpan.FromDays(1),
+            CandleWidth.Days3 => TimeSpan.FromDays(3),
+            CandleWidth.Week1 => TimeSpan.FromDays(7),
+            CandleWidth.Month1 => TimeSpan.FromDays(31),
+            _ => null,
+        };
+
+        return timeSpan is not null;
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnConnectedDelegateAsync"/>
