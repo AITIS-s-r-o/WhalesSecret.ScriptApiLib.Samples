@@ -6,7 +6,7 @@
         "type": "Direct",
         "requested": "[1.0.1.9, )",
         "resolved": "1.0.1.9",
-        "contentHash": "DiXyx815bKOzicFhfpFo6g4t8+ZjbARNsJZHJrxu7LUCeFViiYZEUwL6h2oegig4MHTjMzMsOhjLKF3AIl2MCg==",
+        "contentHash": "2S86Hp1zzpvPV5ktVEefin7H4AFaCnvzUL7dq5RL+u2Bb3RdlFu5AUngt5AVs3L+3SNih8rpDgD+ZamX1YUxWA==",
         "dependencies": {
           "Autofac": "8.2.0",
           "LZMA-SDK": "22.1.1",

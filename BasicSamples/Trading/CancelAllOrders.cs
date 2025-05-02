@@ -11,7 +11,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;
 
 /// <summary>
 /// Sample that demonstrates how to cancel all orders.
-/// <para>Private connections are necessary to create orders. Exchange API credentials have to be set.</para>
+/// <para>Private connections are necessary to cancel orders. Exchange API credentials have to be set.</para>
 /// </summary>
 /// <remarks>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</remarks>
 public class CancelAllOrders : IScriptApiSample
@@ -19,7 +19,7 @@ public class CancelAllOrders : IScriptApiSample
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
     {
-        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(10));
+        using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(1));
 
         // In order to unlock large orders, a valid license has to be used.
         CreateOptions createOptions = new(license: License.WsLicense);
@@ -27,7 +27,6 @@ public class CancelAllOrders : IScriptApiSample
 
         await using OrderSampleHelper helper = await OrderSampleHelper.InitializeAsync(scriptApi, exchangeMarket, timeoutCts.Token).ConfigureAwait(false);
         ITradeApiClient tradeClient = helper.TradeApiClient;
-        SymbolPair symbolPair = helper.SelectedSymbolPair;
 
         Console.WriteLine("List open orders.");
         IReadOnlyList<ILiveOrder> liveOrders = await tradeClient.GetOpenOrdersAsync(OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
