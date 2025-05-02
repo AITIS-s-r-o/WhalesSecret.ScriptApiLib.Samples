@@ -20,27 +20,27 @@ public class TickerBasic : IScriptApiSample
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a public connection.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with a public connection.");
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
         await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Public connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Public connection to {exchangeMarket} has been established successfully.");
 
         SymbolPair symbolPair = SymbolPair.BTC_USDT;
-        await Console.Out.WriteLineAsync($"Create subscription for '{symbolPair}' ticker on {exchangeMarket}.").ConfigureAwait(false);
+        Console.WriteLine($"Create subscription for '{symbolPair}' ticker on {exchangeMarket}.");
         await using ITickerSubscription subscription = await tradeClient.CreateTickerSubscriptionAsync(symbolPair).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Ticker subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{subscription}'.").ConfigureAwait(false);
+        Console.WriteLine($"Ticker subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{subscription}'.");
 
-        await Console.Out.WriteLineAsync($"Wait for next 2 ticker updates for {symbolPair}.").ConfigureAwait(false);
+        Console.WriteLine($"Wait for next 2 ticker updates for {symbolPair}.");
         Ticker ticker = await subscription.GetNewerTickerAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"First ticker update '{ticker}' has been received.").ConfigureAwait(false);
+        Console.WriteLine($"First ticker update '{ticker}' has been received.");
 
         Ticker ticker2 = await subscription.GetNewerTickerAsync(timeoutCts.Token).ConfigureAwait(false);
+            
+        Console.WriteLine($"Second ticker update '{ticker2}' has been received.");
 
-        await Console.Out.WriteLineAsync($"Second ticker update '{ticker2}' has been received.").ConfigureAwait(false);
-
-        await Console.Out.WriteLineAsync("Disposing ticker subscription, trade API client, and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing ticker subscription, trade API client, and script API.");
     }
 }

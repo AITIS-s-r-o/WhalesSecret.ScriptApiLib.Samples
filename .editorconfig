@@ -7,7 +7,7 @@
 # top-most EditorConfig file
 root = true
 
-[*.{cs,vb,csproj,md,ps1,xaml,props,snippet}]
+[*.{cs,vb,csproj,md,ps1,xaml,props,snippet,dic}]
 end_of_line = crlf
 indent_style = space
 charset = utf-8
@@ -3347,6 +3347,10 @@ dotnet_diagnostic.IDE0305.severity = none
 # IDE0306: Collection initialization can be simplified
 # Disable reason: We prefer not to use the new collection expression (i.e. []) at the moment to avoid big code changes and to avoid early tooling issues.
 dotnet_diagnostic.IDE0306.severity = none
+
+# IDE0350: Lambda expression can be simplified
+# Disable reason: We use lambdas with parameters on purpose.
+dotnet_diagnostic.IDE0350.severity = none
 
 # RS0030: Do not use banned APIs
 # The symbol has been marked as banned in this project, and an alternate should be used instead.

@@ -45,25 +45,25 @@ public class InteractiveTrading : IScriptApiSample
 
         // Default connection options use full-trading connection type, which means both public and private connections will be established with the exchange.
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, ConnectionOptions.Default).ConfigureAwait(false);
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with full-trading access.");
 
         while (true)
         {
-            await Console.Out.WriteLineAsync("Please specify an order you want to place.").ConfigureAwait(false);
+            Console.WriteLine("Please specify an order you want to place.");
 
-            OrderType? orderType = await AskForOrderTypeAsync().ConfigureAwait(false);
+            OrderType? orderType = AskForOrderType();
             if (orderType is null)
                 continue;
 
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine();
 
-            OrderSide? orderSide = await AskForOrderSideAsync().ConfigureAwait(false);
+            OrderSide? orderSide = AskForOrderSide();
             if (orderSide is null)
                 continue;
 
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine();
 
-            decimal? orderSize = await AskForDecimalValueAsync($"""Specify an order size in {OrderSymbolPair.BaseSymbol}:""").ConfigureAwait(false);
+            decimal? orderSize = AskForDecimalValue($"""Specify an order size in {OrderSymbolPair.BaseSymbol}:""");
             if (orderSize is null)
                 continue;
 
@@ -78,9 +78,9 @@ public class InteractiveTrading : IScriptApiSample
             }
             else if (orderType == OrderType.Limit)
             {
-                await Console.Out.WriteLineAsync().ConfigureAwait(false);
+                Console.WriteLine();
 
-                decimal? orderPrice = await AskForDecimalValueAsync($"""Specify a price in {OrderSymbolPair.QuoteSymbol}:""").ConfigureAwait(false);
+                decimal? orderPrice = AskForDecimalValue($"""Specify a price in {OrderSymbolPair.QuoteSymbol}:""");
                 if (orderPrice is null)
                     continue;
 
@@ -93,7 +93,7 @@ public class InteractiveTrading : IScriptApiSample
                 throw new SanityCheckException($"Invalid order type {orderType} provided.");
             }
 
-            bool? cancelOrder = await AskForBoolValueAsync($"Do you want to cancel the order '{liveOrder.ClientOrderId}'? [Y/N]").ConfigureAwait(false);
+            bool? cancelOrder = AskForBoolValue($"Do you want to cancel the order '{liveOrder.ClientOrderId}'? [Y/N]");
             if (cancelOrder == true)
             {
                 using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(1));
@@ -101,26 +101,26 @@ public class InteractiveTrading : IScriptApiSample
             }
             else
             {
-                await Console.Out.WriteLineAsync().ConfigureAwait(false);
-                await Console.Out.WriteLineAsync($"The order '{liveOrder.ClientOrderId}' will not be canceled.").ConfigureAwait(false);
+                Console.WriteLine();
+                Console.WriteLine($"The order '{liveOrder.ClientOrderId}' will not be canceled.");
             }
 
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
+            Console.WriteLine();
 
-            bool? continuePlacing = await AskForBoolValueAsync("Do you want to place another order? [Y/N]").ConfigureAwait(false);
+            bool? continuePlacing = AskForBoolValue("Do you want to place another order? [Y/N]");
             if (continuePlacing != true)
                 break;
         }
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 
     /// <summary>
     /// Ask the user to provide an order type.
     /// </summary>
     /// <returns>Selected order type, or <c>null</c> if the choice was invalid.</returns>
-    private static async Task<OrderType?> AskForOrderTypeAsync()
+    private static OrderType? AskForOrderType()
     {
         string options = """
             Select order type:
@@ -129,11 +129,11 @@ public class InteractiveTrading : IScriptApiSample
             2] Limit
             """;
 
-        await Console.Out.WriteLineAsync(options).ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
+        Console.WriteLine(options);
+        Console.WriteLine();
+        Console.Write("> ");
         ConsoleKeyInfo info = Console.ReadKey();
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
         OrderType? result = info.KeyChar switch
         {
@@ -143,7 +143,7 @@ public class InteractiveTrading : IScriptApiSample
         };
 
         if (result is null)
-            await Console.Out.WriteLineAsync("Invalid value provided.").ConfigureAwait(false);
+            Console.WriteLine("Invalid value provided.");
 
         return result;
     }
@@ -152,7 +152,7 @@ public class InteractiveTrading : IScriptApiSample
     /// Ask the user to provide an order side.
     /// </summary>
     /// <returns>Selected order side, or <c>null</c> if the choice was invalid.</returns>
-    private static async Task<OrderSide?> AskForOrderSideAsync()
+    private static OrderSide? AskForOrderSide()
     {
         string options = """
             Select order side:
@@ -161,11 +161,11 @@ public class InteractiveTrading : IScriptApiSample
             2] Sell
             """;
 
-        await Console.Out.WriteLineAsync(options).ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
+        Console.WriteLine(options);
+        Console.WriteLine();
+        Console.Write("> ");
         ConsoleKeyInfo info = Console.ReadKey();
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
         OrderSide? result = info.KeyChar switch
         {
@@ -175,7 +175,7 @@ public class InteractiveTrading : IScriptApiSample
         };
 
         if (result is null)
-            await Console.Out.WriteLineAsync("Invalid value provided.").ConfigureAwait(false);
+            Console.WriteLine("Invalid value provided.");
 
         return result;
     }
@@ -184,19 +184,19 @@ public class InteractiveTrading : IScriptApiSample
     /// Ask the user to provide a decimal value.
     /// </summary>
     /// <returns>Provided decimal value, or <c>null</c> if the value cannot be parsed.</returns>
-    private static async Task<decimal?> AskForDecimalValueAsync(string prompt)
+    private static decimal? AskForDecimalValue(string prompt)
     {
-        await Console.Out.WriteLineAsync(prompt).ConfigureAwait(false);
-        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
+        Console.WriteLine(prompt);
+        Console.Write("> ");
         string? line = Console.ReadLine();
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
         if (line is null)
             return null;
 
         if (!decimal.TryParse(line, CultureInfo.InvariantCulture, out decimal value))
         {
-            await Console.Out.WriteLineAsync("Failed to parse provided value. Note that decimal separator is to be used to provide input.").ConfigureAwait(false);
+            Console.WriteLine("Failed to parse provided value. Note that decimal separator is to be used to provide input.");
             return null;
         }
 
@@ -207,12 +207,12 @@ public class InteractiveTrading : IScriptApiSample
     /// Ask the user to provide a bool value.
     /// </summary>
     /// <returns>Provided bool value, or <c>null</c> if the value is not either 'y' or 'n'.</returns>
-    private static async Task<bool?> AskForBoolValueAsync(string prompt)
+    private static bool? AskForBoolValue(string prompt)
     {
-        await Console.Out.WriteLineAsync(prompt).ConfigureAwait(false);
-        await Console.Out.WriteAsync("> ").ConfigureAwait(false);
+        Console.WriteLine(prompt);
+        Console.Write("> ");
         ConsoleKeyInfo info = Console.ReadKey();
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
         bool? result = info.KeyChar switch
         {
@@ -224,7 +224,7 @@ public class InteractiveTrading : IScriptApiSample
         };
 
         if (result is null)
-            await Console.Out.WriteLineAsync("Invalid value provided.").ConfigureAwait(false);
+            Console.WriteLine("Invalid value provided.");
 
         return result;
     }

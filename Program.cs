@@ -95,30 +95,30 @@ public class Program
                 }
             }
 
-            await Console.Out.WriteLineAsync($$"""
+            Console.WriteLine($$"""
                 ERROR: {{error}}
 
-                """).ConfigureAwait(false);
+                """);
         }
 
-        await Console.Out.WriteLineAsync($$"""
+        Console.WriteLine($$"""
             Usage: {{nameof(WhalesSecret)}}.{{nameof(ScriptApiLib)}}.{{nameof(Samples)}} <sampleName> <exchangeMarket>
 
                 sampleName - Name of the sample to run. Following values are supported:
 
-            """).ConfigureAwait(false);
+            """);
 
         foreach (object[] sample in sampleDescriptions)
         {
             string name = (string)sample[0];
             string description = (string)sample[2];
-            await Console.Out.WriteLineAsync($"        {name} - {description}").ConfigureAwait(false);
+            Console.WriteLine($"        {name} - {description}");
         }
 
         string markets = string.Join(',', Enum.GetValues<ExchangeMarket>());
-        await Console.Out.WriteLineAsync($$"""
+        Console.WriteLine($$"""
 
-                exchangeMarket - Exchange market to use in the sample. Supported values are {{markets}}
-            """).ConfigureAwait(false);
+                exchangeMarket - Exchange market to use in the sample. Supported values are {{markets}}.
+            """);
     }
 }

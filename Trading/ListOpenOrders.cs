@@ -52,7 +52,7 @@ public class ListOpenOrders : IScriptApiSample
         // When using the order request builder, we do not need to round sizes and prices. The builder takes care of these requirements as well as other things.
         decimal orderSize = quoteOrderSize / limitPrice;
 
-        await Console.Out.WriteLineAsync("Build a limit order request.").ConfigureAwait(false);
+        Console.WriteLine("Build a limit order request.");
         LimitOrderRequest limitOrderRequest = limitBuilder
             .SetClientOrderId(clientOrderId)
             .SetSide(OrderSide.Buy)
@@ -62,30 +62,30 @@ public class ListOpenOrders : IScriptApiSample
             .SetPrice(limitPrice)
             .Build();
 
-        await Console.Out.WriteLineAsync($"Constructed limit order request: {limitOrderRequest}").ConfigureAwait(false);
+        Console.WriteLine($"Constructed limit order request: {limitOrderRequest}");
 
-        await Console.Out.WriteLineAsync("Place the order.").ConfigureAwait(false);
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine("Place the order.");
+        Console.WriteLine();
 
         ILiveLimitOrder limitOrder = await tradeClient.CreateOrderAsync(limitOrderRequest, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Limit order '{limitOrder}' is live.").ConfigureAwait(false);
+        Console.WriteLine($"Limit order '{limitOrder}' is live.");
 
-        await Console.Out.WriteLineAsync("List open orders.");
+        Console.WriteLine("List open orders.");
         IReadOnlyList<ILiveOrder> liveOrders = await tradeClient.GetOpenOrdersAsync(OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
         
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
-        await Console.Out.WriteLineAsync("Following open orders were found:").ConfigureAwait(false);
+        Console.WriteLine();
+        Console.WriteLine("Following open orders were found:");
         for (int i = 0; i < liveOrders.Count; i++)
-            await Console.Out.WriteLineAsync($"  #{i + 1}: {liveOrders[i]}").ConfigureAwait(false);
+            Console.WriteLine($"  #{i + 1}: {liveOrders[i]}");
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Cancel the order.");
+        Console.WriteLine("Cancel the order.");
         await tradeClient.CancelOrderAsync(limitOrder, timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync().ConfigureAwait(false);
+        Console.WriteLine();
 
-        await Console.Out.WriteLineAsync("Disposing trade API client and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing trade API client and script API.");
     }
 }

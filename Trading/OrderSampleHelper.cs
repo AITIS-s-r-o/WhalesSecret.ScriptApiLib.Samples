@@ -96,13 +96,13 @@ public class OrderSampleHelper : IAsyncDisposable
 
         scriptApi.SetCredentials(apiIdentity);
 
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with full-trading access.");
 
         // Default connection options use full-trading connection type, which means both public and private connections will be established with the exchange.
         connectionOptions ??= ConnectionOptions.Default;
         ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Connection to {exchangeMarket} has been established successfully.");
 
         ExchangeInfo exchangeInfo = tradeClient.GetExchangeInfo();
 
@@ -117,27 +117,27 @@ public class OrderSampleHelper : IAsyncDisposable
         if (!exchangeInfo.SymbolPairLimits.TryGetValue(symbolPair, out ExchangeSymbolPairLimits? limits))
         {
             string msg = $"Symbol pair '{symbolPair}' is not supported by {exchangeMarket}.";
-            await Console.Error.WriteLineAsync($"ERROR: {msg}").ConfigureAwait(false);
+            Console.Error.WriteLine($"ERROR: {msg}");
             throw new SanityCheckException(msg);
         }
 
         if (limits.BaseVolumePrecision is null)
         {
             string msg = $"Volume precision is not known for symbol pair '{symbolPair}' on {exchangeMarket}.";
-            await Console.Error.WriteLineAsync($"ERROR: {msg}").ConfigureAwait(false);
+            Console.Error.WriteLine($"ERROR: {msg}");
             throw new SanityCheckException(msg);
         }
 
-        await Console.Out.WriteLineAsync($"Volume precision for symbol pair '{symbolPair}' on {exchangeMarket} is {limits.BaseVolumePrecision}.").ConfigureAwait(false);
+        Console.WriteLine($"Volume precision for symbol pair '{symbolPair}' on {exchangeMarket} is {limits.BaseVolumePrecision}.");
 
-        await Console.Out.WriteLineAsync($"Get best bid and ask prices from an order book on {exchangeMarket}.").ConfigureAwait(false);
+        Console.WriteLine($"Get best bid and ask prices from an order book on {exchangeMarket}.");
 
         SymbolPair[] symbolPairs = new SymbolPair[] { symbolPair };
         IReadOnlyList<Ticker> tickers = await tradeClient.GetLatestTickersAsync(symbolPairs, cancellationToken).ConfigureAwait(false);
         decimal bestBid = tickers[0].BestBidPrice;
         decimal bestAsk = tickers[0].BestAskPrice;
 
-        await Console.Out.WriteLineAsync($"Best bid price is {bestBid}, best ask price is {bestAsk}.").ConfigureAwait(false);
+        Console.WriteLine($"Best bid price is {bestBid}, best ask price is {bestAsk}.");
 
         OrderSampleHelper orderSampleHelper = new(exchangeInfo, tradeClient, bestBid: bestBid, bestAsk: bestAsk, symbolPair, baseVolumePrecision: limits.BaseVolumePrecision.Value);
         return orderSampleHelper;

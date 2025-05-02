@@ -25,25 +25,24 @@ public class Rsi : IScriptApiSample
 
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(timeoutCts.Token).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Connect to {exchangeMarket} exchange with a public connection.").ConfigureAwait(false);
+        Console.WriteLine($"Connect to {exchangeMarket} exchange with a public connection.");
         ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketData);
         await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Public connection to {exchangeMarket} has been established successfully.").ConfigureAwait(false);
+        Console.WriteLine($"Public connection to {exchangeMarket} has been established successfully.");
 
         SymbolPair symbolPair = SymbolPair.BTC_USDT;
-        await Console.Out.WriteLineAsync($"Create subscription for '{symbolPair}' candlesticks on {exchangeMarket}.").ConfigureAwait(false);
+        Console.WriteLine($"Create subscription for '{symbolPair}' candlesticks on {exchangeMarket}.");
         await using ICandlestickSubscription subscription = await tradeClient.CreateCandlestickSubscriptionAsync(symbolPair).ConfigureAwait(false);
 
-        await Console.Out.WriteLineAsync($"Candlestick subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{subscription}'.")
-            .ConfigureAwait(false);
+        Console.WriteLine($"Candlestick subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{subscription}'.");
 
         CandleWidth candleWidth = CandleWidth.Minute1;
 
         Candle lastClosedCandle = subscription.GetLatestClosedCandlestick(candleWidth);
-        await Console.Out.WriteLineAsync($"Latest closed {candleWidth} candle: {lastClosedCandle}").ConfigureAwait(false);
+        Console.WriteLine($"Latest closed {candleWidth} candle: {lastClosedCandle}");
 
-        await Console.Out.WriteLineAsync("Getting 24 hours of candle data").ConfigureAwait(false);
+        Console.WriteLine("Getting 24 hours of candle data");
         DateTime startTime = lastClosedCandle.Timestamp.AddHours(-24);
 
         // End time is exclusive, so to make sure the last closed candle is included, we add 1 second. 
@@ -59,13 +58,13 @@ public class Rsi : IScriptApiSample
         Console.WriteLine();
         Console.WriteLine($"Last closed candle: {lastClosedCandle}");
 
-        await this.ReportRsiAsync(quotes).ConfigureAwait(false);
+        this.ReportRsi(quotes);
 
         // Loop until timeout.
         while (!timeoutCts.IsCancellationRequested)
         {
-            await Console.Out.WriteLineAsync().ConfigureAwait(false);
-            await Console.Out.WriteLineAsync("Waiting for the next closed candle...").ConfigureAwait(false);
+            Console.WriteLine();
+            Console.WriteLine("Waiting for the next closed candle...");
 
             try
             {
@@ -76,13 +75,13 @@ public class Rsi : IScriptApiSample
                 break;
             }
 
-            await Console.Out.WriteLineAsync($"New closed candle arrived: {lastClosedCandle}").ConfigureAwait(false);
+            Console.WriteLine($"New closed candle arrived: {lastClosedCandle}");
 
             quotes.Add(this.QuoteFromCandle(lastClosedCandle));
-            await this.ReportRsiAsync(quotes).ConfigureAwait(false);
+            this.ReportRsi(quotes);
         }
 
-        await Console.Out.WriteLineAsync("Disposing candlestick subscription, trade API client, and script API.").ConfigureAwait(false);
+        Console.WriteLine("Disposing candlestick subscription, trade API client, and script API.");
     }
 
     /// <summary>
@@ -90,7 +89,7 @@ public class Rsi : IScriptApiSample
     /// </summary>
     /// <param name="quotes">List of quotes to calculate RSI from.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private async Task ReportRsiAsync(IEnumerable<Quote> quotes)
+    private void ReportRsi(IEnumerable<Quote> quotes)
     {
         IEnumerable<RsiResult> results = quotes.GetRsi();
         RsiResult lastRsi = results.Last();
@@ -102,7 +101,7 @@ public class Rsi : IScriptApiSample
             _ => string.Empty
         };
 
-        await Console.Out.WriteLineAsync($"Current RSI: {lastRsi.Date} -> {lastRsi.Rsi}{interpretation}").ConfigureAwait(false);
+        Console.WriteLine($"Current RSI: {lastRsi.Date} -> {lastRsi.Rsi}{interpretation}");
     }
 
     /// <summary>
