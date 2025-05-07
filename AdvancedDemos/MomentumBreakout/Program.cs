@@ -140,9 +140,6 @@ internal class Program
         PrintInfo("Press Ctrl+C to terminate the program.");
         PrintInfo();
 
-        PrintInfo($"Strategy parameters: {parameters}");
-        PrintInfo();
-
         using CancellationTokenSource shutdownCancellationTokenSource = new();
         CancellationToken shutdownToken = shutdownCancellationTokenSource.Token;
 
