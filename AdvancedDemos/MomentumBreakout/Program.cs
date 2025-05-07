@@ -465,8 +465,10 @@ internal class Program
         if (parameters.VolumeLookback > candlesNeeded)
             candlesNeeded = parameters.VolumeLookback;
 
+        // When we calculate volatility we need to have at least VolatilityLookback valid values, and for each value we need at least VolatilityLookback previous candles,
+        // therefore we need two times VolatilityLookback candles.
         if (parameters.VolatilityLookback > candlesNeeded)
-            candlesNeeded = parameters.VolatilityLookback;
+            candlesNeeded = 2 * parameters.VolatilityLookback;
 
         return candlesNeeded;
     }
@@ -732,7 +734,7 @@ internal class Program
         bool result = false;
 
         // Average volume on the last candles.
-        IEnumerable<AtrResult> atrResults = quotes.GetAtr(lookbackPeriods: volatilityLookback);
+        IEnumerable<AtrResult> atrResults = quotes.GetAtr(lookbackPeriods: volatilityLookback).TakeLast(volatilityLookback);
         if (atrResults.Any(c => c.Atr is null))
         {
             if (verbose)
