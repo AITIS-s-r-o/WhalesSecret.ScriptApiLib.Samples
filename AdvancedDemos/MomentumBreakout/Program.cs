@@ -750,7 +750,7 @@ internal class Program
         {
             clog.Debug($"Current ATR {currentAtr} is greater than the required ATR {requiredAtr} (avg. ATR {averageAtr} times multiplier {volatilityAvgSize}).");
 
-            tradeConditionLogs.Add("  Volume");
+            tradeConditionLogs.Add("  Volatility");
             tradeConditionLogs.Add($"    {volatilityLookback}-ATR series: {atrSeries.LogJoin()}");
             tradeConditionLogs.Add($"    Average ATR: {averageAtr}");
             tradeConditionLogs.Add($"    Volatility factor: {volatilityAvgSize}");
