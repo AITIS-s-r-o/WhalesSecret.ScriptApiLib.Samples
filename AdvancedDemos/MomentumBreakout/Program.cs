@@ -397,8 +397,8 @@ internal class Program
                                 {
                                     DateTime lastEntry = DateTime.UtcNow;
                                     nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
-                                    await PrintInfoTelegramAsync($"New trade entered. Cooldown period of {parameters.TradeCooldownPeriod} activated. Next trade entry time set to {
-                                        nextEntry}.").ConfigureAwait(false);
+                                    await PrintInfoTelegramAsync($"New trade entered. Cooldown period of {
+                                        parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.").ConfigureAwait(false);
                                 }
                             }
                             else clog.Trace("Waiting for the required values for calculation to be available.");
