@@ -348,7 +348,7 @@ internal class Program
         {
             while (true)
             {
-                _ = await Task.WhenAny(tickerTask, candleTask).ConfigureAwait(false);
+                _ = await Task.WhenAny(candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
 
                 if (candleTask.IsCompleted)
                 {
@@ -405,6 +405,16 @@ internal class Program
         catch (OperationCanceledException)
         {
             await PrintInfoTelegramAsync("Shutdown detected.").ConfigureAwait(false);
+        }
+
+
+        try
+        {
+            clog.Debug("Wait until all tasks are finished.");
+            await Task.WhenAll(candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
+        }
+        catch
+        {
         }
 
         clog.Debug("$");
