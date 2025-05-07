@@ -407,7 +407,6 @@ internal class Program
             await PrintInfoTelegramAsync("Shutdown detected.").ConfigureAwait(false);
         }
 
-
         try
         {
             clog.Debug("Wait until all tasks are finished.");
