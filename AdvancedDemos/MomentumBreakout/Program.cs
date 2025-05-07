@@ -341,6 +341,7 @@ internal class Program
         // List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.
         List<string> tradeConditionLogs = new(capacity: 32);
 
+        DateTime nextEntry = DateTime.MinValue;
         try
         {
             while (true)
@@ -373,24 +374,36 @@ internal class Program
                     Ticker ticker = await tickerTask.ConfigureAwait(false);
                     if (ticker.LastPrice is not null)
                     {
-                        counter++;
-                        tradeConditionLogs.Clear();
-
-                        // Once in a while we print more logs, just to be able to check progress in logs.
-                        bool debugIteration = (counter % 20) == 0;
-
-                        decimal lastPrice = ticker.LastPrice.Value;
-                        tradeConditionLogs.Add($"  Current price: {lastPrice}");
-                        if (debugIteration)
-                            clog.Trace($"Current price is {lastPrice}.");
-
-                        if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null) && (currentVolume is not null))
+                        if (DateTime.UtcNow > nextEntry)
                         {
-                            await ProcessNewPriceAsync(quotes, lastPrice: lastPrice, currentShortEma: (decimal)currentShortEma.Value, currentLongEma: (decimal)currentLongEma.Value,
-                                currentRsi: (decimal)currentRsi.Value, currentAtr: (decimal)currentAtr.Value, currentVolume: currentVolume.Value, parameters, debugIteration,
-                                tradeConditionLogs, cancellationToken).ConfigureAwait(false);
+                            counter++;
+                            tradeConditionLogs.Clear();
+
+                            // Once in a while we print more logs, just to be able to check progress in logs.
+                            bool debugIteration = (counter % 20) == 0;
+
+                            decimal lastPrice = ticker.LastPrice.Value;
+                            tradeConditionLogs.Add($"  Current price: {lastPrice}");
+                            if (debugIteration)
+                                clog.Trace($"Current price is {lastPrice}.");
+
+                            if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null) && (currentVolume is not null))
+                            {
+                                bool entry = await ProcessNewPriceAsync(quotes, lastPrice: lastPrice, currentShortEma: (decimal)currentShortEma.Value,
+                                    currentLongEma: (decimal)currentLongEma.Value, currentRsi: (decimal)currentRsi.Value, currentAtr: (decimal)currentAtr.Value,
+                                    currentVolume: currentVolume.Value, parameters, debugIteration, tradeConditionLogs, cancellationToken).ConfigureAwait(false);
+
+                                if (entry)
+                                {
+                                    DateTime lastEntry = DateTime.UtcNow;
+                                    nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
+                                    await PrintInfoTelegramAsync($"New trade entered. Cooldown period of {parameters.TradeCooldownPeriod} activated. Next trade entry time set to {
+                                        nextEntry}.").ConfigureAwait(false);
+                                }
+                            }
+                            else clog.Trace("Waiting for the required values for calculation to be available.");
                         }
-                        else clog.Trace("Waiting for the required values for calculation to be available.");
+                        else clog.Debug($"Cooldown in progress. Waiting until {nextEntry} before considering making a new trade.");
                     }
                     else clog.Warn("Receive ticker does not have the last price.");
 
@@ -781,14 +794,15 @@ internal class Program
     /// <param name="verbose"><c>true</c> to produce extra trace logs, <c>false</c> otherwise.</param>
     /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task ProcessNewPriceAsync(List<Quote> quotes, decimal lastPrice, decimal currentShortEma, decimal currentLongEma, decimal currentRsi, decimal currentAtr,
-        decimal currentVolume, Parameters parameters, bool verbose, List<string> tradeConditionLogs, CancellationToken cancellationToken)
+    /// <returns><c>true</c> if all the entry conditions were satisfied with the new price, <c>false</c> otherwise.</returns>
+    private static async Task<bool> ProcessNewPriceAsync(List<Quote> quotes, decimal lastPrice, decimal currentShortEma, decimal currentLongEma, decimal currentRsi,
+        decimal currentAtr, decimal currentVolume, Parameters parameters, bool verbose, List<string> tradeConditionLogs, CancellationToken cancellationToken)
     {
         // Short EMA over the long EMA implies bullish trend. Short EMA under the long EMA implies bearish trend.
         bool bullishTrend = currentShortEma > currentLongEma;
         bool bearishTrend = currentShortEma < currentLongEma;
 
+        bool result = false;
         if (bullishTrend || bearishTrend)
         {
             tradeConditionLogs.Add($"  Trend: {(bullishTrend ? "bullish" : "bearish")}");
@@ -814,6 +828,8 @@ internal class Program
 
                 string msg = stringBuilder.ToString();
                 await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
+
+                result = true;
             }
             else if (verbose)
             {
@@ -827,6 +843,8 @@ internal class Program
             }
         }
         else clog.Trace($"Current short-EMA equals long-EMA. No trend detected.");
+
+        return result;
     }
 
     /// <summary>

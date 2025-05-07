@@ -83,6 +83,9 @@ public class Parameters
     /// <summary>Size of each trade as a multiple of the original budget balance.</summary>
     public decimal PositionSize { get; }
 
+    /// <summary>Number of candles to wait before allowing a new trade to be entered.</summary>
+    public int TradeCooldownPeriod { get; }
+
     /// <summary>Description of budget parameters for the trading strategy.</summary>
     public BudgetRequest BudgetRequest { get; }
 
@@ -116,6 +119,7 @@ public class Parameters
     /// <param name="firstTakeProfitAtr">Multiple of ATR to define distance of the first take-profit from the entry price.</param>
     /// <param name="nextTakeProfitAtrIncrement">Multiple of ATR to define distance of the next take-profit from the previous take-profit.</param>
     /// <param name="positionSize">Size of each trade as a multiple of the original budget balance.</param>
+    /// <param name="tradeCooldownPeriod">Number of candles to wait before allowing a new trade to be entered.</param>
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
@@ -140,6 +144,7 @@ public class Parameters
     /// <item><paramref name="firstTakeProfitAtr"/> is not a positive number, or</item>
     /// <item><paramref name="nextTakeProfitAtrIncrement"/> is not a positive number, or</item>
     /// <item><paramref name="positionSize"/> is not a positive number, or</item>
+    /// <item><paramref name="tradeCooldownPeriod"/> is not a positive number, or</item>
     /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
     /// </list>
     /// </exception>
@@ -147,7 +152,7 @@ public class Parameters
     public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, int shortEmaLookback, int longEmaLookback, int rsiLookback, int atrLookback,
         int breakoutLookback, decimal breakoutAtrSize, int volumeLookback, decimal volumeAvgSize, int volatilityLookback, decimal volatilityAvgSize, int maxTradesPerDay,
         CandleWidth candleWidth, int stopLossCount, int takeProfitCount, decimal firstStopLossAtr, decimal nextStopLossAtrIncrement, decimal firstTakeProfitAtr,
-        decimal nextTakeProfitAtrIncrement, decimal positionSize, BudgetRequest budgetRequest, TimeSpan reportPeriod)
+        decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, BudgetRequest budgetRequest, TimeSpan reportPeriod)
     {
         if (appDataPath is null)
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
@@ -212,6 +217,9 @@ public class Parameters
         if (positionSize <= 0)
             throw new InvalidArgumentException($"'{nameof(positionSize)}' must be a positive number.", parameterName: nameof(positionSize));
 
+        if (tradeCooldownPeriod <= 0)
+            throw new InvalidArgumentException($"'{nameof(tradeCooldownPeriod)}' must be a positive number.", parameterName: nameof(tradeCooldownPeriod));
+
         if (reportPeriod <= TimeSpan.Zero)
             throw new InvalidArgumentException($"'{nameof(reportPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(reportPeriod));
 
@@ -237,6 +245,7 @@ public class Parameters
         this.FirstTakeProfitAtr = firstTakeProfitAtr;
         this.NextTakeProfitAtrIncrement = nextTakeProfitAtrIncrement;
         this.PositionSize = positionSize;
+        this.TradeCooldownPeriod = tradeCooldownPeriod;
         this.BudgetRequest = budgetRequest;
         this.ReportPeriod = reportPeriod;
     }
@@ -299,7 +308,7 @@ public class Parameters
     public override string ToString()
     {
         string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},{30}={31}"
-            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}=`{45}`,{46}={47}]";
+            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}=`{47}`,{48}={49}]";
         return string.Format
         (
             CultureInfo.InvariantCulture,
@@ -326,6 +335,7 @@ public class Parameters
             nameof(this.FirstTakeProfitAtr), this.FirstTakeProfitAtr,
             nameof(this.NextTakeProfitAtrIncrement), this.NextTakeProfitAtrIncrement,
             nameof(this.PositionSize), this.PositionSize,
+            nameof(this.TradeCooldownPeriod), this.TradeCooldownPeriod,
             nameof(this.BudgetRequest), this.BudgetRequest,
             nameof(this.ReportPeriod), this.ReportPeriod
         );
