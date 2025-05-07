@@ -13,6 +13,7 @@ using WhalesSecret.ScriptApiLib.Samples.SharedLib;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
+using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
@@ -333,7 +334,10 @@ internal class Program
         CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(parameters.SymbolPair, candleWidth, startTime: startTime, endTime: now, cancellationToken)
             .ConfigureAwait(false);
 
-        List<Quote> quotes = new(capacity: candlestickData.Candles.Count + 100);
+        int counter = 0;
+        int quotesBuffer = 100;
+        int maxQuotes = candlestickData.Candles.Count + quotesBuffer;
+        List<Quote> quotes = new(capacity: maxQuotes);
         foreach (Candle candle in candlestickData.Candles)
             quotes.Add(QuoteFromCandle(candle));
 
@@ -346,69 +350,396 @@ internal class Program
         double? currentLongEma = longEmaResult.Last()?.Ema;
         double? currentRsi = rsiResult.Last()?.Rsi;
         double? currentAtr = atrResult.Last()?.Atr;
+        decimal? currentVolume = null;
 
-        // High price over last breakout-lookback period.
-        decimal breakoutHigh = candlestickData.Candles.TakeLast(parameters.BreakoutLookback).Max(c => c.HighPrice);
+        await using ITickerSubscription tickerSubscription = await tradeClient.CreateTickerSubscriptionAsync(parameters.SymbolPair).ConfigureAwait(false);
+        await using ICandlestickSubscription candleSubscription = await tradeClient.CreateCandlestickSubscriptionAsync(parameters.SymbolPair).ConfigureAwait(false);
 
-        if ((currentShortEma is not null) && (currentLongEma is not null))
+        Task<Candle> candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
+        Task<CandleUpdate> candleUpdateTask = candleSubscription.WaitNextCandlestickUpdateAsync(candleWidth, cancellationToken);
+        Task<Ticker> tickerTask = tickerSubscription.GetNewerTickerAsync(cancellationToken);
+
+        // List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.
+        List<string> tradeConditionLogs = new(capacity: 32);
+
+        try
         {
+            while (true)
+            {
+                _ = await Task.WhenAny(tickerTask, candleTask).ConfigureAwait(false);
 
+                if (candleTask.IsCompleted)
+                {
+                    Candle closedCandle = await candleTask.ConfigureAwait(false);
+                    clog.Debug($"New closed candle received: {closedCandle}");
+
+                    quotes.Add(QuoteFromCandle(closedCandle));
+                    if (quotes.Count > maxQuotes)
+                        quotes.RemoveRange(index: 0, count: quotesBuffer);
+
+                    shortEmaResult = quotes.GetEma(parameters.ShortEmaLookback);
+                    longEmaResult = quotes.GetEma(parameters.LongEmaLookback);
+                    rsiResult = quotes.GetRsi(parameters.RsiLookback);
+                    atrResult = quotes.GetAtr(parameters.AtrLookback);
+
+                    currentShortEma = shortEmaResult.Last()?.Ema;
+                    currentLongEma = longEmaResult.Last()?.Ema;
+                    currentRsi = rsiResult.Last()?.Rsi;
+                    currentAtr = atrResult.Last()?.Atr;
+
+                    if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null))
+                    {
+                        clog.Debug($"Current short({parameters.ShortEmaLookback})-EMA, long({parameters.LongEmaLookback})-EMA, RSI, ATR is {currentShortEma}, {currentLongEma}, {
+                            currentRsi}, {currentAtr}.");
+                    }
+                    else
+                    {
+                        if (currentShortEma is null)
+                            clog.Warn("Unable to calculate the current short EMA.");
+
+                        if (currentLongEma is null)
+                            clog.Warn("Unable to calculate the current long EMA.");
+
+                        if (currentRsi is null)
+                            clog.Warn("Unable to calculate the current RSI.");
+
+                        if (currentAtr is null)
+                            clog.Warn("Unable to calculate the current ATR.");
+                    }
+
+                    // Refresh task.
+                    candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
+                }
+
+                if (candleUpdateTask.IsCompleted)
+                {
+                    CandleUpdate candleUpdate = await candleUpdateTask.ConfigureAwait(false);
+                    currentVolume = candleUpdate.Candle.BaseVolume;
+
+                    // Refresh task.
+                    candleUpdateTask = candleSubscription.WaitNextCandlestickUpdateAsync(candleWidth, cancellationToken);
+                }
+
+                if (tickerTask.IsCompleted)
+                {
+                    Ticker ticker = await tickerTask.ConfigureAwait(false);
+                    if (ticker.LastPrice is not null)
+                    {
+                        counter++;
+                        tradeConditionLogs.Clear();
+
+                        // Once in a while we print more logs, just to be able to check progress in logs.
+                        bool debugIteration = (counter % 20) == 0;
+
+                        decimal lastPrice = ticker.LastPrice.Value;
+                        tradeConditionLogs.Add($"  Current price: {lastPrice}");
+                        if (debugIteration)
+                        {
+                            clog.Trace($"Current price is {lastPrice}.");
+                        }
+
+                        if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null) && (currentVolume is not null))
+                        {
+                            // Short EMA over the long EMA implies bullish trend. Short EMA under the long EMA implies bearish trend.
+                            bool bullishTrend = currentShortEma > currentLongEma;
+                            bool bearishTrend = currentShortEma < currentLongEma;
+
+                            if (bullishTrend || bearishTrend)
+                            {
+                                tradeConditionLogs.Add($"  Trend: {(bullishTrend ? "bullish" : "bearish")}");
+                                tradeConditionLogs.Add($"    {parameters.ShortEmaLookback}-EMA: {currentShortEma}");
+                                tradeConditionLogs.Add($"    {parameters.LongEmaLookback}-EMA: {currentLongEma}");
+
+                                bool breakoutConfirmation = CheckBreakoutCondition(longEntry: bullishTrend, quotes, lastPrice: lastPrice,
+                                    breakoutLookback: parameters.BreakoutLookback, breakoutAtrSize: parameters.BreakoutAtrSize, currentAtr: (decimal)currentAtr.Value,
+                                    verbose: debugIteration, tradeConditionLogs);
+
+                                bool rsiConfirmation = CheckRsiCondition(longEntry: bullishTrend, quotes, (decimal)currentRsi.Value, verbose: debugIteration, tradeConditionLogs);
+
+                                bool volumeConfirmation = CheckVolumeCondition(quotes, volumeLookback: parameters.VolumeLookback, volumeAvgSize: parameters.VolatilityAvgSize,
+                                    currentVolume: currentVolume.Value, verbose: debugIteration, tradeConditionLogs);
+
+                                bool volatilityConfirmation = CheckVolatilityCondition(quotes, volatilityLookback: parameters.VolatilityLookback,
+                                    volatilityAvgSize: parameters.VolatilityAvgSize, currentAtr: (decimal)currentAtr.Value, verbose: debugIteration, tradeConditionLogs);
+
+                                if (breakoutConfirmation && rsiConfirmation && volatilityConfirmation && volatilityConfirmation)
+                                {
+                                    StringBuilder stringBuilder = new("All entry conditions are satisfied.");
+                                    foreach (string line in tradeConditionLogs)
+                                        _ = stringBuilder.AppendLine(line);
+
+                                    string msg = stringBuilder.ToString();
+                                    await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
+                                }
+                                else if (debugIteration)
+                                {
+                                    clog.Trace($$"""
+                                        Entry conditions are not satisfied: 
+                                            Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}"
+                                            RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}"
+                                            Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}"
+                                            Volatility: {{(volatilityConfirmation ? "PASSED" : "FAILED")}}"
+                                        """);
+                                }
+                            }
+                            else clog.Trace($"Current short-EMA equals long-EMA. No trend detected.");
+                        }
+                        else clog.Trace("Waiting for the required values for calculation to be available.");
+                    }
+                    else clog.Warn("Receive ticker does not have the last price.");
+
+                    // Refresh task.
+                    tickerTask = tickerSubscription.GetNewerTickerAsync(cancellationToken);
+                }
+            }
         }
-        else clog.Warn("Unable to calculate current EMAs.");
-
-            DateTime nextOrder = DateTime.MinValue;
-        DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
-
-        while (true)
+        catch (OperationCanceledException)
         {
-            DateTime time = DateTime.UtcNow;
-            if (time >= nextOrder)
+            await PrintInfoTelegramAsync("Shutdown detected.").ConfigureAwait(false);
+        }
+
+        clog.Debug("$");
+    }
+
+    /// <summary>
+    /// Checks the breakout condition. For long entry, it imeans that the price breaks above the high of the previous <paramref name="breakoutLookback"/> candles by at least
+    /// <paramref name="breakoutAtrSize"/> times ATR. For short entry, it means that the price breaks below the low of the previous <paramref name="breakoutLookback"/> candles
+    /// by at least <paramref name="breakoutAtrSize"/> times ATR.
+    /// </summary>
+    /// <param name="longEntry"><c>true</c> to check for the long entry breakout condition, <c>false</c> to check for the short entry.</param>
+    /// <param name="quotes">List of quotes to use to check the breakout condition.</param>
+    /// <param name="lastPrice">Latest price.</param>
+    /// <param name="breakoutLookback">Number of candles for breakout confirmation.</param>
+    /// <param name="breakoutAtrSize">Size of the breakout in multiples of ATR required for confirmation of the breakout.</param>
+    /// <param name="currentAtr">Current value of ATR.</param>
+    /// <param name="verbose"><c>true</c> to produce extra trace logs, <c>false</c> otherwise.</param>
+    /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
+    /// <returns><c>true</c> of the breakout is confirmed, <c>false</c> otherwise.</returns>
+    private static bool CheckBreakoutCondition(bool longEntry, List<Quote> quotes, decimal lastPrice, int breakoutLookback, decimal breakoutAtrSize, decimal currentAtr,
+        bool verbose, List<string> tradeConditionLogs)
+    {
+        if (verbose)
+        {
+            clog.Trace($"* {nameof(longEntry)}={longEntry},|{nameof(quotes)}|={quotes.Count},{nameof(lastPrice)}={lastPrice},{nameof(breakoutLookback)}={breakoutLookback},{
+                nameof(breakoutAtrSize)}={breakoutAtrSize},{nameof(currentAtr)}={currentAtr},{nameof(verbose)}={verbose}");
+        }
+
+        IEnumerable<decimal> breakoutSeries;
+
+        bool result;
+        if (longEntry)
+        {
+            // The highest price over last breakout-lookback period.
+            breakoutSeries = quotes.TakeLast(breakoutLookback).Select(c => c.High);
+            decimal breakoutHigh = breakoutSeries.Max();
+            decimal breakoutPrice = breakoutHigh + (breakoutAtrSize * currentAtr);
+
+            result = lastPrice > breakoutPrice;
+            if (result)
             {
-             /*   orderCounter++;
+                clog.Debug($"Last price {lastPrice} is above the breakout price {breakoutPrice} on bullish trend.");
 
-                MarketOrderRequest orderRequest = builder
-                    .SetClientOrderId($"dca_{orderCounter:00000000}{ITradingStrategyBudget.ClientOrderIdSuffix}")
-                    .Build();
-
-                await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
-
-                nextOrder = time.Add(parameters.Period);
-                PrintInfo($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.");*/
+                tradeConditionLogs.Add("  Bullish breakout");
+                tradeConditionLogs.Add($"    {breakoutLookback}-breakout series: {breakoutSeries.LogJoin()}");
+                tradeConditionLogs.Add($"    Breakout high: {breakoutHigh}");
+                tradeConditionLogs.Add($"    Breakout price: {breakoutPrice}");
             }
-
-            time = DateTime.UtcNow;
-            if (time >= nextReport)
+            else if (verbose)
             {
-                await PrintInfoTelegramAsync($"Generating budget report ...").ConfigureAwait(false);
-                await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
-
-                nextReport = time.Add(parameters.ReportPeriod);
-                await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
-            }
-
-            time = DateTime.UtcNow;
-            TimeSpan delayTillOrder = nextOrder - time;
-            TimeSpan delayTillReport = nextReport - time;
-            TimeSpan delay = delayTillOrder < delayTillReport ? delayTillOrder : delayTillReport;
-
-            if (delay > TimeSpan.Zero)
-            {
-                if (delay == delayTillOrder) PrintInfo($"Waiting {delay} before placing the next order.");
-                else PrintInfo($"Waiting {delay} before generating the next budget report.");
-
-                try
-                {
-                    await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    clog.Debug("Cancelation detected.");
-
-                    clog.Debug("$");
-                    throw;
-                }
+                clog.Trace($"On bullish trend, current price {lastPrice} did not breakout price {breakoutPrice} with {breakoutLookback}-high being at {breakoutHigh} and ATR at {
+                    currentAtr}.");
             }
         }
+        else
+        {
+            // The lowest price over last breakout-lookback period.
+            breakoutSeries = quotes.TakeLast(breakoutLookback).Select(c => c.Low);
+            decimal breakoutLow = breakoutSeries.Min();
+            decimal breakoutPrice = breakoutLow - (breakoutAtrSize * currentAtr);
+
+            result = lastPrice < breakoutPrice;
+
+            if (result)
+            {
+                clog.Debug($"Last price {lastPrice} is below the breakout price {breakoutPrice} on bearish trend.");
+
+                tradeConditionLogs.Add("  Bearish breakout");
+                tradeConditionLogs.Add($"    {breakoutLookback}-breakout series: {breakoutSeries.LogJoin()}");
+                tradeConditionLogs.Add($"    Breakout low: {breakoutLow}");
+                tradeConditionLogs.Add($"    Breakout price: {breakoutPrice}");
+            }
+            else if (verbose)
+            {
+                clog.Trace($"On bearish trend, the current price {lastPrice} did not breakout price {breakoutPrice} with {breakoutLookback}-low being at {breakoutLow} and ATR at {
+                    currentAtr}.");
+            }
+        }
+
+        if (verbose)
+            clog.Trace($"$={result}");
+        return result;
+    }
+
+    /// <summary>
+    /// Checks the RSI condition. For long entry, the current RSI is above <c>50</c> but below <c>70</c> (to avoid overbought conditions). For short entry, the current RSI
+    /// is below <c>50</c> but above <c>30</c> (to avoid oversold conditions).
+    /// </summary>
+    /// <param name="longEntry"><c>true</c> to check for the long entry breakout condition, <c>false</c> to check for the short entry.</param>
+    /// <param name="quotes">List of quotes to use to check the breakout condition.</param>
+    /// <param name="currentRsi">Latest RSI value.</param>
+    /// <param name="verbose"><c>true</c> to produce extra trace logs, <c>false</c> otherwise.</param>
+    /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
+    /// <returns><c>true</c> of the RSI condition is confirmed, <c>false</c> otherwise.</returns>
+    private static bool CheckRsiCondition(bool longEntry, List<Quote> quotes, decimal currentRsi, bool verbose, List<string> tradeConditionLogs)
+    {
+        if (verbose)
+            clog.Trace($"* {nameof(longEntry)}={longEntry},|{nameof(quotes)}|={quotes.Count},{nameof(currentRsi)}={currentRsi},{nameof(verbose)}={verbose}");
+
+        bool result;
+        if (longEntry)
+        {
+            // RSI confirms bullish trend, but is not overbought.
+            result = (50 < currentRsi) && (currentRsi < 70);
+
+            if (result)
+            {
+                clog.Debug($"RSI at {currentRsi} confirms the bullish trend without being overbought.");
+            }
+            else if (verbose)
+            {
+                clog.Debug($"RSI at {currentRsi} does NOT confirm the bullish trend without being overbought.");
+            }
+        }
+        else
+        {
+            // RSI confirms bearish trend, but is not oversold.
+            result = (30 < currentRsi) && (currentRsi < 50);
+
+            if (result)
+            {
+                clog.Debug($"RSI at {currentRsi} confirms the bearish trend without being oversold.");
+            }
+            else if (verbose)
+            {
+                clog.Debug($"RSI at {currentRsi} does NOT confirm the bearish trend without being oversold.");
+            }
+        }
+
+        if (result)
+        {
+            tradeConditionLogs.Add("  RSI");
+            tradeConditionLogs.Add($"    Current RSI: {currentRsi}");
+        }
+
+        if (verbose)
+            clog.Trace($"$={result}");
+        return result;
+    }
+
+    /// <summary>
+    /// Checks the volume condition. The current candle volume must be at least <paramref name="volumeAvgSize"/> times the average volume of the last
+    /// <paramref name="volumeLookback"/> candles.
+    /// </summary>
+    /// <param name="quotes">List of quotes to use to check the breakout condition.</param>
+    /// <param name="volumeLookback">Number of candles for volume confirmation.</param>
+    /// <param name="volumeAvgSize">Size of the current volume in multiples of volume average over <paramref name="volumeLookback"/> period required for volume confirmation.
+    /// </param>
+    /// <param name="currentVolume">Current candle volume.</param>
+    /// <param name="verbose"><c>true</c> to produce extra trace logs, <c>false</c> otherwise.</param>
+    /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
+    /// <returns><c>true</c> of the volume condition is confirmed, <c>false</c> otherwise.</returns>
+    private static bool CheckVolumeCondition(List<Quote> quotes, int volumeLookback, decimal volumeAvgSize, decimal currentVolume, bool verbose, List<string> tradeConditionLogs)
+    {
+        if (verbose)
+        {
+            clog.Trace($"* |{nameof(quotes)}|={quotes.Count},{nameof(volumeLookback)}={volumeLookback},{nameof(volumeAvgSize)}={volumeAvgSize},{
+                nameof(currentVolume)}={currentVolume},{nameof(verbose)}={verbose}");
+        }
+
+        // Average volume on the last candles.
+        IEnumerable<decimal> volumeSeries = quotes.TakeLast(volumeLookback).Select(c => c.Volume);
+        decimal averageVolume = volumeSeries.Average();
+        decimal volumeBreakout = volumeAvgSize * averageVolume;
+        bool result = currentVolume > volumeBreakout;
+
+        if (result)
+        {
+            clog.Debug($"Current volume {currentVolume} is greater than the required volume {volumeBreakout} (avg. volume {averageVolume} times multiplier {volumeAvgSize}).");
+
+            tradeConditionLogs.Add("  Volume");
+            tradeConditionLogs.Add($"    {volumeLookback}-volume series: {volumeSeries.LogJoin()}");
+            tradeConditionLogs.Add($"    Average volume: {averageVolume}");
+            tradeConditionLogs.Add($"    Volume factor: {volumeAvgSize}");
+            tradeConditionLogs.Add($"    Current volume: {currentVolume}");
+            tradeConditionLogs.Add($"    Required volume: {volumeBreakout}");
+        }
+        else if (verbose)
+        {
+            clog.Trace($"Current volume {currentVolume} is NOT greater than the required volume {volumeBreakout} (avg. volume {averageVolume} times multiplier {volumeAvgSize}).");
+        }
+
+        if (verbose)
+            clog.Trace($"$={result}");
+        return result;
+    }
+
+    /// <summary>
+    /// Checks the volatility condition. ATR has to be at leaset than <paramref name="volatilityAvgSize"/> times the average ATR over <paramref name="volatilityLookback"/> candles.
+    /// </summary>
+    /// <param name="quotes">List of quotes to use to check the breakout condition.</param>
+    /// <param name="volatilityLookback">Number of candles for volatility confirmation.</param>
+    /// <param name="volatilityAvgSize">Size of the current ATR in multiples of the ATR average over <paramref name="volatilityLookback"/> period required for volatility
+    /// confirmation.</param>
+    /// <param name="currentAtr">Current ATR.</param>
+    /// <param name="verbose"><c>true</c> to produce extra trace logs, <c>false</c> otherwise.</param>
+    /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
+    /// <returns><c>true</c> of the volatility condition is confirmed, <c>false</c> otherwise.</returns>
+    private static bool CheckVolatilityCondition(List<Quote> quotes, int volatilityLookback, decimal volatilityAvgSize, decimal currentAtr, bool verbose,
+        List<string> tradeConditionLogs)
+    {
+        if (verbose)
+        {
+            clog.Trace($"* |{nameof(quotes)}|={quotes.Count},{nameof(volatilityLookback)}={volatilityLookback},{nameof(volatilityAvgSize)}={volatilityAvgSize},{
+                nameof(currentAtr)}={currentAtr},{nameof(verbose)}={verbose}");
+        }
+
+        bool result = false;
+
+        // Average volume on the last candles.
+        IEnumerable<AtrResult> atrResults = quotes.GetAtr(lookbackPeriods: volatilityLookback);
+        if (atrResults.Any(c => c.Atr is null))
+        {
+            if (verbose)
+                clog.Trace($"$<NOT_AVAILABLE>={result}");
+
+            return result;
+        }
+
+        IEnumerable<decimal> atrSeries = atrResults.Select(c => (decimal)c.Atr!.Value);
+        decimal averageAtr = atrSeries.Average();
+        decimal requiredAtr = averageAtr * volatilityAvgSize;
+
+        result = currentAtr > requiredAtr;
+
+        if (result)
+        {
+            clog.Debug($"Current ATR {currentAtr} is greater than the required ATR {requiredAtr} (avg. ATR {averageAtr} times multiplier {volatilityAvgSize}).");
+
+            tradeConditionLogs.Add("  Volume");
+            tradeConditionLogs.Add($"    {volatilityLookback}-ATR series: {atrSeries.LogJoin()}");
+            tradeConditionLogs.Add($"    Average ATR: {averageAtr}");
+            tradeConditionLogs.Add($"    Volatility factor: {volatilityAvgSize}");
+            tradeConditionLogs.Add($"    Current ATR: {currentAtr}");
+            tradeConditionLogs.Add($"    Required ATR: {requiredAtr}");
+        }
+        else if (verbose)
+        {
+            clog.Trace($"Current ATR {currentAtr} is NOT greater than the required ATR {requiredAtr} (avg. ATR {averageAtr} times multiplier {volatilityAvgSize}).");
+        }
+
+        if (verbose)
+            clog.Trace($"$={result}");
+        return result;
     }
 
     /// <summary>
