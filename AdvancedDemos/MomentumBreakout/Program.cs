@@ -820,10 +820,10 @@ internal class Program
             {
                 clog.Trace($$"""
                                         Entry conditions are not satisfied: 
-                                            Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}"
-                                            RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}"
-                                            Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}"
-                                            Volatility: {{(volatilityConfirmation ? "PASSED" : "FAILED")}}"
+                                            Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}
+                                            RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}
+                                            Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}
+                                            Volatility: {{(volatilityConfirmation ? "PASSED" : "FAILED")}}
                                         """);
             }
         }
