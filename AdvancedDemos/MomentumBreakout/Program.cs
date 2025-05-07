@@ -314,15 +314,7 @@ internal class Program
         string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
         Task reportTask = RunReportTaskAsync(reportFilePath, tradeClient, parameters.ReportPeriod, cancellationToken);
 
-        int candlesNeeded = parameters.LongEmaLookback;
-        if (parameters.RsiLookback > candlesNeeded)
-            candlesNeeded = parameters.RsiLookback;
-
-        if (parameters.VolumeLookback > candlesNeeded)
-            candlesNeeded = parameters.VolumeLookback;
-
-        if (parameters.VolatilityLookback > candlesNeeded)
-            candlesNeeded = parameters.VolatilityLookback;
+        int candlesNeeded = CalculateNumberOfCandles(parameters);
 
         CandleWidth candleWidth = parameters.CandleWidth;
         if (!CandleWidthToTimeSpan(candleWidth, out TimeSpan? candleTimeSpan))
@@ -337,19 +329,9 @@ internal class Program
         int counter = 0;
         int quotesBuffer = 100;
         int maxQuotes = candlestickData.Candles.Count + quotesBuffer;
-        List<Quote> quotes = new(capacity: maxQuotes);
-        foreach (Candle candle in candlestickData.Candles)
-            quotes.Add(QuoteFromCandle(candle));
+        List<Quote> quotes = InitializeQuotesAndIndicatorValues(parameters, candlestickData.Candles, maxQuotes, out double? currentShortEma, out double? currentLongEma,
+            out double? currentRsi, out double? currentAtr);
 
-        IEnumerable<EmaResult> shortEmaResult = quotes.GetEma(parameters.ShortEmaLookback);
-        IEnumerable<EmaResult> longEmaResult = quotes.GetEma(parameters.LongEmaLookback);
-        IEnumerable<RsiResult> rsiResult = quotes.GetRsi(parameters.RsiLookback);
-        IEnumerable<AtrResult> atrResult = quotes.GetAtr(parameters.AtrLookback);
-
-        double? currentShortEma = shortEmaResult.Last()?.Ema;
-        double? currentLongEma = longEmaResult.Last()?.Ema;
-        double? currentRsi = rsiResult.Last()?.Rsi;
-        double? currentAtr = atrResult.Last()?.Atr;
         decimal? currentVolume = null;
 
         await using ITickerSubscription tickerSubscription = await tradeClient.CreateTickerSubscriptionAsync(parameters.SymbolPair).ConfigureAwait(false);
@@ -373,39 +355,8 @@ internal class Program
                     Candle closedCandle = await candleTask.ConfigureAwait(false);
                     clog.Debug($"New closed candle received: {closedCandle}");
 
-                    quotes.Add(QuoteFromCandle(closedCandle));
-                    if (quotes.Count > maxQuotes)
-                        quotes.RemoveRange(index: 0, count: quotesBuffer);
-
-                    shortEmaResult = quotes.GetEma(parameters.ShortEmaLookback);
-                    longEmaResult = quotes.GetEma(parameters.LongEmaLookback);
-                    rsiResult = quotes.GetRsi(parameters.RsiLookback);
-                    atrResult = quotes.GetAtr(parameters.AtrLookback);
-
-                    currentShortEma = shortEmaResult.Last()?.Ema;
-                    currentLongEma = longEmaResult.Last()?.Ema;
-                    currentRsi = rsiResult.Last()?.Rsi;
-                    currentAtr = atrResult.Last()?.Atr;
-
-                    if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null))
-                    {
-                        clog.Debug($"Current short({parameters.ShortEmaLookback})-EMA, long({parameters.LongEmaLookback})-EMA, RSI, ATR is {currentShortEma}, {currentLongEma}, {
-                            currentRsi}, {currentAtr}.");
-                    }
-                    else
-                    {
-                        if (currentShortEma is null)
-                            clog.Warn("Unable to calculate the current short EMA.");
-
-                        if (currentLongEma is null)
-                            clog.Warn("Unable to calculate the current long EMA.");
-
-                        if (currentRsi is null)
-                            clog.Warn("Unable to calculate the current RSI.");
-
-                        if (currentAtr is null)
-                            clog.Warn("Unable to calculate the current ATR.");
-                    }
+                    ProcessClosedCandle(closedCandle, quotes, maxQuotes: maxQuotes, quotesBuffer: quotesBuffer, parameters, out currentShortEma, out currentLongEma, out currentRsi,
+                        out currentAtr);
 
                     // Refresh task.
                     candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
@@ -434,55 +385,13 @@ internal class Program
                         decimal lastPrice = ticker.LastPrice.Value;
                         tradeConditionLogs.Add($"  Current price: {lastPrice}");
                         if (debugIteration)
-                        {
                             clog.Trace($"Current price is {lastPrice}.");
-                        }
 
                         if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null) && (currentVolume is not null))
                         {
-                            // Short EMA over the long EMA implies bullish trend. Short EMA under the long EMA implies bearish trend.
-                            bool bullishTrend = currentShortEma > currentLongEma;
-                            bool bearishTrend = currentShortEma < currentLongEma;
-
-                            if (bullishTrend || bearishTrend)
-                            {
-                                tradeConditionLogs.Add($"  Trend: {(bullishTrend ? "bullish" : "bearish")}");
-                                tradeConditionLogs.Add($"    {parameters.ShortEmaLookback}-EMA: {currentShortEma}");
-                                tradeConditionLogs.Add($"    {parameters.LongEmaLookback}-EMA: {currentLongEma}");
-
-                                bool breakoutConfirmation = CheckBreakoutCondition(longEntry: bullishTrend, quotes, lastPrice: lastPrice,
-                                    breakoutLookback: parameters.BreakoutLookback, breakoutAtrSize: parameters.BreakoutAtrSize, currentAtr: (decimal)currentAtr.Value,
-                                    verbose: debugIteration, tradeConditionLogs);
-
-                                bool rsiConfirmation = CheckRsiCondition(longEntry: bullishTrend, quotes, (decimal)currentRsi.Value, verbose: debugIteration, tradeConditionLogs);
-
-                                bool volumeConfirmation = CheckVolumeCondition(quotes, volumeLookback: parameters.VolumeLookback, volumeAvgSize: parameters.VolatilityAvgSize,
-                                    currentVolume: currentVolume.Value, verbose: debugIteration, tradeConditionLogs);
-
-                                bool volatilityConfirmation = CheckVolatilityCondition(quotes, volatilityLookback: parameters.VolatilityLookback,
-                                    volatilityAvgSize: parameters.VolatilityAvgSize, currentAtr: (decimal)currentAtr.Value, verbose: debugIteration, tradeConditionLogs);
-
-                                if (breakoutConfirmation && rsiConfirmation && volatilityConfirmation && volatilityConfirmation)
-                                {
-                                    StringBuilder stringBuilder = new("All entry conditions are satisfied.");
-                                    foreach (string line in tradeConditionLogs)
-                                        _ = stringBuilder.AppendLine(line);
-
-                                    string msg = stringBuilder.ToString();
-                                    await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
-                                }
-                                else if (debugIteration)
-                                {
-                                    clog.Trace($$"""
-                                        Entry conditions are not satisfied: 
-                                            Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}"
-                                            RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}"
-                                            Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}"
-                                            Volatility: {{(volatilityConfirmation ? "PASSED" : "FAILED")}}"
-                                        """);
-                                }
-                            }
-                            else clog.Trace($"Current short-EMA equals long-EMA. No trend detected.");
+                            await ProcessNewPriceAsync(quotes, lastPrice: lastPrice, currentShortEma: (decimal)currentShortEma.Value, currentLongEma: (decimal)currentLongEma.Value,
+                                currentRsi: (decimal)currentRsi.Value, currentAtr: (decimal)currentAtr.Value, currentVolume: currentVolume.Value, parameters, debugIteration,
+                                tradeConditionLogs, cancellationToken).ConfigureAwait(false);
                         }
                         else clog.Trace("Waiting for the required values for calculation to be available.");
                     }
@@ -499,6 +408,107 @@ internal class Program
         }
 
         clog.Debug("$");
+    }
+
+    /// <summary>
+    /// Initializes list of quotes to be used for calculating indicator values, and initialiezes main indicator values.
+    /// </summary>
+    /// <param name="parameters">Program parameters.</param>
+    /// <param name="candles">List of historical candles to be converted to quotes.</param>
+    /// <param name="maxQuotes">Maximum number of quotes.</param>
+    /// <param name="currentShortEma">Variable to be filled with the current short EMA value.</param>
+    /// <param name="currentLongEma">Variable to be filled with the current long EMA value.</param>
+    /// <param name="currentRsi">Variable to be filled with the current RSI value.</param>
+    /// <param name="currentAtr">Variable to be filled with the current ATR value.</param>
+    private static List<Quote> InitializeQuotesAndIndicatorValues(Parameters parameters, IReadOnlyList<Candle> candles, int maxQuotes, out double? currentShortEma,
+        out double? currentLongEma, out double? currentRsi, out double? currentAtr)
+    {
+        List<Quote> quotes = new(capacity: maxQuotes);
+
+        foreach (Candle candle in candles)
+            quotes.Add(QuoteFromCandle(candle));
+
+        IEnumerable<EmaResult> shortEmaResult = quotes.GetEma(parameters.ShortEmaLookback);
+        IEnumerable<EmaResult> longEmaResult = quotes.GetEma(parameters.LongEmaLookback);
+        IEnumerable<RsiResult> rsiResult = quotes.GetRsi(parameters.RsiLookback);
+        IEnumerable<AtrResult> atrResult = quotes.GetAtr(parameters.AtrLookback);
+
+        currentShortEma = shortEmaResult.Last()?.Ema;
+        currentLongEma = longEmaResult.Last()?.Ema;
+        currentRsi = rsiResult.Last()?.Rsi;
+        currentAtr = atrResult.Last()?.Atr;
+
+        return quotes;
+    }
+
+    /// <summary>
+    /// Calculates how many candles are needed to perform the required calculations given the specific program parameters.
+    /// </summary>
+    /// <param name="parameters">Program parameters.</param>
+    /// <returns>Number of candles needed to perform the required calculations.</returns>
+    private static int CalculateNumberOfCandles(Parameters parameters)
+    {
+        int candlesNeeded = parameters.LongEmaLookback;
+
+        if (parameters.RsiLookback > candlesNeeded)
+            candlesNeeded = parameters.RsiLookback;
+
+        if (parameters.VolumeLookback > candlesNeeded)
+            candlesNeeded = parameters.VolumeLookback;
+
+        if (parameters.VolatilityLookback > candlesNeeded)
+            candlesNeeded = parameters.VolatilityLookback;
+
+        return candlesNeeded;
+    }
+
+    /// <summary>
+    /// Processes a newly received closed candle.
+    /// </summary>
+    /// <param name="closedCandle">Closed candle to process.</param>
+    /// <param name="quotes">List of quotes to add the new candle values to.</param>
+    /// <param name="maxQuotes">Maximum number of quotes.</param>
+    /// <param name="quotesBuffer">Number of extra quotes in <paramref name="quotes"/> that are not needed for calculation.</param>
+    /// <param name="parameters">Program parameters.</param>
+    /// <param name="currentShortEma">Variable to be filled with the current short EMA value.</param>
+    /// <param name="currentLongEma">Variable to be filled with the current long EMA value.</param>
+    /// <param name="currentRsi">Variable to be filled with the current RSI value.</param>
+    /// <param name="currentAtr">Variable to be filled with the current ATR value.</param>
+    private static void ProcessClosedCandle(Candle closedCandle, List<Quote> quotes, int maxQuotes, int quotesBuffer, Parameters parameters, out double? currentShortEma,
+        out double? currentLongEma, out double? currentRsi, out double? currentAtr)
+    {
+        quotes.Add(QuoteFromCandle(closedCandle));
+        if (quotes.Count > maxQuotes)
+            quotes.RemoveRange(index: 0, count: quotesBuffer);
+
+        IEnumerable<EmaResult> shortEmaResult = quotes.GetEma(parameters.ShortEmaLookback);
+        IEnumerable<EmaResult> longEmaResult = quotes.GetEma(parameters.LongEmaLookback);
+        IEnumerable<RsiResult> rsiResult = quotes.GetRsi(parameters.RsiLookback);
+        IEnumerable<AtrResult> atrResult = quotes.GetAtr(parameters.AtrLookback);
+
+        currentShortEma = shortEmaResult.Last()?.Ema;
+        currentLongEma = longEmaResult.Last()?.Ema;
+        currentRsi = rsiResult.Last()?.Rsi;
+        currentAtr = atrResult.Last()?.Atr;
+
+        if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null))
+        {
+            clog.Debug($"Current short({parameters.ShortEmaLookback})-EMA, long({parameters.LongEmaLookback})-EMA, RSI, ATR is {currentShortEma}, {currentLongEma}, {currentRsi}, {currentAtr}.");
+        }
+        else
+        {
+            if (currentShortEma is null)
+                clog.Warn("Unable to calculate the current short EMA.");
+
+            if (currentLongEma is null)
+                clog.Warn("Unable to calculate the current long EMA.");
+
+            if (currentRsi is null)
+                clog.Warn("Unable to calculate the current RSI.");
+
+            if (currentAtr is null)
+                clog.Warn("Unable to calculate the current ATR.");
+        }
     }
 
     /// <summary>
@@ -740,6 +750,68 @@ internal class Program
         if (verbose)
             clog.Trace($"$={result}");
         return result;
+    }
+
+    /// <summary>
+    /// Processes new market price.
+    /// </summary>
+    /// <param name="quotes">List of quotes needed for calculations.</param>
+    /// <param name="lastPrice">Price of the last trade.</param>
+    /// <param name="currentShortEma">Current short EMA value.</param>
+    /// <param name="currentLongEma">Current long EMA value.</param>
+    /// <param name="currentRsi">Current RSI value.</param>
+    /// <param name="currentAtr">Current ATR value.</param>
+    /// <param name="currentVolume">Current volume.</param>
+    /// <param name="parameters">Program parameters.</param>
+    /// <param name="verbose"><c>true</c> to produce extra trace logs, <c>false</c> otherwise.</param>
+    /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task ProcessNewPriceAsync(List<Quote> quotes, decimal lastPrice, decimal currentShortEma, decimal currentLongEma, decimal currentRsi, decimal currentAtr,
+        decimal currentVolume, Parameters parameters, bool verbose, List<string> tradeConditionLogs, CancellationToken cancellationToken)
+    {
+        // Short EMA over the long EMA implies bullish trend. Short EMA under the long EMA implies bearish trend.
+        bool bullishTrend = currentShortEma > currentLongEma;
+        bool bearishTrend = currentShortEma < currentLongEma;
+
+        if (bullishTrend || bearishTrend)
+        {
+            tradeConditionLogs.Add($"  Trend: {(bullishTrend ? "bullish" : "bearish")}");
+            tradeConditionLogs.Add($"    {parameters.ShortEmaLookback}-EMA: {currentShortEma}");
+            tradeConditionLogs.Add($"    {parameters.LongEmaLookback}-EMA: {currentLongEma}");
+
+            bool breakoutConfirmation = CheckBreakoutCondition(longEntry: bullishTrend, quotes, lastPrice: lastPrice,
+                breakoutLookback: parameters.BreakoutLookback, breakoutAtrSize: parameters.BreakoutAtrSize, currentAtr: currentAtr, verbose: verbose, tradeConditionLogs);
+
+            bool rsiConfirmation = CheckRsiCondition(longEntry: bullishTrend, quotes, currentRsi, verbose: verbose, tradeConditionLogs);
+
+            bool volumeConfirmation = CheckVolumeCondition(quotes, volumeLookback: parameters.VolumeLookback, volumeAvgSize: parameters.VolatilityAvgSize,
+                currentVolume: currentVolume, verbose: verbose, tradeConditionLogs);
+
+            bool volatilityConfirmation = CheckVolatilityCondition(quotes, volatilityLookback: parameters.VolatilityLookback,
+                volatilityAvgSize: parameters.VolatilityAvgSize, currentAtr: currentAtr, verbose: verbose, tradeConditionLogs);
+
+            if (breakoutConfirmation && rsiConfirmation && volatilityConfirmation && volatilityConfirmation)
+            {
+                StringBuilder stringBuilder = new("All entry conditions are satisfied.");
+                foreach (string line in tradeConditionLogs)
+                    _ = stringBuilder.AppendLine(line);
+
+                string msg = stringBuilder.ToString();
+                await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
+            }
+            else if (verbose)
+            {
+                clog.Trace($$"""
+                                        Entry conditions are not satisfied: 
+                                            Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}"
+                                            RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}"
+                                            Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}"
+                                            Volatility: {{(volatilityConfirmation ? "PASSED" : "FAILED")}}"
+                                        """);
+            }
+        }
+        else clog.Trace($"Current short-EMA equals long-EMA. No trend detected.");
     }
 
     /// <summary>
