@@ -321,7 +321,7 @@ internal class Program
             throw new SanityCheckException($"Unable to convert candle width {candleWidth} to timespan.");
 
         TimeSpan historyNeeded = candleTimeSpan.Value * (candlesNeeded + 1);
-        DateTime now = DateTime.Now;
+        DateTime now = DateTime.UtcNow;
         DateTime startTime = now.Add(-historyNeeded);
         CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(parameters.SymbolPair, candleWidth, startTime: startTime, endTime: now, cancellationToken)
             .ConfigureAwait(false);
@@ -355,8 +355,8 @@ internal class Program
                     Candle closedCandle = await candleTask.ConfigureAwait(false);
                     clog.Debug($"New closed candle received: {closedCandle}");
 
-                    ProcessClosedCandle(closedCandle, quotes, maxQuotes: maxQuotes, quotesBuffer: quotesBuffer, parameters, out currentShortEma, out currentLongEma, out currentRsi,
-                        out currentAtr);
+                    ProcessClosedCandle(closedCandle, quotes, maxQuotes: maxQuotes, quotesBuffer: quotesBuffer, parameters, ref currentShortEma, ref currentLongEma, ref currentRsi,
+                        ref currentAtr);
 
                     // Refresh task.
                     candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
@@ -483,9 +483,16 @@ internal class Program
     /// <param name="currentLongEma">Variable to be filled with the current long EMA value.</param>
     /// <param name="currentRsi">Variable to be filled with the current RSI value.</param>
     /// <param name="currentAtr">Variable to be filled with the current ATR value.</param>
-    private static void ProcessClosedCandle(Candle closedCandle, List<Quote> quotes, int maxQuotes, int quotesBuffer, Parameters parameters, out double? currentShortEma,
-        out double? currentLongEma, out double? currentRsi, out double? currentAtr)
+    private static void ProcessClosedCandle(Candle closedCandle, List<Quote> quotes, int maxQuotes, int quotesBuffer, Parameters parameters, ref double? currentShortEma,
+        ref double? currentLongEma, ref double? currentRsi, ref double? currentAtr)
     {
+        Quote quote = QuoteFromCandle(closedCandle);
+        if (quote.Date == quotes[^1].Date)
+        {
+            // Do not add candle that we already have.
+            return;
+        }
+
         quotes.Add(QuoteFromCandle(closedCandle));
         if (quotes.Count > maxQuotes)
             quotes.RemoveRange(index: 0, count: quotesBuffer);
