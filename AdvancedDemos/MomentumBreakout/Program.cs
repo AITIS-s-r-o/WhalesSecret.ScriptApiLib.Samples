@@ -15,11 +15,13 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
+using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
+using WhalesSecret.TradeScriptLib.Utils.Orders;
 
 namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout;
 
@@ -81,6 +83,9 @@ internal class Program
 
     /// <summary>Telegram API instance, or <c>null</c> if not initialized yet.</summary>
     private static Telegram? telegram;
+
+    /// <summary>Number of trades the bot performed.</summary>
+    private static int tradeCounter;
 
     /// <summary>
     /// Application that trades a Direct Cost Averaging (DCA) strategy.
@@ -341,6 +346,11 @@ internal class Program
         // List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.
         List<string> tradeConditionLogs = new(capacity: 32);
 
+        OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
+        _ = orderRequestBuilder
+            .SetSizeInBaseSymbol(true)
+            .SetSymbolPair(parameters.SymbolPair);
+
         DateTime nextEntry = DateTime.MinValue;
         try
         {
@@ -389,15 +399,16 @@ internal class Program
 
                             if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null) && (currentVolume is not null))
                             {
-                                bool entry = await ProcessNewPriceAsync(quotes, lastPrice: lastPrice, currentShortEma: (decimal)currentShortEma.Value,
-                                    currentLongEma: (decimal)currentLongEma.Value, currentRsi: (decimal)currentRsi.Value, currentAtr: (decimal)currentAtr.Value,
-                                    currentVolume: currentVolume.Value, parameters, debugIteration, tradeConditionLogs, cancellationToken).ConfigureAwait(false);
+                                bool entry = await ProcessNewPriceAsync(tradeClient, orderRequestBuilder, quotes, lastPrice: lastPrice,
+                                    currentShortEma: (decimal)currentShortEma.Value, currentLongEma: (decimal)currentLongEma.Value, currentRsi: (decimal)currentRsi.Value,
+                                    currentAtr: (decimal)currentAtr.Value, currentVolume: currentVolume.Value, parameters, debugIteration, tradeConditionLogs, cancellationToken)
+                                    .ConfigureAwait(false);
 
                                 if (entry)
                                 {
                                     DateTime lastEntry = DateTime.UtcNow;
                                     nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
-                                    await PrintInfoTelegramAsync($"New trade entered. Cooldown period of {
+                                    await PrintInfoTelegramAsync($"New trade attempted to be entered. Cooldown period of {
                                         parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.").ConfigureAwait(false);
                                 }
                             }
@@ -783,6 +794,8 @@ internal class Program
     /// <summary>
     /// Processes new market price.
     /// </summary>
+    /// <param name="tradeClient">Connected API client.</param>
+    /// <param name="orderRequestBuilder">Order request builder for working orders to open the trading position with.</param>
     /// <param name="quotes">List of quotes needed for calculations.</param>
     /// <param name="lastPrice">Price of the last trade.</param>
     /// <param name="currentShortEma">Current short EMA value.</param>
@@ -795,9 +808,17 @@ internal class Program
     /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns><c>true</c> if all the entry conditions were satisfied with the new price, <c>false</c> otherwise.</returns>
-    private static async Task<bool> ProcessNewPriceAsync(List<Quote> quotes, decimal lastPrice, decimal currentShortEma, decimal currentLongEma, decimal currentRsi,
-        decimal currentAtr, decimal currentVolume, Parameters parameters, bool verbose, List<string> tradeConditionLogs, CancellationToken cancellationToken)
+    private static async Task<bool> ProcessNewPriceAsync(ITradeApiClient tradeClient, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, List<Quote> quotes,
+        decimal lastPrice, decimal currentShortEma, decimal currentLongEma, decimal currentRsi, decimal currentAtr, decimal currentVolume, Parameters parameters, bool verbose,
+        List<string> tradeConditionLogs, CancellationToken cancellationToken)
     {
+        if (verbose)
+        {
+            clog.Trace($"* {nameof(tradeClient)}='{tradeClient}',|{quotes}|={quotes.Count},{nameof(lastPrice)}={lastPrice},{nameof(currentShortEma)}={currentShortEma},{
+                nameof(currentLongEma)}={currentLongEma},{nameof(currentRsi)}={currentRsi},{nameof(currentAtr)}={currentAtr},{nameof(currentVolume)}={currentVolume},{
+                nameof(parameters)}='{parameters}',{nameof(verbose)}={verbose},|{nameof(tradeConditionLogs)}|={tradeConditionLogs.Count}");
+        }
+
         // Short EMA over the long EMA implies bullish trend. Short EMA under the long EMA implies bearish trend.
         bool bullishTrend = currentShortEma > currentLongEma;
         bool bearishTrend = currentShortEma < currentLongEma;
@@ -822,9 +843,42 @@ internal class Program
 
             if (breakoutConfirmation && rsiConfirmation && volatilityConfirmation && volatilityConfirmation)
             {
+                tradeCounter++;
+                clog.Debug($"All entry conditions are satisfied, attempt entering the trade #{tradeCounter}.");
+
+                OrderSide orderSide = bullishTrend ? OrderSide.Buy : OrderSide.Sell;
+                string clientOrderId = $"{parameters.OrderIdPrefix}{tradeCounter:00000}{(orderSide == OrderSide.Buy ? 'b' : 's')}{ITradingStrategyBudget.ClientOrderIdSuffix}";
+
+                string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
+                if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
+                    throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
+
+                decimal orderSize = initialBudget * parameters.PositionSize;
+                decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
+                MarketOrderRequest workingOrderRequest = orderRequestBuilder
+                        .SetSide(orderSide)
+                        .SetSize(orderSizeInBaseSymbol)
+                        .SetClientOrderId(clientOrderId)
+                        .Build();
+
+                tradeConditionLogs.Add("  Working order:");
+                tradeConditionLogs.Add($"    {workingOrderRequest}");
+
+                BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
+
+                tradeConditionLogs.Add("  Bracket orders:");
+                foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
+                    tradeConditionLogs.Add($"    {bracketOrderDefinition}");
+
+               // await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, onBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
+
                 StringBuilder stringBuilder = new("All entry conditions are satisfied.");
+                _ = stringBuilder.AppendLine("```");
+
                 foreach (string line in tradeConditionLogs)
                     _ = stringBuilder.AppendLine(line);
+
+                _ = stringBuilder.AppendLine("```");
 
                 string msg = stringBuilder.ToString();
                 await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
@@ -834,17 +888,92 @@ internal class Program
             else if (verbose)
             {
                 clog.Trace($$"""
-                                        Entry conditions are not satisfied: 
-                                            Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}
-                                            RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}
-                                            Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}
-                                            Volatility: {{(volatilityConfirmation ? "PASSED" : "FAILED")}}
-                                        """);
+                    Entry conditions are not satisfied: 
+                        Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}
+                        RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}
+                        Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}
+                        Volatility: {{(volatilityConfirmation ? "PASSED" : "FAILED")}}
+                    """);
             }
         }
         else clog.Trace($"Current short-EMA equals long-EMA. No trend detected.");
 
+        if (verbose)
+            clog.Trace($"$={result}");
         return result;
+    }
+
+    /// <summary>
+    /// Creates bracket order definitions for the bracketed order.
+    /// </summary>
+    /// <param name="parameters">Program parameters.</param>
+    /// <param name="orderSide">Side of the working order.</param>
+    /// <param name="lastPrice">Price of the last trade.</param>
+    /// <param name="currentAtr">Current ATR value.</param>
+    /// <returns>List of bracket orders.</returns>
+    private static BracketOrderDefinition[] CreateBracketOrdersDefinitions(Parameters parameters, OrderSide orderSide, decimal lastPrice, decimal currentAtr)
+    {
+        clog.Debug($"* {nameof(parameters)}='{parameters}',{nameof(orderSide)}={orderSide},{nameof(lastPrice)}={lastPrice},{nameof(currentAtr)}={currentAtr}");
+
+        BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[parameters.StopLossCount + parameters.TakeProfitCount];
+
+        decimal slPercent = Math.Round(parameters.StopLossCount > 0 ? 1.0m / parameters.StopLossCount : 0, decimals: 2);
+        decimal slPercentRemaining = 1.0m;
+        decimal slThresholdPrice = 0;
+
+        int index = 0;
+        if (parameters.StopLossCount > 0)
+        {
+            slThresholdPrice = orderSide == OrderSide.Buy ? lastPrice - (currentAtr * parameters.FirstStopLossAtr) : lastPrice + (currentAtr * parameters.FirstStopLossAtr);
+
+            bracketOrdersDefinitions[index] = new(BracketOrderType.StopLoss, thresholdPrice: slThresholdPrice, sizePercent: slPercent);
+            index++;
+
+            slPercentRemaining -= slPercent;
+        }
+
+        for (int i = 1; i < parameters.StopLossCount; i++)
+        {
+            slThresholdPrice = orderSide == OrderSide.Buy
+                ? slThresholdPrice - (currentAtr * parameters.NextStopLossAtrIncrement)
+                : slThresholdPrice + (currentAtr * parameters.NextStopLossAtrIncrement);
+
+            decimal sizePercent = index == parameters.StopLossCount - 1 ? slPercentRemaining : slPercent;
+            bracketOrdersDefinitions[index] = new(BracketOrderType.StopLoss, thresholdPrice: slThresholdPrice, sizePercent: sizePercent);
+            index++;
+
+            slPercentRemaining -= sizePercent;
+        }
+
+        decimal tpPercent = Math.Round(parameters.TakeProfitCount > 0 ? 1.0m / parameters.TakeProfitCount: 0, decimals: 2);
+        decimal tpPercentRemaining = 1.0m;
+        decimal tpThresholdPrice = 0;
+
+        if (parameters.TakeProfitCount > 0)
+        {
+            tpThresholdPrice = orderSide == OrderSide.Buy ? lastPrice + (currentAtr * parameters.FirstTakeProfitAtr) : lastPrice - (currentAtr * parameters.FirstTakeProfitAtr);
+
+            bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: tpPercent);
+            index++;
+
+            tpPercentRemaining -= tpPercent;
+        }
+
+        for (int i = 1; i < parameters.TakeProfitCount; i++)
+        {
+            tpThresholdPrice = orderSide == OrderSide.Buy
+                ? tpThresholdPrice + (currentAtr * parameters.NextTakeProfitAtrIncrement)
+                : tpThresholdPrice - (currentAtr * parameters.NextTakeProfitAtrIncrement);
+
+            decimal sizePercent = i == parameters.TakeProfitCount - 1 ? tpPercentRemaining : tpPercent;
+            bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: sizePercent);
+            index++;
+
+            tpPercentRemaining -= sizePercent;
+        }
+
+        clog.Debug($"$={bracketOrdersDefinitions.LogJoin()}");
+        return bracketOrdersDefinitions;
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text.Json;
@@ -17,6 +18,9 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout;
 /// </summary>
 public class Parameters
 {
+    /// <summary>Maximum length of <see cref="OrderIdPrefix"/>.</summary>
+    private const int MaxOrderIdPrefixLength = 8;
+
     /// <summary>Path to the application data folder.</summary>
     public string AppDataPath { get; }
 
@@ -80,11 +84,21 @@ public class Parameters
     /// <summary>Multiple of ATR to define distance of the next take-profit from the previous take-profit.</summary>
     public decimal NextTakeProfitAtrIncrement { get; }
 
-    /// <summary>Size of each trade as a multiple of the original budget balance.</summary>
+    /// <summary>Size of each trade as a multiple of the initial budget balance.</summary>
+    /// <remarks>
+    /// The order size for buy orders is calculated from the initial budget's allocation of the quote symbol of the <see cref="SymbolPair"/> and the order size for the sell orders
+    /// is calculated from the initial budget's allocation of the base symbol. For example, if we bot is going to make an order to buy <see cref="SymbolPair.BTC_EUR"/> and the
+    /// initial budget for <c>EUR</c> is <c>1,000</c> and the position size is <c>5%</c> (i.e. <c>0.05</c>), then the order size will be <c>50 EUR</c> worth of <c>BTC</c>. If the
+    /// bot is going to make an order to sell <see cref="SymbolPair.BTC_EUR"/> and the initial budget for <c>BTC</c> is <c>0.01</c> and the position size is <c>5%</c>, then the
+    /// order size will be <c>0.0005 BTC</c>.
+    /// </remarks>
     public decimal PositionSize { get; }
 
     /// <summary>Number of candles to wait before allowing a new trade to be entered.</summary>
     public int TradeCooldownPeriod { get; }
+
+    /// <summary>Prefix of client order IDs of the trading orders.</summary>
+    public string OrderIdPrefix { get; }
 
     /// <summary>Description of budget parameters for the trading strategy.</summary>
     public BudgetRequest BudgetRequest { get; }
@@ -120,6 +134,7 @@ public class Parameters
     /// <param name="nextTakeProfitAtrIncrement">Multiple of ATR to define distance of the next take-profit from the previous take-profit.</param>
     /// <param name="positionSize">Size of each trade as a multiple of the original budget balance.</param>
     /// <param name="tradeCooldownPeriod">Number of candles to wait before allowing a new trade to be entered.</param>
+    /// <param name="orderIdPrefix">Prefix of client order IDs of the trading orders.</param>
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
@@ -145,14 +160,18 @@ public class Parameters
     /// <item><paramref name="nextTakeProfitAtrIncrement"/> is not a positive number, or</item>
     /// <item><paramref name="positionSize"/> is not a positive number, or</item>
     /// <item><paramref name="tradeCooldownPeriod"/> is not a positive number, or</item>
+    /// <item><paramref name="orderIdPrefix"/> is <c>null</c>, empty, or longer than <see cref="MaxOrderIdPrefixLength"/>, or</item>
+    /// <item><paramref name="budgetRequest"/> has zero initial budget for either the base or the quote symbol of <paramref name="symbolPair"/>, or</item>
     /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
     /// </list>
     /// </exception>
+    [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity",
+        Justification = "The cyclomatic complexity in this method is only caused by a large number of validation checks, which is fine.")]
     [JsonConstructor]
     public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, int shortEmaLookback, int longEmaLookback, int rsiLookback, int atrLookback,
         int breakoutLookback, decimal breakoutAtrSize, int volumeLookback, decimal volumeAvgSize, int volatilityLookback, decimal volatilityAvgSize, int maxTradesPerDay,
         CandleWidth candleWidth, int stopLossCount, int takeProfitCount, decimal firstStopLossAtr, decimal nextStopLossAtrIncrement, decimal firstTakeProfitAtr,
-        decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, BudgetRequest budgetRequest, TimeSpan reportPeriod)
+        decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, string orderIdPrefix, BudgetRequest budgetRequest, TimeSpan reportPeriod)
     {
         if (appDataPath is null)
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
@@ -220,6 +239,24 @@ public class Parameters
         if (tradeCooldownPeriod <= 0)
             throw new InvalidArgumentException($"'{nameof(tradeCooldownPeriod)}' must be a positive number.", parameterName: nameof(tradeCooldownPeriod));
 
+        if (string.IsNullOrEmpty(orderIdPrefix) || (orderIdPrefix.Length > MaxOrderIdPrefixLength))
+        {
+            throw new InvalidArgumentException($"'{nameof(orderIdPrefix)}' must not be null, empty, nor longer than {MaxOrderIdPrefixLength}.",
+                parameterName: nameof(MaxOrderIdPrefixLength));
+        }
+
+        if (!budgetRequest.InitialBudget.TryGetValue(symbolPair.BaseSymbol, out decimal baseAllocation) || (baseAllocation <= 0))
+        {
+            throw new InvalidArgumentException($"Initial budget for '{symbolPair.BaseSymbol}' in '{nameof(budgetRequest)}' be a positive number.",
+                parameterName: nameof(budgetRequest));
+        }
+
+        if (!budgetRequest.InitialBudget.TryGetValue(symbolPair.QuoteSymbol, out decimal quoteAllocation) || (quoteAllocation <= 0))
+        {
+            throw new InvalidArgumentException($"Initial budget for '{symbolPair.QuoteSymbol}' in '{nameof(budgetRequest)}' be a positive number.",
+                parameterName: nameof(budgetRequest));
+        }
+
         if (reportPeriod <= TimeSpan.Zero)
             throw new InvalidArgumentException($"'{nameof(reportPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(reportPeriod));
 
@@ -246,6 +283,7 @@ public class Parameters
         this.NextTakeProfitAtrIncrement = nextTakeProfitAtrIncrement;
         this.PositionSize = positionSize;
         this.TradeCooldownPeriod = tradeCooldownPeriod;
+        this.OrderIdPrefix = orderIdPrefix;
         this.BudgetRequest = budgetRequest;
         this.ReportPeriod = reportPeriod;
     }
@@ -308,7 +346,7 @@ public class Parameters
     public override string ToString()
     {
         string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},{30}={31}"
-            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}=`{47}`,{48}={49}]";
+            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}=`{47}`,{48}='{49}',{50}={51}]";
         return string.Format
         (
             CultureInfo.InvariantCulture,
@@ -336,6 +374,7 @@ public class Parameters
             nameof(this.NextTakeProfitAtrIncrement), this.NextTakeProfitAtrIncrement,
             nameof(this.PositionSize), this.PositionSize,
             nameof(this.TradeCooldownPeriod), this.TradeCooldownPeriod,
+            nameof(this.OrderIdPrefix), this.OrderIdPrefix,
             nameof(this.BudgetRequest), this.BudgetRequest,
             nameof(this.ReportPeriod), this.ReportPeriod
         );
