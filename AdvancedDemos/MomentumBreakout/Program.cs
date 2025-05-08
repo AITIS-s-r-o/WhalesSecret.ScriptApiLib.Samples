@@ -870,15 +870,17 @@ internal class Program
                 foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
                     tradeConditionLogs.Add($"    {bracketOrderDefinition}");
 
-               // await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, onBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
+                // await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, onBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
 
-                StringBuilder stringBuilder = new("All entry conditions are satisfied.");
-                _ = stringBuilder.AppendLine("```");
+                StringBuilder stringBuilder = new();
+                _ = stringBuilder
+                    .AppendLine("All entry conditions are satisfied.")
+                    .AppendLine("<pre>");
 
                 foreach (string line in tradeConditionLogs)
                     _ = stringBuilder.AppendLine(line);
 
-                _ = stringBuilder.AppendLine("```");
+                _ = stringBuilder.AppendLine("</pre>");
 
                 string msg = stringBuilder.ToString();
                 await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
@@ -1041,7 +1043,12 @@ internal class Program
     {
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
-        await PrintInfoTelegramAsync($"Bot started with parameters: {parameters}").ConfigureAwait(false);
+        await PrintInfoTelegramAsync($$"""
+            Bot started with parameters:
+            <pre>
+            {{parameters}}
+            </pre>
+            """).ConfigureAwait(false);
 
         StringBuilder stringBuilder = new();
         _ = stringBuilder
