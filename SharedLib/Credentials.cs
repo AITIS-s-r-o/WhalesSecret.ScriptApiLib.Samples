@@ -32,6 +32,7 @@ public static class Credentials
     public static readonly SensitiveByteArray KucoinPassphrase = "CHANGE THIS TO Kucoin passphrase"u8;
 
     /// <summary>API token for Telegram bot.</summary>
+    /// <seealso href="https://medium.com/@whales_secret/trading-bot-in-c-part-2-notifications-1257dc1f4c48"/>
     public const string TelegramApiToken = "CHANGE THIS TO Telegram API token";
 
     /// <summary>
