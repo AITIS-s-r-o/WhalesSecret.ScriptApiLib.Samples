@@ -1265,8 +1265,8 @@ internal class Program
 
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[parameters.StopLossCount + parameters.TakeProfitCount];
 
-        decimal slPercent = Math.Round(parameters.StopLossCount > 0 ? 1.0m / parameters.StopLossCount : 0, decimals: 2);
-        decimal slPercentRemaining = 1.0m;
+        decimal slPercent = Math.Round(parameters.StopLossCount > 0 ? 100.0m / parameters.StopLossCount : 0, decimals: 2);
+        decimal slPercentRemaining = 100.0m;
         decimal slThresholdPrice = 0;
 
         int index = 0;
@@ -1293,8 +1293,8 @@ internal class Program
             slPercentRemaining -= sizePercent;
         }
 
-        decimal tpPercent = Math.Round(parameters.TakeProfitCount > 0 ? 1.0m / parameters.TakeProfitCount: 0, decimals: 2);
-        decimal tpPercentRemaining = 1.0m;
+        decimal tpPercent = Math.Round(parameters.TakeProfitCount > 0 ? 100.0m / parameters.TakeProfitCount: 0, decimals: 2);
+        decimal tpPercentRemaining = 100.0m;
         decimal tpThresholdPrice = 0;
 
         if (parameters.TakeProfitCount > 0)
