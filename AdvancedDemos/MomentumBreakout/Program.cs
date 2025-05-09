@@ -1426,21 +1426,24 @@ internal class Program
                     }
                 }
 
-                StringBuilder stringBuilder = new();
-                lock (liveLock)
+                if (ordersToRemove.Count > 0)
                 {
-                    foreach (ILiveBracketedOrder liveBracketedOrder in ordersToRemove)
+                    StringBuilder stringBuilder = new();
+                    lock (liveLock)
                     {
-                        _ = liveBracketedOrdersTerminationTasksMap.Remove(liveBracketedOrder);
-                        clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
+                        foreach (ILiveBracketedOrder liveBracketedOrder in ordersToRemove)
+                        {
+                            _ = liveBracketedOrdersTerminationTasksMap.Remove(liveBracketedOrder);
+                            clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
 
-                        openPositions--;
-                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
-                            $"Live bracketed order '{liveBracketedOrder}' has been completed. There are now {openPositions} open positions.");
+                            openPositions--;
+                            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
+                                $"Live bracketed order '{liveBracketedOrder}' has been completed. There are now {openPositions} open positions.");
+                        }
                     }
-                }
 
-                await PrintInfoTelegramAsync(stringBuilder.ToString()).ConfigureAwait(false);
+                    await PrintInfoTelegramAsync(stringBuilder.ToString()).ConfigureAwait(false);
+                }
             }
         }
         catch (OperationCanceledException)
