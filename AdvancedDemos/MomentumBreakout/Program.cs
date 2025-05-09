@@ -602,7 +602,8 @@ internal class Program
 
         if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null))
         {
-            clog.Debug($"Current short({parameters.ShortEmaLookback})-EMA, long({parameters.LongEmaLookback})-EMA, RSI, ATR is {currentShortEma}, {currentLongEma}, {currentRsi}, {currentAtr}.");
+            clog.Debug($"Current short({parameters.ShortEmaLookback})-EMA, long({parameters.LongEmaLookback})-EMA, RSI, ATR is {currentShortEma}, {currentLongEma}, {currentRsi}, {
+                currentAtr}.");
         }
         else
         {
