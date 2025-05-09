@@ -67,6 +67,11 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout;
 /// <para>
 /// Each trade uses the size that is <see cref="Parameters.PositionSize"/> times the original available budget for the base symbol of <see cref="Parameters.SymbolPair"/>.
 /// </para>
+/// <para>
+/// If all entry conditions are satisfied and the bot attempts to open a new position, the bot enters a cooldown period for <see cref="Parameters.TradeCooldownPeriod"/> candles
+/// in order to avoid duplicated trades. The bot may operate multiple open positions at the same time, but all open position must be on the same side - either all long or all
+/// short.
+/// </para>
 /// <para>The bot also create reports about its performance and writes the report history it into a CSV file.</para>
 /// </summary>
 internal class Program
