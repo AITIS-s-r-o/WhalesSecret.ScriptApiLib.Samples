@@ -307,7 +307,7 @@ internal class Program
     {
         PrintInfo(msg);
 
-        if (telegram is not null)
+        if ((telegram is not null) && !string.IsNullOrEmpty(msg))
         {
             string? error = await telegram.SendMessageAsync(msg).ConfigureAwait(false);
             if (error is not null)
@@ -324,7 +324,7 @@ internal class Program
     {
         PrintError(msg);
 
-        if (telegram is not null)
+        if ((telegram is not null) && !string.IsNullOrEmpty(msg))
         {
             string? error = await telegram.SendMessageAsync($"<b>ERROR:</b> {msg}").ConfigureAwait(false);
             if (error is not null)
