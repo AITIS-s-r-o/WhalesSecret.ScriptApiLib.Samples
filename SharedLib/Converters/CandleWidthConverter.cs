@@ -18,7 +18,7 @@ public class CandleWidthConverter : JsonConverter<CandleWidth>
 
         string? value = reader.GetString();
         if (value is null)
-            throw new JsonException("Order side cannot be null.");
+            throw new JsonException("Candle width cannot be null.");
 
         if (!Enum.TryParse(value, out CandleWidth candleWidth))
             throw new JsonException("Invalid candle width format.");
