@@ -519,6 +519,7 @@ internal class Program
     /// <param name="currentLongEma">Variable to be filled with the current long EMA value.</param>
     /// <param name="currentRsi">Variable to be filled with the current RSI value.</param>
     /// <param name="currentAtr">Variable to be filled with the current ATR value.</param>
+    /// <returns>List of quotes that correspond to the input candles.</returns>
     private static List<Quote> InitializeQuotesAndIndicatorValues(Parameters parameters, IReadOnlyList<Candle> candles, int maxQuotes, out double? currentShortEma,
         out double? currentLongEma, out double? currentRsi, out double? currentAtr)
     {
