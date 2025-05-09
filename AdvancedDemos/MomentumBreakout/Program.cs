@@ -89,9 +89,12 @@ internal class Program
     /// <summary>Event that is raised when a new bracketed order is placed.</summary>
     private static readonly AsyncAutoResetEvent newLiveBracketedOrder = new();
 
+    /// <summary>List of UTC times when the positions have been opened. This is used to limit the number of trades per day.</summary>
+    private static readonly List<DateTime> positionTimes = new();
+
     /// <summary>
-    /// Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/>, <see cref="openPositions"/>, <see cref="workingOrderTotalFilledSize"/>,
-    /// <see cref="workingOrderAvgFillPrice"/>, <see cref="stopLossFilledWeight"/>, and <see cref="takeProfitFilledWeight"/>.
+    /// Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/>, <see cref="openPositions"/>, <see cref="workingOrderAvgFillPrice"/>,
+    /// <see cref="stopLossFilledWeight"/>, and <see cref="takeProfitFilledWeight"/>.
     /// </summary>
     private static readonly Lock liveLock = new();
 
@@ -113,10 +116,6 @@ internal class Program
     /// <summary>Number of currently opened positions.</summary>
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static int openPositions;
-
-    /// <summary>Cumulative filled size of the working order.</summary>
-    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
-    private static decimal workingOrderTotalFilledSize;
 
     /// <summary>Average price of the working order's fills, or <c>0</c> if the information is not available.</summary>
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
@@ -901,79 +900,101 @@ internal class Program
                 OrderSide orderSide = bullishTrend ? OrderSide.Buy : OrderSide.Sell;
                 if ((positions == 0) || (positionSide == orderSide))
                 {
-                    tradeCounter++;
-                    clog.Debug($"All entry conditions are satisfied, attempt entering the trade #{tradeCounter}.");
+                    DateTime dayAgo = DateTime.UtcNow.AddDays(-1);
 
-                    string clientOrderId = $"{parameters.OrderIdPrefix}{tradeCounter:00000}{(orderSide == OrderSide.Buy ? 'b' : 's')}{ITradingStrategyBudget.ClientOrderIdSuffix}";
-
-                    string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
-                    if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
-                        throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
-
-                    decimal orderSize = initialBudget * parameters.PositionSize;
-                    decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
-                    MarketOrderRequest workingOrderRequest = orderRequestBuilder
-                        .SetSide(orderSide)
-                        .SetSize(orderSizeInBaseSymbol)
-                        .SetClientOrderId(clientOrderId)
-                        .Build();
-
-                    tradeConditionLogs.Add("  Working order:");
-                    tradeConditionLogs.Add($"    {workingOrderRequest}");
-
-                    BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
-
-                    tradeConditionLogs.Add("  Bracket orders:");
-                    foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
-                        tradeConditionLogs.Add($"    {bracketOrderDefinition}");
-
-                    try
+                    clog.Debug($"Number of timestamps in position-times list is {positionTimes.Count}/{parameters.MaxTradesPerDay}, the latest timestamp is {positionTimes}.");
+                    if ((positionTimes.Count < parameters.MaxTradesPerDay) || (positionTimes[0] < dayAgo))
                     {
-                        ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions,
-                            OnBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
+                        tradeCounter++;
+                        clog.Debug($"All entry conditions are satisfied, attempt entering the trade #{tradeCounter}.");
 
-                        Task orderTerminationTask = liveBracketedOrder.TerminatedEvent.WaitAsync(cancellationToken);
-                        lock (liveLock)
+                        string clientOrderId = $"{parameters.OrderIdPrefix}{tradeCounter:00000}{(orderSide == OrderSide.Buy ? 'b' : 's')}{
+                            ITradingStrategyBudget.ClientOrderIdSuffix}";
+
+                        string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
+                        if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
+                            throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
+
+                        decimal orderSize = initialBudget * parameters.PositionSize;
+                        decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
+                        MarketOrderRequest workingOrderRequest = orderRequestBuilder
+                            .SetSide(orderSide)
+                            .SetSize(orderSizeInBaseSymbol)
+                            .SetClientOrderId(clientOrderId)
+                            .Build();
+
+                        tradeConditionLogs.Add("  Working order:");
+                        tradeConditionLogs.Add($"    {workingOrderRequest}");
+
+                        BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
+
+                        tradeConditionLogs.Add("  Bracket orders:");
+                        foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
+                            tradeConditionLogs.Add($"    {bracketOrderDefinition}");
+
+                        try
                         {
-                            liveBracketedOrdersTerminationTasksMap.Add(liveBracketedOrder, orderTerminationTask);
-                            clog.Debug($"Termination task for bracketed order '{liveBracketedOrder}' has been added to the map.");
+                            ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions,
+                                OnBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
+
+                            Task orderTerminationTask = liveBracketedOrder.TerminatedEvent.WaitAsync(cancellationToken);
+                            lock (liveLock)
+                            {
+                                liveBracketedOrdersTerminationTasksMap.Add(liveBracketedOrder, orderTerminationTask);
+                                clog.Debug($"Termination task for bracketed order '{liveBracketedOrder}' has been added to the map.");
+                            }
+
+                            positionSide = orderSide;
+
+                            lock (liveLock)
+                            {
+                                openPositions++;
+                            }
+
+                            positions++;
+
+                            positionTimes.Add(DateTime.UtcNow);
+                            if (positionTimes.Count > parameters.MaxTradesPerDay)
+                                positionTimes.RemoveAt(index: 0);
+
+                            newLiveBracketedOrder.Set();
+
+                            StringBuilder stringBuilder = new();
+                            _ = stringBuilder
+                                .AppendLine("All entry conditions are satisfied.")
+                                .AppendLine("<pre>");
+
+                            foreach (string line in tradeConditionLogs)
+                                _ = stringBuilder.AppendLine(line);
+
+                            _ = stringBuilder
+                                .AppendLine("</pre>")
+                                .AppendLine()
+                                .AppendLine(CultureInfo.InvariantCulture, $"Bracketed order '{liveBracketedOrder}' has been placed.")
+                                .AppendLine(CultureInfo.InvariantCulture, $"We have {positions} open {(positionSide == OrderSide.Buy ? "long" : "short")} positions.");
+
+                            string msg = stringBuilder.ToString();
+
+                            await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
+
+                            result = true;
                         }
-
-                        positionSide = orderSide;
-
-                        lock (liveLock)
+                        catch (Exception e)
                         {
-                            openPositions++;
+                            await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {e}")
+                                .ConfigureAwait(false);
+
+                            // Activate cooldown even if the order was not open.
+                            result = true;
                         }
-
-                        positions++;
-
-                        newLiveBracketedOrder.Set();
-
-                        StringBuilder stringBuilder = new();
-                        _ = stringBuilder
-                            .AppendLine("All entry conditions are satisfied.")
-                            .AppendLine("<pre>");
-
-                        foreach (string line in tradeConditionLogs)
-                            _ = stringBuilder.AppendLine(line);
-
-                        _ = stringBuilder
-                            .AppendLine("</pre>")
-                            .AppendLine()
-                            .AppendLine(CultureInfo.InvariantCulture, $"Bracketed order '{liveBracketedOrder}' has been placed.")
-                            .AppendLine(CultureInfo.InvariantCulture, $"We have {positions} open {(positionSide == OrderSide.Buy ? "long" : "short")} positions.");
-
-                        string msg = stringBuilder.ToString();
-
-                        await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
-
-                        result = true;
                     }
-                    catch (Exception e)
+                    else
                     {
-                        await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {e}")
+                        await PrintInfoTelegramAsync($"Can not open new position because we have already created {parameters.MaxTradesPerDay} positions in the last 24 hours.")
                             .ConfigureAwait(false);
+
+                        // Activate cooldown even if the order was not open.
+                        result = true;
                     }
                 }
                 else
@@ -1038,11 +1059,7 @@ internal class Program
                         {
                             _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
 
-                            if (fillData.LastAveragePrice is not null)
-                            {
-                                workingOrderTotalFilledSize += fillData.LastSize;
-                                workingOrderAvgFillPrice += fillData.LastAveragePrice.Value;
-                            }
+                            if (fillData.LastAveragePrice is not null) workingOrderAvgFillPrice += fillData.LastAveragePrice.Value;
                             else workingOrderAvgFillPrice = 0;
                         }
                     }
@@ -1111,7 +1128,11 @@ internal class Program
 
                     _ = stringBuilder.AppendLine("</code>");
                     _ = stringBuilder.AppendLine();
-                    _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"New total stop-loss weight is {slWeight}, take-profit weight is {tpWeight}.");
+
+                    decimal pnlWeight = tpWeight - slWeight;
+                    _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
+                        $"New total stop-loss weight is {slWeight}, take-profit weight is {tpWeight}, PnL weight is {pnlWeight}.");
+
                     _ = PrintInfoTelegramAsync(stringBuilder.ToString());
                 }
                 else
