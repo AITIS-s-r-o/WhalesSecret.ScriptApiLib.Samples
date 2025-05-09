@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.VisualStudio.Threading;
 using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -82,14 +83,17 @@ internal class Program
     private static readonly List<BudgetReport> budgetReports = new();
 
     /// <summary>Live bracketed orders termination tasks mapped to the bracketed orders.</summary>
-    /// <remarks>All access has to be protected by <see cref="tasksLock"/>.</remarks>
+    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static readonly Dictionary<ILiveBracketedOrder, Task> liveBracketedOrdersTerminationTasksMap = new();
 
     /// <summary>Event that is raised when a new bracketed order is placed.</summary>
     private static readonly AsyncAutoResetEvent newLiveBracketedOrder = new();
 
-    /// <summary>Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/> and <see cref="openPositions"/>.</summary>
-    private static readonly Lock tasksLock = new();
+    /// <summary>
+    /// Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/>, <see cref="openPositions"/>, <see cref="workingOrderTotalFilledSize"/>,
+    /// <see cref="workingOrderAvgFillPrice"/>, <see cref="stopLossFilledWeight"/>, and <see cref="takeProfitFilledWeight"/>.
+    /// </summary>
+    private static readonly Lock liveLock = new();
 
     /// <summary>Class logger.</summary>
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
@@ -107,8 +111,29 @@ internal class Program
     private static OrderSide positionSide;
 
     /// <summary>Number of currently opened positions.</summary>
-    /// <remarks>All access has to be protected by <see cref="tasksLock"/>.</remarks>
+    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static int openPositions;
+
+    /// <summary>Cumulative filled size of the working order.</summary>
+    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
+    private static decimal workingOrderTotalFilledSize;
+
+    /// <summary>Average price of the working order's fills, or <c>0</c> if the information is not available.</summary>
+    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
+    private static decimal workingOrderAvgFillPrice;
+
+    /// <summary>Cumulative weight of all stop-loss fills.</summary>
+    /// <remarks>
+    /// Weight of a fill is calculated as its price distance from the <see cref="workingOrderAvgFillPrice">working order average fill price</see> multiplied by the price of
+    /// the fill.
+    /// <para>All access has to be protected by <see cref="liveLock"/>.</para>
+    /// </remarks>
+    private static decimal stopLossFilledWeight;
+
+    /// <summary>Cumulative weight of all take-profit fills.</summary>
+    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
+    /// <seealso cref="stopLossFilledWeight"/>
+    private static decimal takeProfitFilledWeight;
 
     /// <summary>
     /// Application that trades a Direct Cost Averaging (DCA) strategy.
@@ -868,7 +893,7 @@ internal class Program
             if (breakoutConfirmation && rsiConfirmation && volatilityConfirmation && volatilityConfirmation)
             {
                 int positions;
-                lock (tasksLock)
+                lock (liveLock)
                 {
                     positions = openPositions;
                 }
@@ -908,7 +933,7 @@ internal class Program
                             OnBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
 
                         Task orderTerminationTask = liveBracketedOrder.TerminatedEvent.WaitAsync(cancellationToken);
-                        lock (tasksLock)
+                        lock (liveLock)
                         {
                             liveBracketedOrdersTerminationTasksMap.Add(liveBracketedOrder, orderTerminationTask);
                             clog.Debug($"Termination task for bracketed order '{liveBracketedOrder}' has been added to the map.");
@@ -916,7 +941,7 @@ internal class Program
 
                         positionSide = orderSide;
 
-                        lock (tasksLock)
+                        lock (liveLock)
                         {
                             openPositions++;
                         }
@@ -950,16 +975,6 @@ internal class Program
                         await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {e}")
                             .ConfigureAwait(false);
                     }
-
-                    /*
-                    lock (liveOrdersLock)
-                    {
-                        liveBracketedOrdersByClientOrderIds.Add(liveBracketedOrder.WorkingClientOrderId, liveBracketedOrder);
-                    }
-
-                    clog.Debug("Sending signal that new order has been added to the map.");
-                    newOrderSignal.Set();
-                    */
                 }
                 else
                 {
@@ -1017,8 +1032,20 @@ internal class Program
                         .AppendLine(msg)
                         .AppendLine("<code>");
 
-                    foreach (FillData fillData in workingOrderFill.Fills)
-                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+                    lock (liveLock)
+                    {
+                        foreach (FillData fillData in workingOrderFill.Fills)
+                        {
+                            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+
+                            if (fillData.LastAveragePrice is not null)
+                            {
+                                workingOrderTotalFilledSize += fillData.LastSize;
+                                workingOrderAvgFillPrice += fillData.LastAveragePrice.Value;
+                            }
+                            else workingOrderAvgFillPrice = 0;
+                        }
+                    }
 
                     _ = stringBuilder.AppendLine("</code>");
                     _ = PrintInfoTelegramAsync(stringBuilder.ToString());
@@ -1055,10 +1082,36 @@ internal class Program
                         .AppendLine(msg)
                         .AppendLine("<code>");
 
-                    foreach (FillData fillData in bracketOrderFill.Fills)
-                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+                    decimal slWeight, tpWeight;
+                    lock (liveLock)
+                    {
+                        foreach (FillData fillData in bracketOrderFill.Fills)
+                        {
+                            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+
+                            if ((workingOrderAvgFillPrice != 0) && (fillData.LastAveragePrice is not null))
+                            {
+                                decimal priceDiff = Math.Abs(fillData.LastAveragePrice.Value - workingOrderAvgFillPrice);
+                                decimal weight = priceDiff * fillData.LastSize;
+
+                                if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss)
+                                {
+                                    stopLossFilledWeight += weight;
+                                }
+                                else
+                                {
+                                    takeProfitFilledWeight += weight;
+                                }
+                            }
+                        }
+
+                        slWeight = stopLossFilledWeight;
+                        tpWeight = takeProfitFilledWeight;
+                    }
 
                     _ = stringBuilder.AppendLine("</code>");
+                    _ = stringBuilder.AppendLine();
+                    _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"New total stop-loss weight is {slWeight}, take-profit weight is {tpWeight}.");
                     _ = PrintInfoTelegramAsync(stringBuilder.ToString());
                 }
                 else
@@ -1274,7 +1327,7 @@ internal class Program
                 tasks.Clear();
                 mapCopy.Clear();
                 ordersToRemove.Clear();
-                lock (tasksLock)
+                lock (liveLock)
                 {
                     tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
 
@@ -1300,7 +1353,7 @@ internal class Program
                 }
 
                 StringBuilder stringBuilder = new();
-                lock (tasksLock)
+                lock (liveLock)
                 {
                     foreach (ILiveBracketedOrder liveBracketedOrder in ordersToRemove)
                     {
@@ -1321,7 +1374,7 @@ internal class Program
             clog.Debug("Shutdown detected.");
         }
 
-        lock (tasksLock)
+        lock (liveLock)
         {
             tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
 
