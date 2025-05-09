@@ -1135,7 +1135,7 @@ internal class Program
 
             case BracketOrderCreated bracketOrderCreated:
                 _ = PrintInfoTelegramAsync($"{(bracketOrderCreated.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit")} #{
-                    bracketOrderCreated} bracket order '{bracketOrderCreated.ClientOrderId}' created for live bracketed order '{bracketOrderCreated.Order}'.");
+                    bracketOrderCreated.Index} bracket order '{bracketOrderCreated.ClientOrderId}' created for live bracketed order '{bracketOrderCreated.Order}'.");
                 break;
 
             case BracketOrderFill bracketOrderFill:
