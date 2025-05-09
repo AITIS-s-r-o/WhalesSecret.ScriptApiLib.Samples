@@ -901,8 +901,8 @@ internal class Program
             tradeConditionLogs.Add($"    {parameters.ShortEmaLookback}-EMA: {currentShortEma}");
             tradeConditionLogs.Add($"    {parameters.LongEmaLookback}-EMA: {currentLongEma}");
 
-            bool breakoutConfirmation = CheckBreakoutCondition(longEntry: bullishTrend, quotes, lastPrice: lastPrice,
-                breakoutLookback: parameters.BreakoutLookback, breakoutAtrSize: parameters.BreakoutAtrSize, currentAtr: currentAtr, verbose: verbose, tradeConditionLogs);
+            bool breakoutConfirmation = CheckBreakoutCondition(longEntry: bullishTrend, quotes, lastPrice: lastPrice, breakoutLookback: parameters.BreakoutLookback,
+                breakoutAtrSize: parameters.BreakoutAtrSize, currentAtr: currentAtr, verbose: verbose, tradeConditionLogs);
 
             bool rsiConfirmation = CheckRsiCondition(longEntry: bullishTrend, quotes, currentRsi, verbose: verbose, tradeConditionLogs);
 
