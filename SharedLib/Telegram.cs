@@ -15,6 +15,9 @@ public class Telegram : IAsyncDisposable
     /// <summary>URL-encoded Telegram group ID to which to send the messages.</summary>
     private readonly string groupId;
 
+    /// <summary>Telegram API token.</summary>
+    private readonly string apiToken;
+
     /// <summary>HTTP client to use to send messages to Telegram, or <c>null</c> to create a new instance.</summary>
     private readonly HttpClient httpClient;
 
@@ -32,11 +35,13 @@ public class Telegram : IAsyncDisposable
     /// Creates a new instance of the object.
     /// </summary>
     /// <param name="groupId">Telegram group ID to which to send the messages.</param>
+    /// <param name="apiToken">Telegram API token.</param>
     /// <param name="httpClient">HTTP client to use to send messages to Telegram, or <c>null</c> to create a new instance.</param>
-    public Telegram(string groupId, HttpClient? httpClient = null)
+    public Telegram(string groupId, string apiToken, HttpClient? httpClient = null)
     {
         this.disposedValueLock = new();
         this.groupId = HttpUtility.UrlEncode(groupId);
+        this.apiToken = apiToken;
 
         if (httpClient is null)
         {
