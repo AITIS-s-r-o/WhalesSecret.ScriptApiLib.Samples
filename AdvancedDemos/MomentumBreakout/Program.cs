@@ -909,8 +909,8 @@ internal class Program
             bool volumeConfirmation = CheckVolumeCondition(quotes, volumeLookback: parameters.VolumeLookback, volumeAvgSize: parameters.VolatilityAvgSize,
                 currentVolume: currentVolume, verbose: verbose, tradeConditionLogs);
 
-            bool volatilityConfirmation = CheckVolatilityCondition(quotes, volatilityLookback: parameters.VolatilityLookback,
-                volatilityAvgSize: parameters.VolatilityAvgSize, currentAtr: currentAtr, verbose: verbose, tradeConditionLogs);
+            bool volatilityConfirmation = CheckVolatilityCondition(quotes, volatilityLookback: parameters.VolatilityLookback, volatilityAvgSize: parameters.VolatilityAvgSize,
+                currentAtr: currentAtr, verbose: verbose, tradeConditionLogs);
 
             if (breakoutConfirmation && rsiConfirmation && volatilityConfirmation && volatilityConfirmation)
             {
