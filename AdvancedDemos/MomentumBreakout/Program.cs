@@ -804,7 +804,7 @@ internal class Program
     }
 
     /// <summary>
-    /// Checks the volatility condition. ATR has to be at leaset than <paramref name="volatilityAvgSize"/> times the average ATR over <paramref name="volatilityLookback"/> candles.
+    /// Checks the volatility condition. ATR has to be at least than <paramref name="volatilityAvgSize"/> times the average ATR over <paramref name="volatilityLookback"/> candles.
     /// </summary>
     /// <param name="quotes">List of quotes to use to check the breakout condition.</param>
     /// <param name="volatilityLookback">Number of candles for volatility confirmation.</param>
