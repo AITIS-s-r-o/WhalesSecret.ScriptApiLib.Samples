@@ -55,16 +55,13 @@ public class Telegram : IAsyncDisposable
     /// Sends a message to the Telegram group.
     /// </summary>
     /// <param name="message">Message to send.</param>
-    /// <param name="htmlSyntax"><c>true</c> if the message is HTML-encoded, <c>false</c> otherwise.</param>
     /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
-    public async Task<string?> SendMessageAsync(string message, bool htmlSyntax = true)
+    public async Task<string?> SendMessageAsync(string message)
     {
         string? error = null;
         message = HttpUtility.UrlEncode(message);
 
-        string uri = htmlSyntax
-            ? $"https://api.telegram.org/bot{this.apiToken}/sendMessage?chat_id={this.groupId}&parse_mode=html&text={message}"
-            : $"https://api.telegram.org/bot{this.apiToken}/sendMessage?chat_id={this.groupId}&text={message}";
+        string uri = $"https://api.telegram.org/bot{this.apiToken}/sendMessage?chat_id={this.groupId}&parse_mode=html&text={message}";
 
         try
         {
