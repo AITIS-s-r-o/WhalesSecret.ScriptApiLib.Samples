@@ -132,7 +132,7 @@ public class Parameters
     /// <param name="nextStopLossAtrIncrement">Multiple of ATR to define distance of the next stop-loss from the previous stop-loss.</param>
     /// <param name="firstTakeProfitAtr">Multiple of ATR to define distance of the first take-profit from the entry price.</param>
     /// <param name="nextTakeProfitAtrIncrement">Multiple of ATR to define distance of the next take-profit from the previous take-profit.</param>
-    /// <param name="positionSize">Size of each trade as a multiple of the original budget balance.</param>
+    /// <param name="positionSize">Size of each trade as a multiple of the initial budget balance.</param>
     /// <param name="tradeCooldownPeriod">Number of candles to wait before allowing a new trade to be entered.</param>
     /// <param name="orderIdPrefix">Prefix of client order IDs of the trading orders.</param>
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
