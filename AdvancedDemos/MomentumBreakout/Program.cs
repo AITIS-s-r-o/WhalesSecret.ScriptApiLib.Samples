@@ -377,7 +377,7 @@ internal class Program
 
         ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
             budgetRequest: parameters.BudgetRequest);
-        ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
+        await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
 
         await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.").ConfigureAwait(false);
 
