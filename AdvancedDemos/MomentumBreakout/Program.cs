@@ -905,88 +905,11 @@ internal class Program
                     clog.Debug($"Number of timestamps in position-times list is {positionTimes.Count}/{parameters.MaxTradesPerDay}, the latest timestamp is {positionTimes}.");
                     if ((positionTimes.Count < parameters.MaxTradesPerDay) || (positionTimes[0] < dayAgo))
                     {
-                        tradeCounter++;
-                        clog.Debug($"All entry conditions are satisfied, attempt entering the trade #{tradeCounter}.");
+                        await PlaceOrderAsync(tradeClient, parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr, orderRequestBuilder, tradeConditionLogs,
+                            cancellationToken).ConfigureAwait(false);
 
-                        string clientOrderId = $"{parameters.OrderIdPrefix}{tradeCounter:00000}{(orderSide == OrderSide.Buy ? 'b' : 's')}{
-                            ITradingStrategyBudget.ClientOrderIdSuffix}";
-
-                        string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
-                        if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
-                            throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
-
-                        decimal orderSize = initialBudget * parameters.PositionSize;
-                        decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
-                        MarketOrderRequest workingOrderRequest = orderRequestBuilder
-                            .SetSide(orderSide)
-                            .SetSize(orderSizeInBaseSymbol)
-                            .SetClientOrderId(clientOrderId)
-                            .Build();
-
-                        tradeConditionLogs.Add("  Working order:");
-                        tradeConditionLogs.Add($"    {workingOrderRequest}");
-
-                        BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
-
-                        tradeConditionLogs.Add("  Bracket orders:");
-                        foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
-                            tradeConditionLogs.Add($"    {bracketOrderDefinition}");
-
-                        try
-                        {
-                            ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions,
-                                OnBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
-
-                            Task orderTerminationTask = liveBracketedOrder.TerminatedEvent.WaitAsync(cancellationToken);
-                            lock (liveLock)
-                            {
-                                liveBracketedOrdersTerminationTasksMap.Add(liveBracketedOrder, orderTerminationTask);
-                                clog.Debug($"Termination task for bracketed order '{liveBracketedOrder}' has been added to the map.");
-                            }
-
-                            positionSide = orderSide;
-
-                            lock (liveLock)
-                            {
-                                openPositions++;
-                            }
-
-                            positions++;
-
-                            positionTimes.Add(DateTime.UtcNow);
-                            if (positionTimes.Count > parameters.MaxTradesPerDay)
-                                positionTimes.RemoveAt(index: 0);
-
-                            newLiveBracketedOrder.Set();
-
-                            StringBuilder stringBuilder = new();
-                            _ = stringBuilder
-                                .AppendLine("All entry conditions are satisfied.")
-                                .AppendLine("<pre>");
-
-                            foreach (string line in tradeConditionLogs)
-                                _ = stringBuilder.AppendLine(line);
-
-                            _ = stringBuilder
-                                .AppendLine("</pre>")
-                                .AppendLine()
-                                .AppendLine(CultureInfo.InvariantCulture, $"Bracketed order '{liveBracketedOrder}' has been placed.")
-                                .AppendLine(CultureInfo.InvariantCulture, $"We have {positions} open {(positionSide == OrderSide.Buy ? "long" : "short")} positions.");
-
-                            string msg = stringBuilder.ToString();
-
-                            await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
-
-                            result = true;
-                        }
-                        catch (Exception e)
-                        {
-                            await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {e}")
-                                .ConfigureAwait(false);
-
-                            // Activate cooldown even if the order was not open.
-                            result = true;
-                        }
+                        // Activate cooldown even if the order was not open.
+                        result = true;
                     }
                     else
                     {
@@ -1022,6 +945,113 @@ internal class Program
         if (verbose)
             clog.Trace($"$={result}");
         return result;
+    }
+
+    /// <summary>
+    /// Creates a new bracketed order.
+    /// </summary>
+    /// <param name="tradeClient">Connected API client.</param>
+    /// <param name="parameters">Program parameters.</param>
+    /// <param name="orderSide">Side of the order to create.</param>
+    /// <param name="lastPrice">Price of the last trade.</param>
+    /// <param name="currentAtr">Current ATR value.</param>
+    /// <param name="orderRequestBuilder">Order request builder for working orders to open the trading position with.</param>
+    /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PlaceOrderAsync(ITradeApiClient tradeClient, Parameters parameters, OrderSide orderSide, decimal lastPrice, decimal currentAtr,
+        OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, List<string> tradeConditionLogs, CancellationToken cancellationToken)
+    {
+        tradeCounter++;
+        clog.Debug($"All entry conditions are satisfied, attempt entering the trade #{tradeCounter}.");
+
+        string clientOrderId = $"{parameters.OrderIdPrefix}{tradeCounter:00000}{(orderSide == OrderSide.Buy ? 'b' : 's')}{ITradingStrategyBudget.ClientOrderIdSuffix}";
+
+        string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
+        if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
+            throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
+
+        decimal orderSize = initialBudget * parameters.PositionSize;
+        decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
+        MarketOrderRequest workingOrderRequest = orderRequestBuilder
+            .SetSide(orderSide)
+            .SetSize(orderSizeInBaseSymbol)
+            .SetClientOrderId(clientOrderId)
+            .Build();
+
+        tradeConditionLogs.Add("  Working order:");
+        tradeConditionLogs.Add($"    {workingOrderRequest}");
+
+        BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
+
+        tradeConditionLogs.Add("  Bracket orders:");
+        foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
+            tradeConditionLogs.Add($"    {bracketOrderDefinition}");
+
+        try
+        {
+            ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions,
+                OnBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
+
+            Task orderTerminationTask = liveBracketedOrder.TerminatedEvent.WaitAsync(cancellationToken);
+            lock (liveLock)
+            {
+                liveBracketedOrdersTerminationTasksMap.Add(liveBracketedOrder, orderTerminationTask);
+                clog.Debug($"Termination task for bracketed order '{liveBracketedOrder}' has been added to the map.");
+            }
+
+            positionSide = orderSide;
+
+            int positions;
+            lock (liveLock)
+            {
+                openPositions++;
+                positions = openPositions;
+            }
+
+            positionTimes.Add(DateTime.UtcNow);
+            if (positionTimes.Count > parameters.MaxTradesPerDay)
+                positionTimes.RemoveAt(index: 0);
+
+            newLiveBracketedOrder.Set();
+
+            await PrintTradeSummaryAsync(tradeConditionLogs, liveBracketedOrder, positions).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {e}")
+                .ConfigureAwait(false);
+
+            // Activate cooldown even if the order was not open.
+        }
+    }
+
+    /// <summary>
+    /// Prints summary of the trade to the console and Telegram.
+    /// </summary>
+    /// <param name="tradeConditionLogs">Trade logs to print.</param>
+    /// <param name="liveBracketedOrder">Live bracketed order that was created.</param>
+    /// <param name="positions">Number of currently open positions.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PrintTradeSummaryAsync(List<string> tradeConditionLogs, ILiveBracketedOrder liveBracketedOrder, int positions)
+    {
+        StringBuilder stringBuilder = new();
+        _ = stringBuilder
+            .AppendLine("All entry conditions are satisfied.")
+            .AppendLine("<pre>");
+
+        foreach (string line in tradeConditionLogs)
+            _ = stringBuilder.AppendLine(line);
+
+        _ = stringBuilder
+            .AppendLine("</pre>")
+            .AppendLine()
+            .AppendLine(CultureInfo.InvariantCulture, $"Bracketed order '{liveBracketedOrder}' has been placed.")
+            .AppendLine(CultureInfo.InvariantCulture, $"We have {positions} open {(positionSide == OrderSide.Buy ? "long" : "short")} positions.");
+
+        string msg = stringBuilder.ToString();
+
+        await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
     }
 
     /// <inheritdoc cref="IBracketedOrdersFactory.OnBracketedOrderUpdateAsync"/>
