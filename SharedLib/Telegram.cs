@@ -63,8 +63,8 @@ public class Telegram : IAsyncDisposable
         message = HttpUtility.UrlEncode(message);
 
         string uri = htmlSyntax
-            ? $"https://api.telegram.org/bot{Credentials.TelegramApiToken}/sendMessage?chat_id={this.groupId}&parse_mode=html&text={message}"
-            : $"https://api.telegram.org/bot{Credentials.TelegramApiToken}/sendMessage?chat_id={this.groupId}&text={message}";
+            ? $"https://api.telegram.org/bot{this.apiToken}/sendMessage?chat_id={this.groupId}&parse_mode=html&text={message}"
+            : $"https://api.telegram.org/bot{this.apiToken}/sendMessage?chat_id={this.groupId}&text={message}";
 
         try
         {
