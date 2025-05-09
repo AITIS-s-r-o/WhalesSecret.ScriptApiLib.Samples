@@ -148,18 +148,36 @@ internal class Program
     ///   "AppDataPath": "Data",
     ///   "ExchangeMarket": "BinanceSpot",
     ///   "SymbolPair": "BTC/EUR",
-    ///   "Period": "00:00:10",
-    ///   "QuoteSize": 10.0,
-    ///   "OrderSide": "Buy",
+    ///   "ShortEmaLookback": 20,
+    ///   "LongEmaLookback": 50,
+    ///   "RsiLookback": 14,
+    ///   "AtrLookback": 14,
+    ///   "BreakoutLookback": 3,
+    ///   "BreakoutAtrSize": 0.5,
+    ///   "VolumeLookback": 10,
+    ///   "VolumeAvgSize": 1.5,
+    ///   "VolatilityLookback": 20,
+    ///   "VolatilityAvgSize": 0.5,
+    ///   "MaxTradesPerDay": 10,
+    ///   "CandleWidth": "Minutes5",
+    ///   "StopLossCount": 2,
+    ///   "TakeProfitCount": 2,
+    ///   "FirstStopLossAtr": 1.5,
+    ///   "NextStopLossAtrIncrement": 0.5,
+    ///   "FirstTakeProfitAtr": 2.0,
+    ///   "NextTakeProfitAtrIncrement": 1.0,
+    ///   "PositionSize": 0.02,
+    ///   "TradeCooldownPeriod": 3,
+    ///   "OrderIdPrefix": "MB5m",
     ///   "BudgetRequest": {
-    ///     "StrategyName": "DCA",
+    ///     "StrategyName": "MomentumBreakout",
     ///     "PrimaryAsset": "EUR",
     ///     "InitialBudget": {
     ///       "EUR": 1000,
-    ///       "BTC": 0.001
+    ///       "BTC": 0.01
     ///     }
     ///   },
-    ///   "ReportPeriod": "00:00:30"
+    ///   "ReportPeriod": "12:00:00"
     /// }
     /// </code>
     /// </para>
