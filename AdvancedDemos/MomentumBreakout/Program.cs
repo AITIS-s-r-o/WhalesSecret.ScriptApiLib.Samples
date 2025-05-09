@@ -1013,8 +1013,8 @@ internal class Program
 
         try
         {
-            ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions,
-                OnBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
+            ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, OnBracketedOrderUpdateAsync,
+                cancellationToken).ConfigureAwait(false);
 
             Task orderTerminationTask = liveBracketedOrder.TerminatedEvent.WaitAsync(cancellationToken);
             lock (liveLock)
