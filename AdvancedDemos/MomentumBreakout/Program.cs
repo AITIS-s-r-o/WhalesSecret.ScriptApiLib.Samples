@@ -1334,6 +1334,7 @@ internal class Program
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task RunReportTaskAsync(string reportFilePath, ITradeApiClient tradeClient, TimeSpan reportPeriod, CancellationToken cancellationToken)
     {
+        using IDisposable mdlc = clog.SetMdlc();
         clog.Debug($"* {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}={tradeClient},{nameof(reportPeriod)}={reportPeriod}");
 
         DateTime nextReport = DateTime.UtcNow.Add(reportPeriod);
@@ -1388,6 +1389,7 @@ internal class Program
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task RunBracketedOrderTerminationMonitoringTaskAsync(CancellationToken cancellationToken)
     {
+        using IDisposable mdlc = clog.SetMdlc();
         clog.Debug("*");
 
         List<Task> tasks = new();
