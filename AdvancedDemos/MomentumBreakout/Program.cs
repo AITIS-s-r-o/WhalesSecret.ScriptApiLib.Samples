@@ -510,7 +510,7 @@ internal class Program
     }
 
     /// <summary>
-    /// Initializes list of quotes to be used for calculating indicator values, and initialiezes main indicator values.
+    /// Initializes list of quotes to be used for calculating indicator values, and initializes main indicator values.
     /// </summary>
     /// <param name="parameters">Program parameters.</param>
     /// <param name="candles">List of historical candles to be converted to quotes.</param>
