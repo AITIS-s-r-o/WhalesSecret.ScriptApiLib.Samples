@@ -1460,6 +1460,7 @@ internal class Program
             clog.Debug("Shutdown detected.");
         }
 
+        tasks.Clear();
         lock (liveLock)
         {
             tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
