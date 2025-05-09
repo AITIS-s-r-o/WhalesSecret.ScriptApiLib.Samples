@@ -14,7 +14,7 @@ public class CandleWidthConverter : JsonConverter<CandleWidth>
     public override CandleWidth Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.String)
-            throw new JsonException($"Expected a string at position {reader.TokenStartIndex} representing an order side.");
+            throw new JsonException($"Expected a string at position {reader.TokenStartIndex} representing a candle width.");
 
         string? value = reader.GetString();
         if (value is null)
