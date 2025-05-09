@@ -622,7 +622,7 @@ internal class Program
     }
 
     /// <summary>
-    /// Checks the breakout condition. For long entry, it imeans that the price breaks above the high of the previous <paramref name="breakoutLookback"/> candles by at least
+    /// Checks the breakout condition. For long entry, it means that the price breaks above the high of the previous <paramref name="breakoutLookback"/> candles by at least
     /// <paramref name="breakoutAtrSize"/> times ATR. For short entry, it means that the price breaks below the low of the previous <paramref name="breakoutLookback"/> candles
     /// by at least <paramref name="breakoutAtrSize"/> times ATR.
     /// </summary>
