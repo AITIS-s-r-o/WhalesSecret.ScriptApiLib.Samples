@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Build.Framework;
+using Microsoft.VisualStudio.Threading;
 using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib;
@@ -16,6 +18,7 @@ using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets;
+using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets.Updates;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
@@ -78,14 +81,34 @@ internal class Program
     /// <summary>All budget reports that have been generated during the program's lifetime.</summary>
     private static readonly List<BudgetReport> budgetReports = new();
 
+    /// <summary>Live bracketed orders termination tasks mapped to the bracketed orders.</summary>
+    /// <remarks>All access has to be protected by <see cref="tasksLock"/>.</remarks>
+    private static readonly Dictionary<ILiveBracketedOrder, Task> liveBracketedOrdersTerminationTasksMap = new();
+
+    /// <summary>Event that is raised when a new bracketed order is placed.</summary>
+    private static readonly AsyncAutoResetEvent newLiveBracketedOrder = new();
+
+    /// <summary>Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/> and <see cref="openPositions"/>.</summary>
+    private static readonly Lock tasksLock = new();
+
     /// <summary>Class logger.</summary>
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
+
+    /// <summary>Cancellation token that is canceled when the shutdown is initiated, or <c>null</c> if not initialized yet.</summary>
+    private static CancellationToken? shutdownToken;
 
     /// <summary>Telegram API instance, or <c>null</c> if not initialized yet.</summary>
     private static Telegram? telegram;
 
     /// <summary>Number of trades the bot performed.</summary>
     private static int tradeCounter;
+
+    /// <summary>If <see cref="openPositions"/> is greater than <c>0</c>, this is the order side of all the open positions.</summary>
+    private static OrderSide positionSide;
+
+    /// <summary>Number of currently opened positions.</summary>
+    /// <remarks>All access has to be protected by <see cref="tasksLock"/>.</remarks>
+    private static int openPositions;
 
     /// <summary>
     /// Application that trades a Direct Cost Averaging (DCA) strategy.
@@ -146,7 +169,7 @@ internal class Program
         PrintInfo();
 
         using CancellationTokenSource shutdownCancellationTokenSource = new();
-        CancellationToken shutdownToken = shutdownCancellationTokenSource.Token;
+        shutdownToken = shutdownCancellationTokenSource.Token;
 
         // Install Ctrl+C / SIGINT handler.
         ConsoleCancelEventHandler controlCancelHandler = (object? sender, ConsoleCancelEventArgs e) =>
@@ -164,7 +187,7 @@ internal class Program
 
         try
         {
-            await StartStrategyAsync(parameters, shutdownToken).ConfigureAwait(false);
+            await StartStrategyAsync(parameters, shutdownToken.Value).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -172,7 +195,7 @@ internal class Program
 
             if (e is OperationCanceledException)
             {
-                if (shutdownToken.IsCancellationRequested)
+                if (shutdownToken.Value.IsCancellationRequested)
                 {
                     PrintInfo();
                     PrintInfo("Shutdown detected.");
@@ -235,7 +258,7 @@ internal class Program
     /// </summary>
     /// <param name="msg">Message to print.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintInfoTelegramAsync(string msg = "")
+    private static async Task PrintInfoTelegramAsync(string msg)
     {
         PrintInfo(msg);
 
@@ -252,7 +275,7 @@ internal class Program
     /// </summary>
     /// <param name="msg">Message to print.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintErrorTelegramAsync(string msg = "")
+    private static async Task PrintErrorTelegramAsync(string msg)
     {
         PrintError(msg);
 
@@ -315,6 +338,7 @@ internal class Program
 
         string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
         Task reportTask = RunReportTaskAsync(reportFilePath, tradeClient, parameters.ReportPeriod, cancellationToken);
+        Task bracketedOrderTerminationMonitoringTask = RunBracketedOrderTerminationMonitoringTaskAsync(cancellationToken);
 
         int candlesNeeded = CalculateNumberOfCandles(parameters);
 
@@ -408,7 +432,7 @@ internal class Program
                                 {
                                     DateTime lastEntry = DateTime.UtcNow;
                                     nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
-                                    await PrintInfoTelegramAsync($"New trade attempted to be entered. Cooldown period of {
+                                    await PrintInfoTelegramAsync($"New trade has been attempted. Cooldown period of {
                                         parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.").ConfigureAwait(false);
                                 }
                             }
@@ -431,7 +455,7 @@ internal class Program
         try
         {
             clog.Debug("Wait until all tasks are finished.");
-            await Task.WhenAll(candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
+            await Task.WhenAll(reportTask, bracketedOrderTerminationMonitoringTask, candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
         }
         catch
         {
@@ -807,7 +831,7 @@ internal class Program
     /// <param name="verbose"><c>true</c> to produce extra trace logs, <c>false</c> otherwise.</param>
     /// <param name="tradeConditionLogs">List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
-    /// <returns><c>true</c> if all the entry conditions were satisfied with the new price, <c>false</c> otherwise.</returns>
+    /// <returns><c>true</c> if the cooldown should be activated , <c>false</c> otherwise.</returns>
     private static async Task<bool> ProcessNewPriceAsync(ITradeApiClient tradeClient, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, List<Quote> quotes,
         decimal lastPrice, decimal currentShortEma, decimal currentLongEma, decimal currentRsi, decimal currentAtr, decimal currentVolume, Parameters parameters, bool verbose,
         List<string> tradeConditionLogs, CancellationToken cancellationToken)
@@ -843,49 +867,108 @@ internal class Program
 
             if (breakoutConfirmation && rsiConfirmation && volatilityConfirmation && volatilityConfirmation)
             {
-                tradeCounter++;
-                clog.Debug($"All entry conditions are satisfied, attempt entering the trade #{tradeCounter}.");
+                int positions;
+                lock (tasksLock)
+                {
+                    positions = openPositions;
+                }
 
                 OrderSide orderSide = bullishTrend ? OrderSide.Buy : OrderSide.Sell;
-                string clientOrderId = $"{parameters.OrderIdPrefix}{tradeCounter:00000}{(orderSide == OrderSide.Buy ? 'b' : 's')}{ITradingStrategyBudget.ClientOrderIdSuffix}";
+                if ((positions == 0) || (positionSide == orderSide))
+                {
+                    tradeCounter++;
+                    clog.Debug($"All entry conditions are satisfied, attempt entering the trade #{tradeCounter}.");
 
-                string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
-                if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
-                    throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
+                    string clientOrderId = $"{parameters.OrderIdPrefix}{tradeCounter:00000}{(orderSide == OrderSide.Buy ? 'b' : 's')}{ITradingStrategyBudget.ClientOrderIdSuffix}";
 
-                decimal orderSize = initialBudget * parameters.PositionSize;
-                decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
-                MarketOrderRequest workingOrderRequest = orderRequestBuilder
+                    string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
+                    if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
+                        throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
+
+                    decimal orderSize = initialBudget * parameters.PositionSize;
+                    decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
+                    MarketOrderRequest workingOrderRequest = orderRequestBuilder
                         .SetSide(orderSide)
                         .SetSize(orderSizeInBaseSymbol)
                         .SetClientOrderId(clientOrderId)
                         .Build();
 
-                tradeConditionLogs.Add("  Working order:");
-                tradeConditionLogs.Add($"    {workingOrderRequest}");
+                    tradeConditionLogs.Add("  Working order:");
+                    tradeConditionLogs.Add($"    {workingOrderRequest}");
 
-                BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
+                    BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
 
-                tradeConditionLogs.Add("  Bracket orders:");
-                foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
-                    tradeConditionLogs.Add($"    {bracketOrderDefinition}");
+                    tradeConditionLogs.Add("  Bracket orders:");
+                    foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
+                        tradeConditionLogs.Add($"    {bracketOrderDefinition}");
 
-                // await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions, onBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        ILiveBracketedOrder liveBracketedOrder = await tradeClient.CreateBracketedOrderAsync(workingOrderRequest, bracketOrdersDefinitions,
+                            OnBracketedOrderUpdateAsync, cancellationToken).ConfigureAwait(false);
 
-                StringBuilder stringBuilder = new();
-                _ = stringBuilder
-                    .AppendLine("All entry conditions are satisfied.")
-                    .AppendLine("<pre>");
+                        Task orderTerminationTask = liveBracketedOrder.TerminatedEvent.WaitAsync(cancellationToken);
+                        lock (tasksLock)
+                        {
+                            liveBracketedOrdersTerminationTasksMap.Add(liveBracketedOrder, orderTerminationTask);
+                            clog.Debug($"Termination task for bracketed order '{liveBracketedOrder}' has been added to the map.");
+                        }
 
-                foreach (string line in tradeConditionLogs)
-                    _ = stringBuilder.AppendLine(line);
+                        positionSide = orderSide;
 
-                _ = stringBuilder.AppendLine("</pre>");
+                        lock (tasksLock)
+                        {
+                            openPositions++;
+                        }
 
-                string msg = stringBuilder.ToString();
-                await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
+                        positions++;
 
-                result = true;
+                        newLiveBracketedOrder.Set();
+
+                        StringBuilder stringBuilder = new();
+                        _ = stringBuilder
+                            .AppendLine("All entry conditions are satisfied.")
+                            .AppendLine("<pre>");
+
+                        foreach (string line in tradeConditionLogs)
+                            _ = stringBuilder.AppendLine(line);
+
+                        _ = stringBuilder
+                            .AppendLine("</pre>")
+                            .AppendLine()
+                            .AppendLine(CultureInfo.InvariantCulture, $"Bracketed order '{liveBracketedOrder}' has been placed.")
+                            .AppendLine(CultureInfo.InvariantCulture, $"We have {positions} open {(positionSide == OrderSide.Buy ? "long" : "short")} positions.");
+
+                        string msg = stringBuilder.ToString();
+
+                        await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
+
+                        result = true;
+                    }
+                    catch (Exception e)
+                    {
+                        await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {e}")
+                            .ConfigureAwait(false);
+                    }
+
+                    /*
+                    lock (liveOrdersLock)
+                    {
+                        liveBracketedOrdersByClientOrderIds.Add(liveBracketedOrder.WorkingClientOrderId, liveBracketedOrder);
+                    }
+
+                    clog.Debug("Sending signal that new order has been added to the map.");
+                    newOrderSignal.Set();
+                    */
+                }
+                else
+                {
+                    await PrintInfoTelegramAsync($"Can not open {(orderSide == OrderSide.Buy ? "long" : "short")} position because we have {positions} open {
+                        (positionSide == OrderSide.Buy ? "long" : "short")} positions.").ConfigureAwait(false);
+
+                    // Activate cooldown even if the order was not open.
+                    result = true;
+                }
             }
             else if (verbose)
             {
@@ -903,6 +986,142 @@ internal class Program
         if (verbose)
             clog.Trace($"$={result}");
         return result;
+    }
+
+    /// <inheritdoc cref="IBracketedOrdersFactory.OnBracketedOrderUpdateAsync"/>
+    /// <remarks>
+    /// We use fire and forget in this method for sending a message to Telegram as we do not want to block the live bracketed order flow in case there is a problem on Telegram's
+    /// side.
+    /// </remarks>
+    private static Task OnBracketedOrderUpdateAsync(IBracketedOrderUpdate update)
+    {
+        clog.Debug($"* {nameof(update)}='{update}'");
+
+        if (shutdownToken is null)
+            throw new SanityCheckException("Shutdown token is not initialized.");
+
+        switch (update)
+        {
+            case WorkingOrderCreated workingOrderCreated:
+                _ = PrintInfoTelegramAsync($"Working order '{workingOrderCreated.ClientOrderId}' of live bracketed order '{workingOrderCreated.Order}' has been created.");
+                break;
+
+            case WorkingOrderFill workingOrderFill:
+            {
+                StringBuilder stringBuilder = new();
+
+                if (workingOrderFill.Fills.Count > 0)
+                {
+                    string msg = $"Working order '{workingOrderFill.ClientOrderId}' of live bracketed order '{workingOrderFill.Order}' has been filled:";
+                    _ = stringBuilder
+                        .AppendLine(msg)
+                        .AppendLine("<code>");
+
+                    foreach (FillData fillData in workingOrderFill.Fills)
+                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+
+                    _ = stringBuilder.AppendLine("</code>");
+                    _ = PrintInfoTelegramAsync(stringBuilder.ToString());
+                }
+                else
+                {
+                    _ = PrintInfoTelegramAsync($"Working order '{workingOrderFill.ClientOrderId}' of live bracketed order '{
+                        workingOrderFill.Order}' has been filled completely.");
+                }
+
+                break;
+            }
+
+            case WorkingOrderCanceled workingOrderCanceled:
+                _ = PrintInfoTelegramAsync($"Working order '{workingOrderCanceled.ClientOrderId}' has been canceled.");
+                break;
+
+            case BracketOrderCreated bracketOrderCreated:
+                _ = PrintInfoTelegramAsync($"{(bracketOrderCreated.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit")} #{
+                    bracketOrderCreated} bracket order '{bracketOrderCreated.ClientOrderId}' created for live bracketed order '{bracketOrderCreated.Order}'.");
+                break;
+
+            case BracketOrderFill bracketOrderFill:
+            {
+                StringBuilder stringBuilder = new();
+
+                string type = bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
+                if (bracketOrderFill.Fills.Count > 0)
+                {
+                    string msg = $"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{
+                        bracketOrderFill.Order}' has been filled:";
+
+                    _ = stringBuilder
+                        .AppendLine(msg)
+                        .AppendLine("<code>");
+
+                    foreach (FillData fillData in bracketOrderFill.Fills)
+                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+
+                    _ = stringBuilder.AppendLine("</code>");
+                    _ = PrintInfoTelegramAsync(stringBuilder.ToString());
+                }
+                else
+                {
+                    _ = PrintInfoTelegramAsync($"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{
+                        bracketOrderFill.Order}' has been filled completely.");
+                }
+
+                break;
+            }
+
+            case BracketOrderChanged bracketOrderChanged:
+            {
+                string type = bracketOrderChanged.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
+                _ = PrintInfoTelegramAsync($"{type} #{bracketOrderChanged.Index} bracket order '{bracketOrderChanged.PreviousClientOrderId} with size {
+                    bracketOrderChanged.PreviousBaseSize} has been replaced with bracket order '{bracketOrderChanged.NewClientOrderId}' with size {
+                    bracketOrderChanged.NewBaseSize} for live bracketed order '{bracketOrderChanged.Order}'.");
+                break;
+            }
+
+            case BracketOrderCanceled bracketOrderCanceled:
+            {
+                string type = bracketOrderCanceled.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
+                _ = PrintInfoTelegramAsync($"{type} #{bracketOrderCanceled.Index} bracket order '{bracketOrderCanceled.ClientOrderId} was canceled.");
+                break;
+            }
+
+            case ClosePositionOrderCreated closePositionOrderCreated:
+                _ = PrintInfoTelegramAsync($"Close-position order '{closePositionOrderCreated.ClientOrderId}' of live bracketed order '{
+                    closePositionOrderCreated.Order}' has been created.");
+                break;
+
+            case ClosePositionOrderFill closePositionOrderFill:
+            {
+                StringBuilder stringBuilder = new();
+
+                if (closePositionOrderFill.Fills.Count > 0)
+                {
+                    string msg = $"Close-position order '{closePositionOrderFill.ClientOrderId}' of live bracketed order '{closePositionOrderFill.Order}' has been filled:";
+
+                    _ = stringBuilder
+                        .AppendLine(msg)
+                        .AppendLine("<code>");
+
+                    foreach (FillData fillData in closePositionOrderFill.Fills)
+                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+
+                    _ = stringBuilder.AppendLine("</code>");
+
+                    _ = PrintInfoTelegramAsync(stringBuilder.ToString());
+                }
+                else
+                {
+                    _ = PrintInfoTelegramAsync($"Close-position order '{closePositionOrderFill.ClientOrderId}' of live bracketed order '{
+                        closePositionOrderFill.Order}' has been filled completely.");
+                }
+
+                break;
+            }
+        }
+
+        clog.Debug("$");
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -988,7 +1207,7 @@ internal class Program
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private static async Task RunReportTaskAsync(string reportFilePath, ITradeApiClient tradeClient, TimeSpan reportPeriod, CancellationToken cancellationToken)
     {
-        clog.Debug($" * {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}={tradeClient},{nameof(reportPeriod)}={reportPeriod}");
+        clog.Debug($"* {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}={tradeClient},{nameof(reportPeriod)}={reportPeriod}");
 
         DateTime nextReport = DateTime.UtcNow.Add(reportPeriod);
 
@@ -1035,6 +1254,97 @@ internal class Program
     }
 
     /// <summary>
+    /// Background task that processes termination of live bracketed orders. After the shutdown is detected, all positions that are still open are closed. This method also cares
+    /// about disposing live bracketed orders when they terminate.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task RunBracketedOrderTerminationMonitoringTaskAsync(CancellationToken cancellationToken)
+    {
+        clog.Debug("*");
+
+        List<Task> tasks = new();
+        List<ILiveBracketedOrder> ordersToRemove = new();
+        Dictionary<ILiveBracketedOrder, Task> mapCopy = new();
+
+        try
+        {
+            while (true)
+            {
+                tasks.Clear();
+                mapCopy.Clear();
+                ordersToRemove.Clear();
+                lock (tasksLock)
+                {
+                    tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
+
+                    foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in liveBracketedOrdersTerminationTasksMap)
+                        mapCopy.Add(liveBracketedOrder, terminationTask);
+                }
+
+                Task newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
+                tasks.Add(newOrderTask);
+
+                _ = await Task.WhenAny(tasks).ConfigureAwait(false);
+
+                foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in mapCopy)
+                {
+                    if (terminationTask.IsCompleted)
+                    {
+                        await terminationTask.ConfigureAwait(false);
+                        ordersToRemove.Add(liveBracketedOrder);
+
+                        clog.Debug($"Disposing live bracketed order '{liveBracketedOrder}' after it terminated.");
+                        await liveBracketedOrder.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+
+                StringBuilder stringBuilder = new();
+                lock (tasksLock)
+                {
+                    foreach (ILiveBracketedOrder liveBracketedOrder in ordersToRemove)
+                    {
+                        _ = liveBracketedOrdersTerminationTasksMap.Remove(liveBracketedOrder);
+                        clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
+
+                        openPositions--;
+                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
+                            $"Live bracketed order '{liveBracketedOrder}' has been completed. There are now {openPositions} open positions.");
+                    }
+                }
+
+                await PrintInfoTelegramAsync(stringBuilder.ToString()).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            clog.Debug("Shutdown detected.");
+        }
+
+        lock (tasksLock)
+        {
+            tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
+
+            foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in liveBracketedOrdersTerminationTasksMap)
+                mapCopy.Add(liveBracketedOrder, terminationTask);
+        }
+
+        foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in mapCopy)
+        {
+            clog.Debug($"Closing position of bracketed order '{liveBracketedOrder}'.");
+            await liveBracketedOrder.ClosePositionAsync(waitForClosePositionFill: true, CancellationToken.None).ConfigureAwait(false);
+
+            clog.Debug($"Disposing live bracketed order '{liveBracketedOrder}' after its position has been closed.");
+            await liveBracketedOrder.DisposeAsync().ConfigureAwait(false);
+
+            clog.Debug($"Waiting for the live bracketed order '{liveBracketedOrder}' to be terminated.");
+            await terminationTask.ConfigureAwait(false);
+        }
+
+        clog.Debug("$");
+    }
+
+    /// <summary>
     /// Prints bot's settings to the log, console, and to the Telegram.
     /// </summary>
     /// <param name="parameters">Bot's parameters.</param>
@@ -1060,41 +1370,6 @@ internal class Program
 
         string initialBudget = stringBuilder.ToString();
         await PrintInfoTelegramAsync($"Initial budget: {initialBudget}").ConfigureAwait(false);
-
-        clog.Debug("$");
-    }
-
-    /// <summary>
-    /// Places the order request to the exchange and waits for the order to be filled.
-    /// </summary>
-    /// <param name="tradeClient">Connected client.</param>
-    /// <param name="orderRequest">Request for the order to place.</param>
-    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    /// <exception cref="BudgetCalculationException">Thrown if a trading strategy budget is associated with the trade API client and it is not possible to calculate whether
-    /// an order would exceed it if it was placed.</exception>
-    /// <exception cref="BudgetExceededException">Thrown if a trading strategy budget is associated with the trade API client and placing the order would exceed the budget.
-    /// </exception>
-    /// <exception cref="OperationCanceledException">Thrown if the operation was cancelled including cancellation due to shutdown or object disposal.</exception>
-    /// <exception cref="OperationFailedException">Thrown if the request could not be sent to the exchange.</exception>
-    private static async Task PlaceOrderAsync(ITradeApiClient tradeClient, MarketOrderRequest orderRequest, CancellationToken cancellationToken)
-    {
-        clog.Debug($" {nameof(tradeClient)}='{tradeClient}',{nameof(orderRequest)}='{orderRequest}'");
-
-        try
-        {
-            ILiveMarketOrder order = await tradeClient.CreateOrderAsync(orderRequest, cancellationToken).ConfigureAwait(false);
-            IReadOnlyList<FillData> fillData = await order.WaitForFillAsync(cancellationToken).ConfigureAwait(false);
-
-            PrintInfo($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).");
-        }
-        catch (Exception e)
-        {
-            if ((e is OperationCanceledException) || (e is BudgetExceededException) || (e is BudgetCalculationException))
-                throw;
-
-            throw new OperationFailedException($"Placing order request '{orderRequest}' on the exchange failed.", e);
-        }
 
         clog.Debug("$");
     }
