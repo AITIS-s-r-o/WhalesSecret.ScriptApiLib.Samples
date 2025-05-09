@@ -67,10 +67,10 @@ public class Telegram : IAsyncDisposable
         {
             using HttpRequestMessage request = new(HttpMethod.Get, uri);
             HttpResponseMessage response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
-            _ = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            string responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
-                error = $"Sending a HTTP request to Telegram failed with HTTP status code {response.StatusCode}.";
+                error = $"Sending a HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";
         }
         catch (Exception e)
         {
