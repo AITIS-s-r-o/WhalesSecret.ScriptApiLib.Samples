@@ -1393,6 +1393,7 @@ internal class Program
         List<Task> tasks = new();
         List<ILiveBracketedOrder> ordersToRemove = new();
         Dictionary<ILiveBracketedOrder, Task> mapCopy = new();
+        Task newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
 
         try
         {
@@ -1409,7 +1410,6 @@ internal class Program
                         mapCopy.Add(liveBracketedOrder, terminationTask);
                 }
 
-                Task newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
                 tasks.Add(newOrderTask);
 
                 _ = await Task.WhenAny(tasks).ConfigureAwait(false);
@@ -1443,6 +1443,15 @@ internal class Program
                     }
 
                     await PrintInfoTelegramAsync(stringBuilder.ToString()).ConfigureAwait(false);
+                }
+
+                if (newOrderTask.IsCompleted)
+                {
+                    // This throws in case of shutdown.
+                    await newOrderTask.ConfigureAwait(false);
+
+                    // Refresh the task if it was not canceled.
+                    newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
                 }
             }
         }
