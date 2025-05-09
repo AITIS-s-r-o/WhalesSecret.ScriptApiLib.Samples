@@ -70,7 +70,7 @@ internal class Program
     /// </code>
     /// </para>
     /// <para>
-    /// With this input the program will will buy <c>10</c> EUR worth of BTC every hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is
+    /// With this input the program will buy <c>10</c> EUR worth of BTC every hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is
     /// <c>0.001</c> BTC and <c>1000</c> EUR.
     /// </para>
     /// </param>

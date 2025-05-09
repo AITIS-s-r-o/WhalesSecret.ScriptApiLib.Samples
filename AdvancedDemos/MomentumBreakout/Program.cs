@@ -182,8 +182,8 @@ internal class Program
     /// </code>
     /// </para>
     /// <para>
-    /// With this input the program will will buy <c>10</c> EUR worth of BTC every hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is
-    /// <c>0.001</c> BTC and <c>1000</c> EUR.
+    /// With this input the program will open positions that are <c>2%</c> of the initial budget - i.e. <c>20</c> EUR worth of BTC for buy orders and <c>0.0002</c> BTC for sell
+    /// orders. Each position will have two stop-loss brackets and two take-profit brackets, each having <c>50%</c> size of the position. The report will be generated twice a day.
     /// </para>
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
