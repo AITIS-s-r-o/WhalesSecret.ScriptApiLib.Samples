@@ -1339,43 +1339,51 @@ internal class Program
 
         DateTime nextReport = DateTime.UtcNow.Add(reportPeriod);
 
-        while (true)
+        try
         {
-            DateTime time = DateTime.UtcNow;
-
-            if (time >= nextReport)
+            while (true)
             {
-                await PrintInfoTelegramAsync($"Generating budget report ...").ConfigureAwait(false);
+                DateTime time = DateTime.UtcNow;
 
-                try
+                if (time >= nextReport)
                 {
-                    await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    await PrintInfoTelegramAsync($"Exception occurred while trying to generate report: {e}.").ConfigureAwait(false);
+                    await PrintInfoTelegramAsync($"Generating budget report ...").ConfigureAwait(false);
+
+                    try
+                    {
+                        await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception e)
+                    {
+                        await PrintInfoTelegramAsync($"Exception occurred while trying to generate report: {e}.").ConfigureAwait(false);
+                    }
+
+                    nextReport = time.Add(reportPeriod);
+                    await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
                 }
 
-                nextReport = time.Add(reportPeriod);
-                await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
+                TimeSpan delay = nextReport - time;
+
+                if (delay > TimeSpan.Zero)
+                {
+                    PrintInfo($"Waiting {delay} before generating the next budget report.");
+
+                    try
+                    {
+                        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        clog.Debug("Cancelation detected.");
+                        break;
+                    }
+                }
             }
-
-            TimeSpan delay = nextReport - time;
-
-            if (delay > TimeSpan.Zero)
-            {
-                PrintInfo($"Waiting {delay} before generating the next budget report.");
-
-                try
-                {
-                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    clog.Debug("Cancelation detected.");
-                    break;
-                }
-            }
+        }
+        catch (Exception e)
+        {
+            clog.Error($"Exception occurred in the report task: {e}");
+            throw;
         }
 
         clog.Debug("$");
@@ -1392,97 +1400,105 @@ internal class Program
         using IDisposable mdlc = clog.SetMdlc();
         clog.Debug("*");
 
-        List<Task> tasks = new();
-        List<ILiveBracketedOrder> ordersToRemove = new();
-        Dictionary<ILiveBracketedOrder, Task> mapCopy = new();
-        Task newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
-
         try
         {
-            while (true)
+            List<Task> tasks = new();
+            List<ILiveBracketedOrder> ordersToRemove = new();
+            Dictionary<ILiveBracketedOrder, Task> mapCopy = new();
+            Task newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
+
+            try
             {
-                tasks.Clear();
-                mapCopy.Clear();
-                ordersToRemove.Clear();
-                lock (liveLock)
+                while (true)
                 {
-                    tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
-
-                    foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in liveBracketedOrdersTerminationTasksMap)
-                        mapCopy.Add(liveBracketedOrder, terminationTask);
-                }
-
-                tasks.Add(newOrderTask);
-
-                _ = await Task.WhenAny(tasks).ConfigureAwait(false);
-
-                foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in mapCopy)
-                {
-                    if (terminationTask.IsCompleted)
-                    {
-                        await terminationTask.ConfigureAwait(false);
-                        ordersToRemove.Add(liveBracketedOrder);
-
-                        clog.Debug($"Disposing live bracketed order '{liveBracketedOrder}' after it terminated.");
-                        await liveBracketedOrder.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-
-                if (ordersToRemove.Count > 0)
-                {
-                    StringBuilder stringBuilder = new();
+                    tasks.Clear();
+                    mapCopy.Clear();
+                    ordersToRemove.Clear();
                     lock (liveLock)
                     {
-                        foreach (ILiveBracketedOrder liveBracketedOrder in ordersToRemove)
-                        {
-                            _ = liveBracketedOrdersTerminationTasksMap.Remove(liveBracketedOrder);
-                            clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
+                        tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
 
-                            openPositions--;
-                            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
-                                $"Live bracketed order '{liveBracketedOrder}' has been completed. There are now {openPositions} open positions.");
+                        foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in liveBracketedOrdersTerminationTasksMap)
+                            mapCopy.Add(liveBracketedOrder, terminationTask);
+                    }
+
+                    tasks.Add(newOrderTask);
+
+                    _ = await Task.WhenAny(tasks).ConfigureAwait(false);
+
+                    foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in mapCopy)
+                    {
+                        if (terminationTask.IsCompleted)
+                        {
+                            await terminationTask.ConfigureAwait(false);
+                            ordersToRemove.Add(liveBracketedOrder);
+
+                            clog.Debug($"Disposing live bracketed order '{liveBracketedOrder}' after it terminated.");
+                            await liveBracketedOrder.DisposeAsync().ConfigureAwait(false);
                         }
                     }
 
-                    await PrintInfoTelegramAsync(stringBuilder.ToString()).ConfigureAwait(false);
-                }
+                    if (ordersToRemove.Count > 0)
+                    {
+                        StringBuilder stringBuilder = new();
+                        lock (liveLock)
+                        {
+                            foreach (ILiveBracketedOrder liveBracketedOrder in ordersToRemove)
+                            {
+                                _ = liveBracketedOrdersTerminationTasksMap.Remove(liveBracketedOrder);
+                                clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
 
-                if (newOrderTask.IsCompleted)
-                {
-                    // This throws in case of shutdown.
-                    await newOrderTask.ConfigureAwait(false);
+                                openPositions--;
+                                _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
+                                    $"Live bracketed order '{liveBracketedOrder}' has been completed. There are now {openPositions} open positions.");
+                            }
+                        }
 
-                    // Refresh the task if it was not canceled.
-                    newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
+                        await PrintInfoTelegramAsync(stringBuilder.ToString()).ConfigureAwait(false);
+                    }
+
+                    if (newOrderTask.IsCompleted)
+                    {
+                        // This throws in case of shutdown.
+                        await newOrderTask.ConfigureAwait(false);
+
+                        // Refresh the task if it was not canceled.
+                        newOrderTask = newLiveBracketedOrder.WaitAsync(cancellationToken);
+                    }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                clog.Debug("Shutdown detected.");
+            }
+
+            mapCopy.Clear();
+            lock (liveLock)
+            {
+                clog.Debug($"There are {liveBracketedOrdersTerminationTasksMap.Count} live orders.");
+
+                foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in liveBracketedOrdersTerminationTasksMap)
+                    mapCopy.Add(liveBracketedOrder, terminationTask);
+
+                liveBracketedOrdersTerminationTasksMap.Clear();
+            }
+
+            foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in mapCopy)
+            {
+                clog.Debug($"Closing position of bracketed order '{liveBracketedOrder}'.");
+                await liveBracketedOrder.ClosePositionAsync(waitForClosePositionFill: true, CancellationToken.None).ConfigureAwait(false);
+
+                clog.Debug($"Disposing live bracketed order '{liveBracketedOrder}' after its position has been closed.");
+                await liveBracketedOrder.DisposeAsync().ConfigureAwait(false);
+
+                clog.Debug($"Waiting for the live bracketed order '{liveBracketedOrder}' to be terminated.");
+                await terminationTask.ConfigureAwait(false);
+            }
         }
-        catch (OperationCanceledException)
+        catch (Exception e)
         {
-            clog.Debug("Shutdown detected.");
-        }
-
-        mapCopy.Clear();
-        lock (liveLock)
-        {
-            clog.Debug($"There are {liveBracketedOrdersTerminationTasksMap.Count} live orders.");
-
-            foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in liveBracketedOrdersTerminationTasksMap)
-                mapCopy.Add(liveBracketedOrder, terminationTask);
-
-            liveBracketedOrdersTerminationTasksMap.Clear();
-        }
-
-        foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in mapCopy)
-        {
-            clog.Debug($"Closing position of bracketed order '{liveBracketedOrder}'.");
-            await liveBracketedOrder.ClosePositionAsync(waitForClosePositionFill: true, CancellationToken.None).ConfigureAwait(false);
-
-            clog.Debug($"Disposing live bracketed order '{liveBracketedOrder}' after its position has been closed.");
-            await liveBracketedOrder.DisposeAsync().ConfigureAwait(false);
-
-            clog.Debug($"Waiting for the live bracketed order '{liveBracketedOrder}' to be terminated.");
-            await terminationTask.ConfigureAwait(false);
+            clog.Error($"Exception occurred in the bracketed order termination monitoring task: {e}");
+            throw;
         }
 
         clog.Debug("$");
