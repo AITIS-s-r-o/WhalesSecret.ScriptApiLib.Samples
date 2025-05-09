@@ -1460,13 +1460,15 @@ internal class Program
             clog.Debug("Shutdown detected.");
         }
 
-        tasks.Clear();
+        mapCopy.Clear();
         lock (liveLock)
         {
-            tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
+            clog.Debug($"There are {liveBracketedOrdersTerminationTasksMap.Count} live orders.");
 
             foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in liveBracketedOrdersTerminationTasksMap)
                 mapCopy.Add(liveBracketedOrder, terminationTask);
+
+            liveBracketedOrdersTerminationTasksMap.Clear();
         }
 
         foreach ((ILiveBracketedOrder liveBracketedOrder, Task terminationTask) in mapCopy)
