@@ -26,6 +26,7 @@ public static class Reports
         string finalValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.FinalValue}");
         string totalProfitStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalProfit}");
         string totalFeesValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalFeesValue}");
+        string totalReservationsValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalReservationsValue}");
 
         StringBuilder stringBuilder = new();
         _ = stringBuilder
@@ -36,6 +37,7 @@ public static class Reports
             .AppendLine(CultureInfo.InvariantCulture, $"  final value: {finalValueStr} {budgetReport.PrimaryAsset}")
             .AppendLine(CultureInfo.InvariantCulture, $"  profit/loss: {totalProfitStr} {budgetReport.PrimaryAsset}")
             .AppendLine(CultureInfo.InvariantCulture, $"  fees value paid: {totalFeesValueStr} {budgetReport.PrimaryAsset}")
+            .AppendLine(CultureInfo.InvariantCulture, $"  reservations: {totalReservationsValueStr} {budgetReport.PrimaryAsset}")
             .AppendLine()
             .AppendLine("Current budget:")
             .AppendLine();
@@ -70,6 +72,8 @@ public static class Reports
             .Append(CultureInfo.InvariantCulture, $"Diff last report ({primaryAsset})")
             .Append(ReportFileValueSeparator)
             .Append(CultureInfo.InvariantCulture, $"P/L ({primaryAsset})")
+            .Append(ReportFileValueSeparator)
+            .Append(CultureInfo.InvariantCulture, $"Reserves {primaryAsset}")
             .Append(ReportFileValueSeparator);
 
         string[] assetNames = lastBudgetReport.FinalBudget.Keys.Order().ToArray();
@@ -112,6 +116,8 @@ public static class Reports
                     .Append('0')
                     .Append(ReportFileValueSeparator)
                     .Append('0')
+                    .Append(ReportFileValueSeparator)
+                    .Append('0')
                     .Append(ReportFileValueSeparator);
 
                 snapshot = lastBudgetReport.InitialBudget;
@@ -139,6 +145,8 @@ public static class Reports
                     .Append(CultureInfo.InvariantCulture, $"{diff}")
                     .Append(ReportFileValueSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{report.TotalProfit}")
+                    .Append(ReportFileValueSeparator)
+                    .Append(CultureInfo.InvariantCulture, $"{report.TotalReservationsValue}")
                     .Append(ReportFileValueSeparator);
 
                 snapshot = report.FinalBudget;
