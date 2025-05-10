@@ -1357,7 +1357,7 @@ internal class Program
                     }
                     catch (Exception e)
                     {
-                        await PrintInfoTelegramAsync($"Exception occurred while trying to generate report: {e}.").ConfigureAwait(false);
+                        await PrintErrorTelegramAsync($"Exception occurred while trying to generate report: {e}.").ConfigureAwait(false);
                     }
 
                     nextReport = time.Add(reportPeriod);
