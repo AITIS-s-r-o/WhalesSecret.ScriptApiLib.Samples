@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Extensions.Primitives;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Entities;
 
@@ -34,6 +35,9 @@ public static class Credentials
     /// <summary>API token for Telegram bot.</summary>
     /// <seealso href="https://medium.com/@whales_secret/trading-bot-in-c-part-2-notifications-1257dc1f4c48"/>
     public const string TelegramApiToken = "CHANGE THIS TO Telegram API token";
+
+    /// <summary>Telegram group ID to send messages to.</summary>
+    public const string TelegramGroupId = "INSERT YOUR TELEGRAM GROUP ID";
 
     /// <summary>
     /// Gets exchange API credentials for Binance exchange using HMAC algorithm.

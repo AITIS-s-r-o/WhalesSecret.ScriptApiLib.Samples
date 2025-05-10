@@ -369,7 +369,7 @@ internal class Program
 
         scriptApi.SetCredentials(apiIdentity);
 
-        telegram = new(groupId: "INSERT YOUR TELEGRAM GROUP ID", apiToken: Credentials.TelegramApiToken);
+        telegram = new(groupId: Credentials.TelegramGroupId, apiToken: Credentials.TelegramApiToken);
         await using Telegram telegramToDispose = telegram;
 
         await PrintIntroAsync(parameters).ConfigureAwait(false);
