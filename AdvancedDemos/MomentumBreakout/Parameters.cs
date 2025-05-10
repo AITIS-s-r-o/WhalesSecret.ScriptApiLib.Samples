@@ -63,13 +63,26 @@ public class Parameters
     /// <summary>Maximum number of trades to execute per day.</summary>
     public int MaxTradesPerDay { get; }
 
+    /// <summary>Maximum number of simultaneously opened positions.</summary>
+    /// <remarks>
+    /// Each open position will create <see cref="StopLossCount"/> stop-loss bracket orders and <see cref="TakeProfitCount"/> take-profit bracket orders. Therefore, the total
+    /// number of bracket orders to be open simultaneously is <see cref="MaxOpenPositions"/> multiplied by <see cref="StopLossCount"/> and <see cref="TakeProfitCount"/>. Note that
+    /// on some exchanges the total number of bracket orders is limited (e.g. on Binance Spot market, on each symbol pair you can have as few as <c>5</c> bracket orders). If you
+    /// set the maximum number of positions and the number of stop-loss and take-profit orders incorrectly (exceeding the limits imposed by the exchange) the bot will fail to
+    /// create bracket orders and the position will be closed immediately after the working order is filled (losing money on trading fees and slippage).
+    /// </remarks>
+    /// <seealso cref="StopLossCount"/>
+    public int MaxOpenPositions { get; }
+
     /// <summary>Candle width of the chart used for calculation.</summary>
     public CandleWidth CandleWidth { get; }
 
     /// <summary>Number of stop-loss orders for a single position.</summary>
+    /// <seealso cref="MaxOpenPositions"/>
     public int StopLossCount { get; }
 
     /// <summary>Number of take-profit orders for a single position.</summary>
+    /// <seealso cref="MaxOpenPositions"/>
     public int TakeProfitCount { get; }
 
     /// <summary>Multiple of ATR to define distance of the first stop-loss from the entry price.</summary>
@@ -125,6 +138,7 @@ public class Parameters
     /// <param name="volatilityAvgSize">Size of the current ATR in multiples of ATR average over <paramref name="volatilityLookback"/> period required for volatility confirmation.
     /// </param>
     /// <param name="maxTradesPerDay">Maximum number of trades to execute per day.</param>
+    /// <param name="maxOpenPositions">Maximum number of simultaneously opened positions.</param>
     /// <param name="candleWidth">Candle width of the chart used for calculation.</param>
     /// <param name="stopLossCount">Number of stop-loss orders for a single position.</param>
     /// <param name="takeProfitCount">Number of take-profit orders for a single position.</param>
@@ -151,6 +165,7 @@ public class Parameters
     /// <item><paramref name="volatilityLookback"/> is not a positive number, or</item>
     /// <item><paramref name="volatilityAvgSize"/> is not a positive number, or</item>
     /// <item><paramref name="maxTradesPerDay"/> is not a positive number, or</item>
+    /// <item><paramref name="maxOpenPositions"/> is not a positive number, or</item>
     /// <item><paramref name="stopLossCount"/> is not a positive number, or</item>
     /// <item><paramref name="takeProfitCount"/> is not a positive number, or</item>
     /// <item><paramref name="stopLossCount"/> plus <paramref name="takeProfitCount"/> is greater than <see cref="IBracketedOrdersFactory.MaxBracketOrders"/>, or</item>
@@ -170,8 +185,9 @@ public class Parameters
     [JsonConstructor]
     public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, int shortEmaLookback, int longEmaLookback, int rsiLookback, int atrLookback,
         int breakoutLookback, decimal breakoutAtrSize, int volumeLookback, decimal volumeAvgSize, int volatilityLookback, decimal volatilityAvgSize, int maxTradesPerDay,
-        CandleWidth candleWidth, int stopLossCount, int takeProfitCount, decimal firstStopLossAtr, decimal nextStopLossAtrIncrement, decimal firstTakeProfitAtr,
-        decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, string orderIdPrefix, BudgetRequest budgetRequest, TimeSpan reportPeriod)
+        int maxOpenPositions, CandleWidth candleWidth, int stopLossCount, int takeProfitCount, decimal firstStopLossAtr, decimal nextStopLossAtrIncrement,
+        decimal firstTakeProfitAtr, decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, string orderIdPrefix, BudgetRequest budgetRequest,
+        TimeSpan reportPeriod)
     {
         if (appDataPath is null)
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
@@ -208,6 +224,9 @@ public class Parameters
 
         if (maxTradesPerDay <= 0)
             throw new InvalidArgumentException($"'{nameof(maxTradesPerDay)}' must be a positive number.", parameterName: nameof(maxTradesPerDay));
+
+        if (maxOpenPositions <= 0)
+            throw new InvalidArgumentException($"'{nameof(maxOpenPositions)}' must be a positive number.", parameterName: nameof(maxOpenPositions));
 
         if (stopLossCount <= 0)
             throw new InvalidArgumentException($"'{nameof(stopLossCount)}' must be a positive number.", parameterName: nameof(stopLossCount));
@@ -274,6 +293,7 @@ public class Parameters
         this.VolatilityLookback = volatilityLookback;
         this.VolatilityAvgSize = volatilityAvgSize;
         this.MaxTradesPerDay = maxTradesPerDay;
+        this.MaxOpenPositions = maxOpenPositions;
         this.CandleWidth = candleWidth;
         this.StopLossCount = stopLossCount;
         this.TakeProfitCount = takeProfitCount;
@@ -346,7 +366,7 @@ public class Parameters
     public override string ToString()
     {
         string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},{30}={31}"
-            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}=`{47}`,{48}='{49}',{50}={51}]";
+            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}={47},{48}='{49}',{50}=`{51}`,{52}={53}]";
         return string.Format
         (
             CultureInfo.InvariantCulture,
@@ -365,6 +385,7 @@ public class Parameters
             nameof(this.VolatilityLookback), this.VolatilityLookback,
             nameof(this.VolatilityAvgSize), this.VolatilityAvgSize,
             nameof(this.MaxTradesPerDay), this.MaxTradesPerDay,
+            nameof(this.MaxOpenPositions), this.MaxOpenPositions,
             nameof(this.CandleWidth), this.CandleWidth,
             nameof(this.StopLossCount), this.StopLossCount,
             nameof(this.TakeProfitCount), this.TakeProfitCount,

@@ -159,6 +159,7 @@ internal class Program
     ///   "VolatilityLookback": 20,
     ///   "VolatilityAvgSize": 0.5,
     ///   "MaxTradesPerDay": 10,
+    ///   "MaxOpenPositions": 1,
     ///   "CandleWidth": "Minutes5",
     ///   "StopLossCount": 2,
     ///   "TakeProfitCount": 2,
@@ -921,7 +922,8 @@ internal class Program
                 }
 
                 OrderSide orderSide = bullishTrend ? OrderSide.Buy : OrderSide.Sell;
-                if ((positions == 0) || (positionSide == orderSide))
+                if (((positions == 0) || (positionSide == orderSide))
+                    && (positions < parameters.MaxOpenPositions))
                 {
                     DateTime dayAgo = DateTime.UtcNow.AddDays(-1);
 
@@ -946,7 +948,7 @@ internal class Program
                 else
                 {
                     await PrintInfoTelegramAsync($"Can not open {(orderSide == OrderSide.Buy ? "long" : "short")} position because we have {positions} open {
-                        (positionSide == OrderSide.Buy ? "long" : "short")} positions.").ConfigureAwait(false);
+                        (positionSide == OrderSide.Buy ? "long" : "short")} positions. Maximum number of open positions is {parameters.MaxOpenPositions}.").ConfigureAwait(false);
 
                     // Activate cooldown even if the order was not open.
                     result = true;
