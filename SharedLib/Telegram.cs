@@ -54,7 +54,7 @@ public class Telegram : IAsyncDisposable
     /// <summary>
     /// Sends a message to the Telegram group.
     /// </summary>
-    /// <param name="message">Message to send.</param>
+    /// <param name="message">Message to send. Note that the message is expected to be a HTML-encoded message..</param>
     /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
     public async Task<string?> SendMessageAsync(string message)
     {

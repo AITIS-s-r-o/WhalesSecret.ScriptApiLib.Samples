@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.VisualStudio.Threading;
 using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -1044,7 +1045,8 @@ internal class Program
         }
         catch (Exception e)
         {
-            await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {e}")
+            string encodedException = HttpUtility.HtmlEncode(e.ToString());
+            await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {encodedException}")
                 .ConfigureAwait(false);
 
             // Activate cooldown even if the order was not open.
@@ -1357,7 +1359,8 @@ internal class Program
                     }
                     catch (Exception e)
                     {
-                        await PrintErrorTelegramAsync($"Exception occurred while trying to generate report: {e}.").ConfigureAwait(false);
+                        string encodedException = HttpUtility.HtmlEncode(e.ToString());
+                        await PrintErrorTelegramAsync($"Exception occurred while trying to generate report: {encodedException}.").ConfigureAwait(false);
                     }
 
                     nextReport = time.Add(reportPeriod);
