@@ -1110,18 +1110,19 @@ internal class Program
                         .AppendLine(msg)
                         .AppendLine("<code>");
 
-                    lock (liveLock)
-                    {
-                        foreach (FillData fillData in workingOrderFill.Fills)
-                        {
-                            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
-
-                            if (fillData.LastAveragePrice is not null) workingOrderAvgFillPrice += fillData.LastAveragePrice.Value;
-                            else workingOrderAvgFillPrice = 0;
-                        }
-                    }
+                    foreach (FillData fillData in workingOrderFill.Fills)
+                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
 
                     _ = stringBuilder.AppendLine("</code>");
+                    _ = stringBuilder.AppendLine();
+
+                    lock (liveLock)
+                    {
+                        decimal? cumAvgPrice = workingOrderFill.Fills[^1].CumulativeAveragePrice;
+                        workingOrderAvgFillPrice = cumAvgPrice is not null ? cumAvgPrice.Value : 0;
+                        _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"Working order fill average price is {cumAvgPrice}.");
+                    }
+
                     _ = PrintInfoTelegramAsync(stringBuilder.ToString());
                 }
                 else
@@ -1159,6 +1160,9 @@ internal class Program
                     decimal slWeight, tpWeight;
                     lock (liveLock)
                     {
+                        clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight}, take-profit filled weight is {
+                            takeProfitFilledWeight}, working order average filled price is {workingOrderAvgFillPrice}.");
+
                         foreach (FillData fillData in bracketOrderFill.Fills)
                         {
                             _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
@@ -1168,14 +1172,11 @@ internal class Program
                                 decimal priceDiff = Math.Abs(fillData.LastAveragePrice.Value - workingOrderAvgFillPrice);
                                 decimal weight = priceDiff * fillData.LastSize;
 
-                                if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss)
-                                {
-                                    stopLossFilledWeight += weight;
-                                }
-                                else
-                                {
-                                    takeProfitFilledWeight += weight;
-                                }
+                                clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {
+                                    weight}");
+
+                                if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss) stopLossFilledWeight += weight;
+                                else takeProfitFilledWeight += weight;
                             }
                         }
 
