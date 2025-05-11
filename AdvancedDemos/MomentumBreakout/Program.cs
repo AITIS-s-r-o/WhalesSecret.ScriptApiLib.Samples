@@ -1173,7 +1173,7 @@ internal class Program
                                 decimal weight = priceDiff * fillData.LastSize;
 
                                 clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {
-                                    weight}");
+                                    weight}.");
 
                                 if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss) stopLossFilledWeight += weight;
                                 else takeProfitFilledWeight += weight;
