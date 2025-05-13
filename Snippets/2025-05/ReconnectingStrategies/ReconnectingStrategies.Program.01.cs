@@ -18,7 +18,7 @@ scriptApi.SetCredentials(apiIdentity);
 // Use the FailInstantlyIfNotConnected connection strategy.
 ConnectionOptions connectionOptions = new(FailInstantlyIfNotConnected.Instance);
 ITradeApiClient client = await scriptApi.ConnectAsync(ExchangeMarket.BinanceSpot, connectionOptions);
-Print("Connected to Binance sandbox.\n");
+Print("Connected to Binance sandbox.");
 
 // Use: sudo netsh interface set interface name="Wi-Fi" admin=DISABLED
 Print("Waiting 10 seconds for you to make sure your machine is offline.");
@@ -33,7 +33,7 @@ try
 }
 catch (NotConnectedException)
 {
-    Print($"{nameof(NotConnectedException)} was thrown as expected!\n");
+    Print($"{nameof(NotConnectedException)} was thrown as expected!");
 }
 
 try
@@ -49,7 +49,7 @@ try
 }
 catch (NotConnectedException)
 {
-    Print($"{nameof(NotConnectedException)} was thrown as expected!\n");
+    Print($"{nameof(NotConnectedException)} was thrown as expected!");
 }
 
 // Use: sudo netsh interface set interface name="Wi-Fi" admin=ENABLED

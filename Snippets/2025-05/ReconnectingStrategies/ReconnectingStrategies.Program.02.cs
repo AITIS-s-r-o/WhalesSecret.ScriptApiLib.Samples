@@ -18,7 +18,7 @@ scriptApi.SetCredentials(apiIdentity);
 BlockUntilReconnectedOrTimeout connectionStrategy = new(preRequestTimeout: TimeSpan.FromSeconds(30));
 ConnectionOptions connectionOptions = new(connectionStrategy);
 ITradeApiClient client = await scriptApi.ConnectAsync(ExchangeMarket.BinanceSpot, connectionOptions);
-Print("Connected to Binance sandbox.\n");
+Print("Connected to Binance sandbox.");
 
 // Use: sudo netsh interface set interface name="Wi-Fi" admin=DISABLED
 Print("Waiting 10 seconds for you to make sure your machine is offline.");
