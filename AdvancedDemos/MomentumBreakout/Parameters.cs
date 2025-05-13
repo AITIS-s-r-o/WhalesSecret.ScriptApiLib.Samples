@@ -57,7 +57,8 @@ public class Parameters
     /// <summary>Number of candles for volatility confirmation.</summary>
     public int VolatilityLookback { get; }
 
-    /// <summary>Size of the current ATR in multiples of the ATR average over <see cref="VolatilityLookback"/> period required for volatility confirmation.</summary>
+    /// <summary>Size of the current Average True Range (ATR) in multiples of the ATR average over <see cref="VolatilityLookback"/> period required for volatility confirmation.</summary>
+    /// <seealso href="https://www.investopedia.com/terms/a/atr.asp"/>
     public decimal VolatilityAvgSize { get; }
 
     /// <summary>Maximum number of trades to execute per day.</summary>
