@@ -970,7 +970,7 @@ internal class Program
                     """);
             }
         }
-        else clog.Trace($"Current short-EMA equals long-EMA. No trend detected.");
+        else clog.Trace("Current short-EMA equals long-EMA. No trend detected.");
 
         if (verbose)
             clog.Trace($"$={result}");
