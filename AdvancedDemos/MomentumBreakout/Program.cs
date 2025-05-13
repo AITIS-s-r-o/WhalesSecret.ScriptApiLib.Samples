@@ -718,7 +718,7 @@ internal class Program
     private static bool CheckRsiCondition(bool longEntry, List<Quote> quotes, decimal currentRsi, bool verbose, List<string> tradeConditionLogs)
     {
         if (verbose)
-            clog.Trace($"* {nameof(longEntry)}={longEntry},|{nameof(quotes)}|={quotes.Count},{nameof(currentRsi)}={currentRsi},{nameof(verbose)}={verbose}");
+            clog.Trace($"* {nameof(longEntry)}={longEntry},|{nameof(quotes)}|={quotes.Count},{nameof(currentRsi)}={currentRsi}");
 
         bool result;
         if (longEntry)
