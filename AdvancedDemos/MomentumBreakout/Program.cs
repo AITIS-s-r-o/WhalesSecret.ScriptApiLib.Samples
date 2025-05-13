@@ -1419,8 +1419,8 @@ internal class Program
                 while (true)
                 {
                     tasks.Clear();
-                    mapCopy.Clear();
                     ordersToRemove.Clear();
+                    mapCopy.Clear();
                     lock (liveLock)
                     {
                         tasks.AddRange(liveBracketedOrdersTerminationTasksMap.Values);
