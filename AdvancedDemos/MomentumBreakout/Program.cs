@@ -177,7 +177,8 @@ internal class Program
     ///       "BTC": 0.01
     ///     }
     ///   },
-    ///   "ReportPeriod": "12:00:00"
+    ///   "ReportPeriod": "12:00:00",
+    ///   "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES"
     /// }
     /// </code>
     /// </para>
@@ -369,142 +370,149 @@ internal class Program
 
         scriptApi.SetCredentials(apiIdentity);
 
-        telegram = new(groupId: Credentials.TelegramGroupId, apiToken: Credentials.TelegramApiToken);
-        await using Telegram telegramToDispose = telegram;
+        if (parameters.TelegramGroupId is not null)
+            telegram = new(groupId: parameters.TelegramGroupId, apiToken: Credentials.TelegramApiToken);
 
-        await PrintIntroAsync(parameters, cancellationToken).ConfigureAwait(false);
-        await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.", cancellationToken).ConfigureAwait(false);
-
-        ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
-            budgetRequest: parameters.BudgetRequest);
-        await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
-
-        await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.", cancellationToken).ConfigureAwait(false);
-
-        string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
-        Task reportTask = RunReportTaskAsync(reportFilePath, tradeClient, parameters.ReportPeriod, cancellationToken);
-        Task bracketedOrderTerminationMonitoringTask = RunBracketedOrderTerminationMonitoringTaskAsync(cancellationToken);
-
-        int candlesNeeded = CalculateNumberOfCandles(parameters);
-
-        CandleWidth candleWidth = parameters.CandleWidth;
-        if (!CandleWidthToTimeSpan(candleWidth, out TimeSpan? candleTimeSpan))
-            throw new SanityCheckException($"Unable to convert candle width {candleWidth} to timespan.");
-
-        TimeSpan historyNeeded = candleTimeSpan.Value * (candlesNeeded + 1);
-        DateTime now = DateTime.UtcNow;
-        DateTime startTime = now.Add(-historyNeeded);
-        CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(parameters.SymbolPair, candleWidth, startTime: startTime, endTime: now, cancellationToken)
-            .ConfigureAwait(false);
-
-        int counter = 0;
-        int quotesBuffer = 100;
-        int maxQuotes = candlestickData.Candles.Count + quotesBuffer;
-        List<Quote> quotes = InitializeQuotesAndIndicatorValues(parameters, candlestickData.Candles, maxQuotes, out double? currentShortEma, out double? currentLongEma,
-            out double? currentRsi, out double? currentAtr);
-
-        decimal? currentVolume = null;
-
-        await using ITickerSubscription tickerSubscription = await tradeClient.CreateTickerSubscriptionAsync(parameters.SymbolPair).ConfigureAwait(false);
-        await using ICandlestickSubscription candleSubscription = await tradeClient.CreateCandlestickSubscriptionAsync(parameters.SymbolPair).ConfigureAwait(false);
-
-        Task<Candle> candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
-        Task<CandleUpdate> candleUpdateTask = candleSubscription.WaitNextCandlestickUpdateAsync(candleWidth, cancellationToken);
-        Task<Ticker> tickerTask = tickerSubscription.GetNewerTickerAsync(cancellationToken);
-
-        // List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.
-        List<string> tradeConditionLogs = new(capacity: 32);
-
-        OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
-        _ = orderRequestBuilder
-            .SetSizeInBaseSymbol(true)
-            .SetSymbolPair(parameters.SymbolPair);
-
-        DateTime nextEntry = DateTime.MinValue;
         try
         {
-            while (true)
+            await PrintIntroAsync(parameters, cancellationToken).ConfigureAwait(false);
+            await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.", cancellationToken).ConfigureAwait(false);
+
+            ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
+                budgetRequest: parameters.BudgetRequest);
+            await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
+
+            await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.", cancellationToken).ConfigureAwait(false);
+
+            string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
+            Task reportTask = RunReportTaskAsync(reportFilePath, tradeClient, parameters.ReportPeriod, cancellationToken);
+            Task bracketedOrderTerminationMonitoringTask = RunBracketedOrderTerminationMonitoringTaskAsync(cancellationToken);
+
+            int candlesNeeded = CalculateNumberOfCandles(parameters);
+
+            CandleWidth candleWidth = parameters.CandleWidth;
+            if (!CandleWidthToTimeSpan(candleWidth, out TimeSpan? candleTimeSpan))
+                throw new SanityCheckException($"Unable to convert candle width {candleWidth} to timespan.");
+
+            TimeSpan historyNeeded = candleTimeSpan.Value * (candlesNeeded + 1);
+            DateTime now = DateTime.UtcNow;
+            DateTime startTime = now.Add(-historyNeeded);
+            CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(parameters.SymbolPair, candleWidth, startTime: startTime, endTime: now, cancellationToken)
+                .ConfigureAwait(false);
+
+            int counter = 0;
+            int quotesBuffer = 100;
+            int maxQuotes = candlestickData.Candles.Count + quotesBuffer;
+            List<Quote> quotes = InitializeQuotesAndIndicatorValues(parameters, candlestickData.Candles, maxQuotes, out double? currentShortEma, out double? currentLongEma,
+                out double? currentRsi, out double? currentAtr);
+
+            decimal? currentVolume = null;
+
+            await using ITickerSubscription tickerSubscription = await tradeClient.CreateTickerSubscriptionAsync(parameters.SymbolPair).ConfigureAwait(false);
+            await using ICandlestickSubscription candleSubscription = await tradeClient.CreateCandlestickSubscriptionAsync(parameters.SymbolPair).ConfigureAwait(false);
+
+            Task<Candle> candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
+            Task<CandleUpdate> candleUpdateTask = candleSubscription.WaitNextCandlestickUpdateAsync(candleWidth, cancellationToken);
+            Task<Ticker> tickerTask = tickerSubscription.GetNewerTickerAsync(cancellationToken);
+
+            // List of human readable log messages to be sent to Telegram in case the trade entry conditions are met.
+            List<string> tradeConditionLogs = new(capacity: 32);
+
+            OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
+            _ = orderRequestBuilder
+                .SetSizeInBaseSymbol(true)
+                .SetSymbolPair(parameters.SymbolPair);
+
+            DateTime nextEntry = DateTime.MinValue;
+            try
             {
-                _ = await Task.WhenAny(candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
-
-                if (candleTask.IsCompleted)
+                while (true)
                 {
-                    Candle closedCandle = await candleTask.ConfigureAwait(false);
-                    clog.Debug($"New closed candle received: {closedCandle}");
+                    _ = await Task.WhenAny(candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
 
-                    ProcessClosedCandle(closedCandle, quotes, maxQuotes: maxQuotes, quotesBuffer: quotesBuffer, parameters, ref currentShortEma, ref currentLongEma, ref currentRsi,
-                        ref currentAtr);
-
-                    // Refresh task.
-                    candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
-                }
-
-                if (candleUpdateTask.IsCompleted)
-                {
-                    CandleUpdate candleUpdate = await candleUpdateTask.ConfigureAwait(false);
-                    currentVolume = candleUpdate.Candle.BaseVolume;
-
-                    // Refresh task.
-                    candleUpdateTask = candleSubscription.WaitNextCandlestickUpdateAsync(candleWidth, cancellationToken);
-                }
-
-                if (tickerTask.IsCompleted)
-                {
-                    Ticker ticker = await tickerTask.ConfigureAwait(false);
-                    if (ticker.LastPrice is not null)
+                    if (candleTask.IsCompleted)
                     {
-                        if (DateTime.UtcNow > nextEntry)
-                        {
-                            counter++;
-                            tradeConditionLogs.Clear();
+                        Candle closedCandle = await candleTask.ConfigureAwait(false);
+                        clog.Debug($"New closed candle received: {closedCandle}");
 
-                            // Once in a while we print more logs, just to be able to check progress in logs.
-                            bool debugIteration = (counter % 20) == 0;
+                        ProcessClosedCandle(closedCandle, quotes, maxQuotes: maxQuotes, quotesBuffer: quotesBuffer, parameters, ref currentShortEma, ref currentLongEma, ref currentRsi,
+                            ref currentAtr);
 
-                            decimal lastPrice = ticker.LastPrice.Value;
-                            tradeConditionLogs.Add($"  Current price: {lastPrice}");
-                            if (debugIteration)
-                                clog.Trace($"Current price is {lastPrice}.");
-
-                            if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null)
-                                && (currentVolume is not null))
-                            {
-                                bool entry = await ProcessNewPriceAsync(tradeClient, orderRequestBuilder, quotes, lastPrice: lastPrice,
-                                    currentShortEma: (decimal)currentShortEma.Value, currentLongEma: (decimal)currentLongEma.Value, currentRsi: (decimal)currentRsi.Value,
-                                    currentAtr: (decimal)currentAtr.Value, currentVolume: currentVolume.Value, parameters, debugIteration, tradeConditionLogs, cancellationToken)
-                                    .ConfigureAwait(false);
-
-                                if (entry)
-                                {
-                                    DateTime lastEntry = DateTime.UtcNow;
-                                    nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
-                                    await PrintInfoTelegramAsync($"New trade has been attempted. Cooldown period of {
-                                        parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.", cancellationToken).ConfigureAwait(false);
-                                }
-                            }
-                            else clog.Trace("Waiting for the required values for calculation to be available.");
-                        }
-                        else clog.Debug($"Cooldown in progress. Waiting until {nextEntry} before considering making a new trade.");
+                        // Refresh task.
+                        candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
                     }
-                    else clog.Warn("Receive ticker does not have the last price.");
 
-                    // Refresh task.
-                    tickerTask = tickerSubscription.GetNewerTickerAsync(cancellationToken);
+                    if (candleUpdateTask.IsCompleted)
+                    {
+                        CandleUpdate candleUpdate = await candleUpdateTask.ConfigureAwait(false);
+                        currentVolume = candleUpdate.Candle.BaseVolume;
+
+                        // Refresh task.
+                        candleUpdateTask = candleSubscription.WaitNextCandlestickUpdateAsync(candleWidth, cancellationToken);
+                    }
+
+                    if (tickerTask.IsCompleted)
+                    {
+                        Ticker ticker = await tickerTask.ConfigureAwait(false);
+                        if (ticker.LastPrice is not null)
+                        {
+                            if (DateTime.UtcNow > nextEntry)
+                            {
+                                counter++;
+                                tradeConditionLogs.Clear();
+
+                                // Once in a while we print more logs, just to be able to check progress in logs.
+                                bool debugIteration = (counter % 20) == 0;
+
+                                decimal lastPrice = ticker.LastPrice.Value;
+                                tradeConditionLogs.Add($"  Current price: {lastPrice}");
+                                if (debugIteration)
+                                    clog.Trace($"Current price is {lastPrice}.");
+
+                                if ((currentShortEma is not null) && (currentLongEma is not null) && (currentRsi is not null) && (currentAtr is not null)
+                                    && (currentVolume is not null))
+                                {
+                                    bool entry = await ProcessNewPriceAsync(tradeClient, orderRequestBuilder, quotes, lastPrice: lastPrice,
+                                        currentShortEma: (decimal)currentShortEma.Value, currentLongEma: (decimal)currentLongEma.Value, currentRsi: (decimal)currentRsi.Value,
+                                        currentAtr: (decimal)currentAtr.Value, currentVolume: currentVolume.Value, parameters, debugIteration, tradeConditionLogs, cancellationToken)
+                                        .ConfigureAwait(false);
+
+                                    if (entry)
+                                    {
+                                        DateTime lastEntry = DateTime.UtcNow;
+                                        nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
+                                        await PrintInfoTelegramAsync($"New trade has been attempted. Cooldown period of {parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.", cancellationToken).ConfigureAwait(false);
+                                    }
+                                }
+                                else clog.Trace("Waiting for the required values for calculation to be available.");
+                            }
+                            else clog.Debug($"Cooldown in progress. Waiting until {nextEntry} before considering making a new trade.");
+                        }
+                        else clog.Warn("Receive ticker does not have the last price.");
+
+                        // Refresh task.
+                        tickerTask = tickerSubscription.GetNewerTickerAsync(cancellationToken);
+                    }
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            await PrintInfoTelegramAsync("Shutdown detected.", CancellationToken.None).ConfigureAwait(false);
-        }
+            catch (OperationCanceledException)
+            {
+                await PrintInfoTelegramAsync("Shutdown detected.", CancellationToken.None).ConfigureAwait(false);
+            }
 
-        try
-        {
-            clog.Debug("Wait until all tasks are finished.");
-            await Task.WhenAll(reportTask, bracketedOrderTerminationMonitoringTask, candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
+            try
+            {
+                clog.Debug("Wait until all tasks are finished.");
+                await Task.WhenAll(reportTask, bracketedOrderTerminationMonitoringTask, candleTask, candleUpdateTask, tickerTask).ConfigureAwait(false);
+            }
+            catch
+            {
+            }
         }
-        catch
+        finally
         {
+            if (telegram is not null)
+                await telegram.DisposeAsync().ConfigureAwait(false);
         }
 
         clog.Debug("$");
