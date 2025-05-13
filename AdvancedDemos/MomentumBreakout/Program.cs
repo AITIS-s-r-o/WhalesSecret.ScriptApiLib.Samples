@@ -999,7 +999,7 @@ internal class Program
 
         string symbol = orderSide == OrderSide.Buy ? parameters.SymbolPair.QuoteSymbol : parameters.SymbolPair.BaseSymbol;
         if (!parameters.BudgetRequest.InitialBudget.TryGetValue(symbol, out decimal initialBudget))
-            throw new SanityCheckException($"Initial budget has no allocation for '{parameters.SymbolPair.BaseSymbol}'");
+            throw new SanityCheckException($"Initial budget has no allocation for '{symbol}'");
 
         decimal orderSize = initialBudget * parameters.PositionSize;
         decimal orderSizeInBaseSymbol = orderSide == OrderSide.Buy ? orderSize / lastPrice : orderSize;
