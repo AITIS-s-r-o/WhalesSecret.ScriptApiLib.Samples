@@ -1106,10 +1106,9 @@ internal class Program
 
             case WorkingOrderFill workingOrderFill:
             {
-                StringBuilder stringBuilder = new();
-
                 if (workingOrderFill.Fills.Count > 0)
                 {
+                    StringBuilder stringBuilder = new();
                     string msg = $"Working order '{workingOrderFill.ClientOrderId}' of live bracketed order '{workingOrderFill.Order}' has been filled:";
                     _ = stringBuilder
                         .AppendLine(msg)
