@@ -155,10 +155,8 @@ public static class Reports
                 prevValue = report.FinalValue;
             }
 
-            for (int assetNameIndex = 0; assetNameIndex < assetNames.Length; assetNameIndex++)
+            foreach (string assetName in assetNames)
             {
-                string assetName = assetNames[assetNameIndex];
-
                 if (snapshot.TryGetValue(assetName, out decimal value))
                     _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
 
