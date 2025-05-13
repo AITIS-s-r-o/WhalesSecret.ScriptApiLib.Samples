@@ -1124,7 +1124,7 @@ internal class Program
                     lock (liveLock)
                     {
                         decimal? cumAvgPrice = workingOrderFill.Fills[^1].CumulativeAveragePrice;
-                        workingOrderAvgFillPrice = cumAvgPrice is not null ? cumAvgPrice.Value : 0;
+                        workingOrderAvgFillPrice = cumAvgPrice ?? 0;
                         _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"Working order fill average price is {cumAvgPrice}.");
                     }
 
