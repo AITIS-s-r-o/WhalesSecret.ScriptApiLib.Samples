@@ -1452,7 +1452,9 @@ internal class Program
                         {
                             foreach (ILiveBracketedOrder liveBracketedOrder in ordersToRemove)
                             {
-                                _ = liveBracketedOrdersTerminationTasksMap.Remove(liveBracketedOrder);
+                                if (!liveBracketedOrdersTerminationTasksMap.Remove(liveBracketedOrder))
+                                    throw new SanityCheckException($"Unable to remove live bracketed order '{liveBracketedOrder}' from the map.");
+
                                 clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
 
                                 openPositions--;
