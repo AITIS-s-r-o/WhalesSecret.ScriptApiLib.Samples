@@ -73,6 +73,10 @@ public class Telegram : IAsyncDisposable
             if (!response.IsSuccessStatusCode)
                 error = $"Sending a HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";
         }
+        catch (HttpRequestException e)
+        {
+            error = $"Sending a HTTP request to Telegram failed with HTTP request error {e.HttpRequestError}: {e.Message}";
+        }
         catch (Exception e)
         {
             error = e.Message;
