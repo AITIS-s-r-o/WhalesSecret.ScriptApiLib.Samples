@@ -1,5 +1,4 @@
 using System;
-using Microsoft.Extensions.Primitives;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Entities;
 
