@@ -292,8 +292,7 @@ internal class Program
 
         if (msg.Length > 0)
         {
-            DateTime dateTime = DateTime.UtcNow;
-            string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            string dateTimeStr = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             Console.WriteLine($"{dateTimeStr}: ERROR {msg}");
         }
         else Console.WriteLine();
