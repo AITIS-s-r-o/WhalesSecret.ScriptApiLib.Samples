@@ -319,9 +319,7 @@ public class Parameters
     public static Parameters LoadFromJson(string filePath)
     {
         if (!File.Exists(filePath))
-        {
             throw new FileNotFoundException($"The specified file '{filePath}' does not exist.");
-        }
 
         JsonSerializerOptions jsonSerializerOptions = new()
         {
