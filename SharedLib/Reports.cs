@@ -13,7 +13,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 public static class Reports
 {
     /// <summary>Separator of values on a single row in the report file.</summary>
-    private const char ReportFileValueSeparator = ',';
+    private const char CsvSeparator = ',';
 
     /// <summary>
     /// Converts budget report to string that can be printed to the console.
@@ -64,17 +64,17 @@ public static class Reports
         // Compose the header from the latest report.
         _ = fileContentBuilder
             .Append("Report Date Time (UTC)")
-            .Append(ReportFileValueSeparator)
+            .Append(CsvSeparator)
             .Append("Total Report Period")
-            .Append(ReportFileValueSeparator)
+            .Append(CsvSeparator)
             .Append(CultureInfo.InvariantCulture, $"Value ({primaryAsset})")
-            .Append(ReportFileValueSeparator)
+            .Append(CsvSeparator)
             .Append(CultureInfo.InvariantCulture, $"Diff last report ({primaryAsset})")
-            .Append(ReportFileValueSeparator)
+            .Append(CsvSeparator)
             .Append(CultureInfo.InvariantCulture, $"P/L ({primaryAsset})")
-            .Append(ReportFileValueSeparator)
+            .Append(CsvSeparator)
             .Append(CultureInfo.InvariantCulture, $"Reserves {primaryAsset}")
-            .Append(ReportFileValueSeparator);
+            .Append(CsvSeparator);
 
         string[] assetNames = lastBudgetReport.FinalBudget.Keys.Order().ToArray();
 
@@ -82,7 +82,7 @@ public static class Reports
         {
             _ = fileContentBuilder
                 .Append(CultureInfo.InvariantCulture, $"Budget Balance {assetName}")
-                .Append(ReportFileValueSeparator);
+                .Append(CsvSeparator);
         }
 
         string[] feeAssetNames = lastBudgetReport.FeesPaid.Keys.Order().ToArray();
@@ -92,7 +92,7 @@ public static class Reports
             _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"Fees Paid {assetNames[i]}");
 
             if (i != feeAssetNames.Length - 1)
-                _ = fileContentBuilder.Append(ReportFileValueSeparator);
+                _ = fileContentBuilder.Append(CsvSeparator);
         }
 
         _ = fileContentBuilder.AppendLine();
@@ -109,16 +109,16 @@ public static class Reports
                 // Second row is the initial budget line
                 _ = fileContentBuilder
                     .Append(lastBudgetReport.StartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
-                    .Append(ReportFileValueSeparator)
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
+                    .Append(CsvSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{lastBudgetReport.InitialValue}")
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append('0')
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append('0')
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append('0')
-                    .Append(ReportFileValueSeparator);
+                    .Append(CsvSeparator);
 
                 snapshot = lastBudgetReport.InitialBudget;
                 feesPaid = new();
@@ -137,17 +137,17 @@ public static class Reports
 
                 _ = fileContentBuilder
                     .Append(report.EndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append(periodStr)
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{report.FinalValue}")
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{diff}")
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{report.TotalProfit}")
-                    .Append(ReportFileValueSeparator)
+                    .Append(CsvSeparator)
                     .Append(CultureInfo.InvariantCulture, $"{report.TotalReservationsValue}")
-                    .Append(ReportFileValueSeparator);
+                    .Append(CsvSeparator);
 
                 snapshot = report.FinalBudget;
                 feesPaid = report.FeesPaid;
@@ -160,7 +160,7 @@ public static class Reports
                 if (snapshot.TryGetValue(assetName, out decimal value))
                     _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
 
-                _ = fileContentBuilder.Append(ReportFileValueSeparator);
+                _ = fileContentBuilder.Append(CsvSeparator);
             }
 
             for (int feeAssetNameIndex = 0; feeAssetNameIndex < feeAssetNames.Length; feeAssetNameIndex++)
@@ -171,7 +171,7 @@ public static class Reports
                     _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
 
                 if (feeAssetNameIndex != feeAssetNames.Length - 1)
-                    _ = fileContentBuilder.Append(ReportFileValueSeparator);
+                    _ = fileContentBuilder.Append(CsvSeparator);
             }
 
             _ = fileContentBuilder.AppendLine();
