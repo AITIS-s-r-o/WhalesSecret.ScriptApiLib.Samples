@@ -43,7 +43,7 @@ public static class Reports
             .AppendLine();
 
         foreach ((string assetName, decimal amount) in budgetReport.FinalBudget)
-            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $" {assetName}: {amount}");
+            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {assetName}: {amount}");
 
         _ = stringBuilder.AppendLine();
 
