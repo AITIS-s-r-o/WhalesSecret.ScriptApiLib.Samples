@@ -12,7 +12,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 /// <remarks>In order for those samples to work, you have to set a valid <see cref="Credentials.TelegramApiToken"/> in <see cref="Credentials"/>.</remarks>
 public class Telegram : IAsyncDisposable
 {
-    /// <summary>URL-encoded Telegram group ID to which to send the messages.</summary>
+    /// <summary>URL-encoded Telegram group ID to which to send messages.</summary>
     private readonly string groupId;
 
     /// <summary>Telegram API token.</summary>
@@ -34,7 +34,7 @@ public class Telegram : IAsyncDisposable
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="groupId">Telegram group ID to which to send the messages.</param>
+    /// <param name="groupId">Telegram group ID to which to send messages.</param>
     /// <param name="apiToken">Telegram API token.</param>
     /// <param name="httpClient">HTTP client to use to send messages to Telegram, or <c>null</c> to create a new instance.</param>
     public Telegram(string groupId, string apiToken, HttpClient? httpClient = null)
