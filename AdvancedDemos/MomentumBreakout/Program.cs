@@ -83,9 +83,6 @@ internal class Program
     /// <summary>Name of the report file.</summary>
     private const string ReportFileName = $"{StrategyName}-budgetReport.csv";
 
-    /// <summary>All budget reports that have been generated during the program's lifetime.</summary>
-    private static readonly List<BudgetReport> budgetReports = new();
-
     /// <summary>Live bracketed orders termination tasks mapped to the bracketed orders.</summary>
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static readonly Dictionary<ILiveBracketedOrder, Task> liveBracketedOrdersTerminationTasksMap = new();
@@ -1346,6 +1343,9 @@ internal class Program
 
         DateTime nextReport = DateTime.UtcNow.Add(reportPeriod);
 
+        // All budget reports that have been generated during the program's lifetime.
+        List<BudgetReport> budgetReports = new();
+
         try
         {
             while (true)
@@ -1358,7 +1358,7 @@ internal class Program
 
                     try
                     {
-                        await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
+                        await GenerateReportAsync(reportFilePath, tradeClient, budgetReports, cancellationToken).ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
@@ -1546,11 +1546,12 @@ internal class Program
     /// </summary>
     /// <param name="reportFilePath">Full path to the report file.</param>
     /// <param name="tradeClient">Connected client.</param>
+    /// <param name="budgetReports">List of all budget reports that have been generated during the program's lifetime.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     /// <exception cref="OperationCanceledException">Thrown if the operation was canceled.</exception>
     /// <exception cref="OperationFailedException">Thrown if it was not possible to calculate the value of the budget or write the report to a file.</exception>
-    private static async Task GenerateReportAsync(string reportFilePath, ITradeApiClient tradeClient, CancellationToken cancellationToken)
+    private static async Task GenerateReportAsync(string reportFilePath, ITradeApiClient tradeClient, List<BudgetReport> budgetReports, CancellationToken cancellationToken)
     {
         clog.Debug($" {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}='{tradeClient}'");
 
@@ -1558,7 +1559,7 @@ internal class Program
         string reportLog = Reports.BudgetReportToString(budgetReport);
         await PrintInfoTelegramAsync(reportLog, cancellationToken).ConfigureAwait(false);
 
-        await ReportToFileAsync(reportFilePath, budgetReport).ConfigureAwait(false);
+        await ReportToFileAsync(reportFilePath, budgetReport, budgetReports).ConfigureAwait(false);
 
         clog.Debug("$");
     }
@@ -1568,13 +1569,14 @@ internal class Program
     /// </summary>
     /// <param name="reportFilePath">Full path to the report file.</param>
     /// <param name="budgetReport">Latest budget to write to the file.</param>
+    /// <param name="budgetReports">List of all budget reports that have been generated during the program's lifetime.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     /// <remarks>
     /// Since it is possible that the initial budget request does not contain all assets, the list of assets can change over time. Therefore, we have to always write all reports
     /// to the file from scratch, to make sure all columns match with the header.
     /// </remarks>
     /// <exception cref="OperationFailedException">Thrown if writing the report to a file failed.</exception>
-    private static async Task ReportToFileAsync(string reportFilePath, BudgetReport budgetReport)
+    private static async Task ReportToFileAsync(string reportFilePath, BudgetReport budgetReport, List<BudgetReport> budgetReports)
     {
         clog.Debug($" {nameof(reportFilePath)}='{reportFilePath}',{nameof(budgetReport)}='{budgetReport}'");
 
