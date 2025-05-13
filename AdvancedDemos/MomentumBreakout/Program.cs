@@ -962,7 +962,7 @@ internal class Program
             else if (verbose)
             {
                 clog.Trace($$"""
-                    Entry conditions are not satisfied: 
+                    Entry conditions are not satisfied:
                         Breakout:   {{(breakoutConfirmation ? "PASSED" : "FAILED")}}
                         RSI:        {{(rsiConfirmation ? "PASSED" : "FAILED")}}
                         Volume:     {{(volumeConfirmation ? "PASSED" : "FAILED")}}
