@@ -269,16 +269,16 @@ internal class Program
     /// <summary>
     /// Prints information level message to the console and to the log. Message timestamp is added when printing to the console.
     /// </summary>
-    /// <param name="msg">Message to print.</param>
-    private static void PrintInfo(string msg = "")
+    /// <param name="message">Message to print.</param>
+    private static void PrintInfo(string message = "")
     {
-        clog.Info(msg);
+        clog.Info(message);
 
-        if (msg.Length > 0)
+        if (message.Length > 0)
         {
             DateTime dateTime = DateTime.UtcNow;
             string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-            Console.WriteLine($"{dateTimeStr}: {msg}");
+            Console.WriteLine($"{dateTimeStr}: {message}");
         }
         else Console.WriteLine();
     }
@@ -301,36 +301,36 @@ internal class Program
     }
 
     /// <summary>
-    /// Prints information level message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
+    /// Prints information message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
     /// </summary>
-    /// <param name="msg">Message to print.</param>
+    /// <param name="message">Message to print.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintInfoTelegramAsync(string msg, CancellationToken cancellationToken)
+    private static async Task PrintInfoTelegramAsync(string message, CancellationToken cancellationToken)
     {
-        PrintInfo(msg);
+        PrintInfo(message);
 
-        if ((telegram is not null) && !string.IsNullOrEmpty(msg))
+        if ((telegram is not null) && !string.IsNullOrEmpty(message))
         {
-            string? error = await telegram.SendMessageAsync(msg, cancellationToken).ConfigureAwait(false);
+            string? error = await telegram.SendMessageAsync(message, cancellationToken).ConfigureAwait(false);
             if (error is not null)
                 clog.Error($"Sending message to Telegram failed. {error}");
         }
     }
 
     /// <summary>
-    /// Prints error level message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
+    /// Prints error message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
     /// </summary>
-    /// <param name="msg">Message to print.</param>
+    /// <param name="message">Message to print.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintErrorTelegramAsync(string msg, CancellationToken cancellationToken)
+    private static async Task PrintErrorTelegramAsync(string message, CancellationToken cancellationToken)
     {
-        PrintError(msg);
+        PrintError(message);
 
-        if ((telegram is not null) && !string.IsNullOrEmpty(msg))
+        if ((telegram is not null) && !string.IsNullOrEmpty(message))
         {
-            string? error = await telegram.SendMessageAsync($"<b>ERROR:</b> {msg}", cancellationToken).ConfigureAwait(false);
+            string? error = await telegram.SendMessageAsync($"<b>ERROR:</b> {message}", cancellationToken).ConfigureAwait(false);
             if (error is not null)
                 clog.Error($"Sending message to Telegram failed. {error}");
         }
