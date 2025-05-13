@@ -54,9 +54,10 @@ public class Telegram : IAsyncDisposable
     /// <summary>
     /// Sends a message to the Telegram group.
     /// </summary>
-    /// <param name="message">Message to send. Note that the message is expected to be a HTML-encoded message..</param>
+    /// <param name="message">Message to send. Note that the message is expected to be a HTML-encoded message.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
-    public async Task<string?> SendMessageAsync(string message)
+    public async Task<string?> SendMessageAsync(string message, CancellationToken cancellationToken)
     {
         string? error = null;
         message = HttpUtility.UrlEncode(message);
@@ -66,8 +67,8 @@ public class Telegram : IAsyncDisposable
         try
         {
             using HttpRequestMessage request = new(HttpMethod.Get, uri);
-            HttpResponseMessage response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
-            string responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            using HttpResponseMessage response = await this.httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
                 error = $"Sending a HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";

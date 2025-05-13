@@ -304,14 +304,15 @@ internal class Program
     /// Prints information level message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
     /// </summary>
     /// <param name="msg">Message to print.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintInfoTelegramAsync(string msg)
+    private static async Task PrintInfoTelegramAsync(string msg, CancellationToken cancellationToken)
     {
         PrintInfo(msg);
 
         if ((telegram is not null) && !string.IsNullOrEmpty(msg))
         {
-            string? error = await telegram.SendMessageAsync(msg).ConfigureAwait(false);
+            string? error = await telegram.SendMessageAsync(msg, cancellationToken).ConfigureAwait(false);
             if (error is not null)
                 clog.Error($"Sending message to Telegram failed. {error}");
         }
@@ -321,14 +322,15 @@ internal class Program
     /// Prints error level message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
     /// </summary>
     /// <param name="msg">Message to print.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintErrorTelegramAsync(string msg)
+    private static async Task PrintErrorTelegramAsync(string msg, CancellationToken cancellationToken)
     {
         PrintError(msg);
 
         if ((telegram is not null) && !string.IsNullOrEmpty(msg))
         {
-            string? error = await telegram.SendMessageAsync($"<b>ERROR:</b> {msg}").ConfigureAwait(false);
+            string? error = await telegram.SendMessageAsync($"<b>ERROR:</b> {msg}", cancellationToken).ConfigureAwait(false);
             if (error is not null)
                 clog.Error($"Sending message to Telegram failed. {error}");
         }
@@ -374,14 +376,14 @@ internal class Program
         telegram = new(groupId: Credentials.TelegramGroupId, apiToken: Credentials.TelegramApiToken);
         await using Telegram telegramToDispose = telegram;
 
-        await PrintIntroAsync(parameters).ConfigureAwait(false);
-        await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.").ConfigureAwait(false);
+        await PrintIntroAsync(parameters, cancellationToken).ConfigureAwait(false);
+        await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.", cancellationToken).ConfigureAwait(false);
 
         ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
             budgetRequest: parameters.BudgetRequest);
         await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
 
-        await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.").ConfigureAwait(false);
+        await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.", cancellationToken).ConfigureAwait(false);
 
         string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
         Task reportTask = RunReportTaskAsync(reportFilePath, tradeClient, parameters.ReportPeriod, cancellationToken);
@@ -481,7 +483,7 @@ internal class Program
                                     DateTime lastEntry = DateTime.UtcNow;
                                     nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
                                     await PrintInfoTelegramAsync($"New trade has been attempted. Cooldown period of {
-                                        parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.").ConfigureAwait(false);
+                                        parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.", cancellationToken).ConfigureAwait(false);
                                 }
                             }
                             else clog.Trace("Waiting for the required values for calculation to be available.");
@@ -497,7 +499,7 @@ internal class Program
         }
         catch (OperationCanceledException)
         {
-            await PrintInfoTelegramAsync("Shutdown detected.").ConfigureAwait(false);
+            await PrintInfoTelegramAsync("Shutdown detected.", CancellationToken.None).ConfigureAwait(false);
         }
 
         try
@@ -940,8 +942,8 @@ internal class Program
                     }
                     else
                     {
-                        await PrintInfoTelegramAsync($"Can not open new position because we have already created {parameters.MaxTradesPerDay} positions in the last 24 hours.")
-                            .ConfigureAwait(false);
+                        await PrintInfoTelegramAsync($"Can not open new position because we have already created {parameters.MaxTradesPerDay} positions in the last 24 hours.",
+                            cancellationToken).ConfigureAwait(false);
 
                         // Activate cooldown even if the order was not open.
                         result = true;
@@ -950,7 +952,8 @@ internal class Program
                 else
                 {
                     await PrintInfoTelegramAsync($"Can not open {(orderSide == OrderSide.Buy ? "long" : "short")} position because we have {positions} open {
-                        (positionSide == OrderSide.Buy ? "long" : "short")} positions. Maximum number of open positions is {parameters.MaxOpenPositions}.").ConfigureAwait(false);
+                        (positionSide == OrderSide.Buy ? "long" : "short")} positions. Maximum number of open positions is {parameters.MaxOpenPositions}.", cancellationToken)
+                        .ConfigureAwait(false);
 
                     // Activate cooldown even if the order was not open.
                     result = true;
@@ -1042,13 +1045,13 @@ internal class Program
 
             newLiveBracketedOrder.Set();
 
-            await PrintTradeSummaryAsync(tradeConditionLogs, liveBracketedOrder, positions).ConfigureAwait(false);
+            await PrintTradeSummaryAsync(tradeConditionLogs, liveBracketedOrder, positions, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
             string encodedException = HttpUtility.HtmlEncode(e.ToString());
-            await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {encodedException}")
-                .ConfigureAwait(false);
+            await PrintErrorTelegramAsync($"Creating a new bracketed order with working order request '{workingOrderRequest}' failed with exception: {encodedException}",
+                cancellationToken).ConfigureAwait(false);
 
             // Activate cooldown even if the order was not open.
         }
@@ -1060,8 +1063,9 @@ internal class Program
     /// <param name="tradeConditionLogs">Trade logs to print.</param>
     /// <param name="liveBracketedOrder">Live bracketed order that was created.</param>
     /// <param name="positions">Number of currently open positions.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintTradeSummaryAsync(List<string> tradeConditionLogs, ILiveBracketedOrder liveBracketedOrder, int positions)
+    private static async Task PrintTradeSummaryAsync(List<string> tradeConditionLogs, ILiveBracketedOrder liveBracketedOrder, int positions, CancellationToken cancellationToken)
     {
         StringBuilder stringBuilder = new();
         _ = stringBuilder
@@ -1079,7 +1083,7 @@ internal class Program
 
         string msg = stringBuilder.ToString();
 
-        await PrintInfoTelegramAsync(msg).ConfigureAwait(false);
+        await PrintInfoTelegramAsync(msg, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc cref="IBracketedOrdersFactory.OnBracketedOrderUpdateAsync"/>
@@ -1097,7 +1101,8 @@ internal class Program
         switch (update)
         {
             case WorkingOrderCreated workingOrderCreated:
-                _ = PrintInfoTelegramAsync($"Working order '{workingOrderCreated.ClientOrderId}' of live bracketed order '{workingOrderCreated.Order}' has been created.");
+                _ = PrintInfoTelegramAsync($"Working order '{workingOrderCreated.ClientOrderId}' of live bracketed order '{workingOrderCreated.Order}' has been created.",
+                    CancellationToken.None);
                 break;
 
             case WorkingOrderFill workingOrderFill:
@@ -1124,24 +1129,25 @@ internal class Program
                         _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"Working order fill average price is {cumAvgPrice}.");
                     }
 
-                    _ = PrintInfoTelegramAsync(stringBuilder.ToString());
+                    _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
                 }
                 else
                 {
                     _ = PrintInfoTelegramAsync($"Working order '{workingOrderFill.ClientOrderId}' of live bracketed order '{
-                        workingOrderFill.Order}' has been filled completely.");
+                        workingOrderFill.Order}' has been filled completely.", CancellationToken.None);
                 }
 
                 break;
             }
 
             case WorkingOrderCanceled workingOrderCanceled:
-                _ = PrintInfoTelegramAsync($"Working order '{workingOrderCanceled.ClientOrderId}' has been canceled.");
+                _ = PrintInfoTelegramAsync($"Working order '{workingOrderCanceled.ClientOrderId}' has been canceled.", CancellationToken.None);
                 break;
 
             case BracketOrderCreated bracketOrderCreated:
                 _ = PrintInfoTelegramAsync($"{(bracketOrderCreated.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit")} #{
-                    bracketOrderCreated.Index} bracket order '{bracketOrderCreated.ClientOrderId}' created for live bracketed order '{bracketOrderCreated.Order}'.");
+                    bracketOrderCreated.Index} bracket order '{bracketOrderCreated.ClientOrderId}' created for live bracketed order '{bracketOrderCreated.Order}'.",
+                    CancellationToken.None);
                 break;
 
             case BracketOrderFill bracketOrderFill:
@@ -1192,12 +1198,12 @@ internal class Program
                     _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
                         $"New total stop-loss weight is {slWeight}, take-profit weight is {tpWeight}, PnL weight is {pnlWeight}.");
 
-                    _ = PrintInfoTelegramAsync(stringBuilder.ToString());
+                    _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
                 }
                 else
                 {
                     _ = PrintInfoTelegramAsync($"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{
-                        bracketOrderFill.Order}' has been filled completely.");
+                        bracketOrderFill.Order}' has been filled completely.", CancellationToken.None);
                 }
 
                 break;
@@ -1208,20 +1214,20 @@ internal class Program
                 string type = bracketOrderChanged.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
                 _ = PrintInfoTelegramAsync($"{type} #{bracketOrderChanged.Index} bracket order '{bracketOrderChanged.PreviousClientOrderId} with size {
                     bracketOrderChanged.PreviousBaseSize} has been replaced with bracket order '{bracketOrderChanged.NewClientOrderId}' with size {
-                    bracketOrderChanged.NewBaseSize} for live bracketed order '{bracketOrderChanged.Order}'.");
+                    bracketOrderChanged.NewBaseSize} for live bracketed order '{bracketOrderChanged.Order}'.", CancellationToken.None);
                 break;
             }
 
             case BracketOrderCanceled bracketOrderCanceled:
             {
                 string type = bracketOrderCanceled.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
-                _ = PrintInfoTelegramAsync($"{type} #{bracketOrderCanceled.Index} bracket order '{bracketOrderCanceled.ClientOrderId} was canceled.");
+                _ = PrintInfoTelegramAsync($"{type} #{bracketOrderCanceled.Index} bracket order '{bracketOrderCanceled.ClientOrderId} was canceled.", CancellationToken.None);
                 break;
             }
 
             case ClosePositionOrderCreated closePositionOrderCreated:
                 _ = PrintInfoTelegramAsync($"Close-position order '{closePositionOrderCreated.ClientOrderId}' of live bracketed order '{
-                    closePositionOrderCreated.Order}' has been created.");
+                    closePositionOrderCreated.Order}' has been created.", CancellationToken.None);
                 break;
 
             case ClosePositionOrderFill closePositionOrderFill:
@@ -1241,12 +1247,12 @@ internal class Program
 
                     _ = stringBuilder.AppendLine("</code>");
 
-                    _ = PrintInfoTelegramAsync(stringBuilder.ToString());
+                    _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
                 }
                 else
                 {
                     _ = PrintInfoTelegramAsync($"Close-position order '{closePositionOrderFill.ClientOrderId}' of live bracketed order '{
-                        closePositionOrderFill.Order}' has been filled completely.");
+                        closePositionOrderFill.Order}' has been filled completely.", CancellationToken.None);
                 }
 
                 break;
@@ -1353,7 +1359,7 @@ internal class Program
 
                 if (time >= nextReport)
                 {
-                    await PrintInfoTelegramAsync($"Generating budget report ...").ConfigureAwait(false);
+                    await PrintInfoTelegramAsync($"Generating budget report ...", cancellationToken).ConfigureAwait(false);
 
                     try
                     {
@@ -1362,11 +1368,11 @@ internal class Program
                     catch (Exception e)
                     {
                         string encodedException = HttpUtility.HtmlEncode(e.ToString());
-                        await PrintErrorTelegramAsync($"Exception occurred while trying to generate report: {encodedException}.").ConfigureAwait(false);
+                        await PrintErrorTelegramAsync($"Exception occurred while trying to generate report: {encodedException}.", cancellationToken).ConfigureAwait(false);
                     }
 
                     nextReport = time.Add(reportPeriod);
-                    await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.").ConfigureAwait(false);
+                    await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.", cancellationToken).ConfigureAwait(false);
                 }
 
                 TimeSpan delay = nextReport - time;
@@ -1461,7 +1467,7 @@ internal class Program
                             }
                         }
 
-                        await PrintInfoTelegramAsync(stringBuilder.ToString()).ConfigureAwait(false);
+                        await PrintInfoTelegramAsync(stringBuilder.ToString(), cancellationToken).ConfigureAwait(false);
                     }
 
                     if (newOrderTask.IsCompleted)
@@ -1515,8 +1521,9 @@ internal class Program
     /// Prints bot's settings to the log, console, and to the Telegram.
     /// </summary>
     /// <param name="parameters">Bot's parameters.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task PrintIntroAsync(Parameters parameters)
+    private static async Task PrintIntroAsync(Parameters parameters, CancellationToken cancellationToken)
     {
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
@@ -1525,7 +1532,7 @@ internal class Program
             <pre>
             {{parameters}}
             </pre>
-            """).ConfigureAwait(false);
+            """, cancellationToken).ConfigureAwait(false);
 
         StringBuilder stringBuilder = new();
         _ = stringBuilder
@@ -1536,7 +1543,7 @@ internal class Program
             _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $" {assetName}: {amount}");
 
         string initialBudget = stringBuilder.ToString();
-        await PrintInfoTelegramAsync($"Initial budget: {initialBudget}").ConfigureAwait(false);
+        await PrintInfoTelegramAsync($"Initial budget: {initialBudget}", cancellationToken).ConfigureAwait(false);
 
         clog.Debug("$");
     }
@@ -1556,7 +1563,7 @@ internal class Program
 
         BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(cancellationToken).ConfigureAwait(false);
         string reportLog = Reports.BudgetReportToString(budgetReport);
-        await PrintInfoTelegramAsync(reportLog).ConfigureAwait(false);
+        await PrintInfoTelegramAsync(reportLog, cancellationToken).ConfigureAwait(false);
 
         await ReportToFileAsync(reportFilePath, budgetReport).ConfigureAwait(false);
 
@@ -1660,7 +1667,7 @@ internal class Program
     {
         // Just log the event.
         PrintInfo();
-        await PrintInfoTelegramAsync("Connection to the exchange has been re-established successfully.").ConfigureAwait(false);
+        await PrintInfoTelegramAsync("Connection to the exchange has been re-established successfully.", CancellationToken.None).ConfigureAwait(false);
         PrintInfo();
     }
 
@@ -1669,7 +1676,7 @@ internal class Program
     {
         // Just log the event.
         PrintInfo();
-        await PrintInfoTelegramAsync("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!").ConfigureAwait(false);
+        await PrintInfoTelegramAsync("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!", CancellationToken.None).ConfigureAwait(false);
         PrintInfo();
     }
 }
