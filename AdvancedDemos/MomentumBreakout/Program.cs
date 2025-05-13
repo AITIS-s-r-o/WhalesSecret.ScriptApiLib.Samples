@@ -234,7 +234,7 @@ internal class Program
 
         try
         {
-            await StartStrategyAsync(parameters, shutdownToken.Value).ConfigureAwait(false);
+            await RunStrategyAsync(parameters, shutdownToken.Value).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -352,7 +352,7 @@ internal class Program
     /// <exception cref="MalfunctionException">Thrown if the initialization of core components fails or another unexpected error occurred.</exception>
     /// <exception cref="OperationCanceledException">Thrown if the operation was cancelled including cancellation due to shutdown or object disposal.</exception>
     /// <exception cref="OperationFailedException">Thrown if the request could not be sent to the exchange.</exception>
-    private static async Task StartStrategyAsync(Parameters parameters, CancellationToken cancellationToken)
+    private static async Task RunStrategyAsync(Parameters parameters, CancellationToken cancellationToken)
     {
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
