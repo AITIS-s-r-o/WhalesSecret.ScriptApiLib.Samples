@@ -78,10 +78,10 @@ public static class Reports
 
         string[] assetNames = lastBudgetReport.FinalBudget.Keys.Order().ToArray();
 
-        for (int i = 0; i < assetNames.Length; i++)
+        foreach (string assetName in assetNames)
         {
             _ = fileContentBuilder
-                .Append(CultureInfo.InvariantCulture, $"Budget Balance {assetNames[i]}")
+                .Append(CultureInfo.InvariantCulture, $"Budget Balance {assetName}")
                 .Append(ReportFileValueSeparator);
         }
 
