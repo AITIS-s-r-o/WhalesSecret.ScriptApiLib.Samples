@@ -5,7 +5,7 @@ using WhalesSecret.TradeScriptLib.Entities;
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
 /// <summary>
-/// Container of exchange API credentials for samples that need to establish a private connection.
+/// Container of exchange API and other credentials for samples that need to establish a private exchange connection or send authenticated messages.
 /// </summary>
 /// <remarks>In order for those samples to work, you have to set valid credentials below. You only need to change credentials that you are going to use.</remarks>
 public static class Credentials
@@ -30,6 +30,13 @@ public static class Credentials
 
     /// <summary>API passphrase for Kucoin exchange.</summary>
     public static readonly SensitiveByteArray KucoinPassphrase = "CHANGE THIS TO Kucoin passphrase"u8;
+
+    /// <summary>API token for Telegram bot.</summary>
+    /// <seealso href="https://medium.com/@whales_secret/trading-bot-in-c-part-2-notifications-1257dc1f4c48"/>
+    public const string TelegramApiToken = "CHANGE THIS TO Telegram API token";
+
+    /// <summary>Telegram group ID to send messages to.</summary>
+    public const string TelegramGroupId = "INSERT YOUR TELEGRAM GROUP ID";
 
     /// <summary>
     /// Gets exchange API credentials for Binance exchange using HMAC algorithm.

@@ -37,9 +37,6 @@ internal class Program
     /// <summary>Name of the report file.</summary>
     private const string ReportFileName = $"{StrategyName}-budgetReport.csv";
 
-    /// <summary>Separator of values on a single row in the report file.</summary>
-    private const char ReportFileValueSeparator = ',';
-
     /// <summary>All budget reports that have been generated during the program's lifetime.</summary>
     private static readonly List<BudgetReport> budgetReports = new();
 
@@ -73,7 +70,7 @@ internal class Program
     /// </code>
     /// </para>
     /// <para>
-    /// With this input the program will will buy <c>10</c> EUR worth of BTC every hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is
+    /// With this input the program will buy <c>10</c> EUR worth of BTC every hour on Binance exchange. The report will be generated every 24 hours. And the initial budget is
     /// <c>0.001</c> BTC and <c>1000</c> EUR.
     /// </para>
     /// </param>
@@ -259,7 +256,7 @@ internal class Program
                 await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
 
                 nextReport = time.Add(parameters.ReportPeriod);
-                PrintInfo($"Next budgetReport should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
+                PrintInfo($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
             }
 
             time = DateTime.UtcNow;
@@ -336,34 +333,8 @@ internal class Program
         clog.Debug($" {nameof(reportFilePath)}='{reportFilePath}',{nameof(tradeClient)}='{tradeClient}'");
 
         BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(cancellationToken).ConfigureAwait(false);
-
-        string initialValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.InitialValue}");
-        string finalValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.FinalValue}");
-        string totalProfitStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalProfit}");
-        string totalFeesValueStr = string.Create(CultureInfo.InvariantCulture, $"{budgetReport.TotalFeesValue}");
-
-        string reportLog = $$"""
-            Budget report:
-              start time: {{budgetReport.StartTime}} UTC
-              end time: {{budgetReport.EndTime}} UTC
-              initial value: {{initialValueStr}} {{budgetReport.PrimaryAsset}}
-              final value: {{finalValueStr}} {{budgetReport.PrimaryAsset}}
-              profit/loss: {{totalProfitStr}} {{budgetReport.PrimaryAsset}}
-              fees value paid: {{totalFeesValueStr}} {{budgetReport.PrimaryAsset}}
-            """;
-
+        string reportLog = Reports.BudgetReportToString(budgetReport);
         PrintInfo(reportLog);
-
-        StringBuilder stringBuilder = new("Current budget:");
-        _ = stringBuilder.AppendLine();
-
-        foreach ((string assetName, decimal amount) in budgetReport.FinalBudget)
-            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $" {assetName}: {amount}");
-
-        _ = stringBuilder.AppendLine();
-
-        string currentBudgetLog = stringBuilder.ToString();
-        PrintInfo(currentBudgetLog);
 
         await ReportToFileAsync(reportFilePath, budgetReport).ConfigureAwait(false);
 
@@ -387,127 +358,12 @@ internal class Program
 
         budgetReports.Add(budgetReport);
 
-        StringBuilder fileContentBuilder = new();
-        string primaryAsset = budgetReport.PrimaryAsset;
-
-        // Compose the header from the latest report.
-        _ = fileContentBuilder
-            .Append("Report Date Time (UTC)")
-            .Append(ReportFileValueSeparator)
-            .Append("Total Report Period")
-            .Append(ReportFileValueSeparator)
-            .Append(CultureInfo.InvariantCulture, $"Value ({primaryAsset})")
-            .Append(ReportFileValueSeparator)
-            .Append(CultureInfo.InvariantCulture, $"Diff last report ({primaryAsset})")
-            .Append(ReportFileValueSeparator)
-            .Append(CultureInfo.InvariantCulture, $"P/L ({primaryAsset})")
-            .Append(ReportFileValueSeparator);
-
-        string[] assetNames = budgetReport.FinalBudget.Keys.Order().ToArray();
-
-        for (int i = 0; i < assetNames.Length; i++)
-        {
-            _ = fileContentBuilder
-                .Append(CultureInfo.InvariantCulture, $"Budget Balance {assetNames[i]}")
-                .Append(ReportFileValueSeparator);
-        }
-
-        string[] feeAssetNames = budgetReport.FeesPaid.Keys.Order().ToArray();
-
-        for (int i = 0; i < feeAssetNames.Length; i++)
-        {
-            _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"Fees Paid {assetNames[i]}");
-
-            if (i != feeAssetNames.Length - 1)
-                _ = fileContentBuilder.Append(ReportFileValueSeparator);
-        }
-
-        _ = fileContentBuilder.AppendLine();
-
-        decimal prevValue = 0;
-
-        for (int i = -1; i < budgetReports.Count; i++)
-        {
-            BudgetSnapshot snapshot;
-            BudgetSnapshot feesPaid;
-
-            if (i == -1)
-            {
-                // Second row is the initial budget line
-                _ = fileContentBuilder
-                    .Append(budgetReport.StartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
-                    .Append(ReportFileValueSeparator)
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{budgetReport.InitialValue}")
-                    .Append(ReportFileValueSeparator)
-                    .Append('0')
-                    .Append(ReportFileValueSeparator)
-                    .Append('0')
-                    .Append(ReportFileValueSeparator);
-
-                snapshot = budgetReport.InitialBudget;
-                feesPaid = new();
-
-                prevValue = budgetReport.InitialValue;
-            }
-            else
-            {
-                BudgetReport report = budgetReports[i];
-                TimeSpan period = report.EndTime - budgetReport.StartTime;
-                string periodStr = period >= TimeSpan.FromDays(1)
-                    ? period.ToString(@"d\.hh\:mm\:ss", CultureInfo.InvariantCulture)
-                    : period.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
-
-                decimal diff = report.FinalValue - prevValue;
-
-                _ = fileContentBuilder
-                    .Append(report.EndTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
-                    .Append(ReportFileValueSeparator)
-                    .Append(periodStr)
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{report.FinalValue}")
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{diff}")
-                    .Append(ReportFileValueSeparator)
-                    .Append(CultureInfo.InvariantCulture, $"{report.TotalProfit}")
-                    .Append(ReportFileValueSeparator);
-
-                snapshot = report.FinalBudget;
-                feesPaid = report.FeesPaid;
-
-                prevValue = report.FinalValue;
-            }
-
-            for (int assetNameIndex = 0; assetNameIndex < assetNames.Length; assetNameIndex++)
-            {
-                string assetName = assetNames[assetNameIndex];
-
-                if (snapshot.TryGetValue(assetName, out decimal value))
-                    _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
-
-                _ = fileContentBuilder.Append(ReportFileValueSeparator);
-            }
-
-            for (int feeAssetNameIndex = 0; feeAssetNameIndex < feeAssetNames.Length; feeAssetNameIndex++)
-            {
-                string assetName = feeAssetNames[feeAssetNameIndex];
-
-                if (feesPaid.TryGetValue(assetName, out decimal value))
-                    _ = fileContentBuilder.Append(CultureInfo.InvariantCulture, $"{value}");
-
-                if (feeAssetNameIndex != feeAssetNames.Length - 1)
-                    _ = fileContentBuilder.Append(ReportFileValueSeparator);
-            }
-
-            _ = fileContentBuilder.AppendLine();
-        }
-
-        string fileContents = fileContentBuilder.ToString();
+        string budgetReportsCsv = Reports.BudgetReportsToCsvString(budgetReports);
 
         try
         {
             // No cancellation token here to avoid losing data in case user presses Ctrl+C at the time of writing.
-            await File.WriteAllTextAsync(reportFilePath, fileContents, CancellationToken.None).ConfigureAwait(false);
+            await File.WriteAllTextAsync(reportFilePath, budgetReportsCsv, CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception e)
         {

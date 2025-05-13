@@ -1,3 +1,11 @@
+## Symbol pairs
+invalidsymbol
+btceur
+btcusdt
+dogeusdt
+ltceur
+eosusdt
+## Remaining words
 abcdef
 alice
 Autofac
@@ -10,6 +18,7 @@ bittrex
 deserializer
 doesnotexist
 ffffff
+Hmac
 Impl
 jsonx
 klines
@@ -20,8 +29,11 @@ Kucoin's
 ltcusd
 ltcusdt
 Macd
+mdlc
+ohlc
 Poloniex
 priv
+Skender
 testnet
 unsignaled
 unsubscription
@@ -31,22 +43,11 @@ upsert
 Unmaintanable
 unreusable
 Usdc
-
-## Symbol pairs
-invalidsymbol
-btceur
-btcusdt
-dogeusdt
-ltceur
-eosusdt
+yyyy
 
 whalessecret
 Materna
-yyyy
-mdlc
 Infos
 namespaceanddescendants
 Uuid
 callsite
-ohlc
-Skender
