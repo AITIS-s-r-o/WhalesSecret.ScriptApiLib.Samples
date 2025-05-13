@@ -1011,7 +1011,7 @@ internal class Program
         tradeConditionLogs.Add("  Working order:");
         tradeConditionLogs.Add($"    {workingOrderRequest}");
 
-        BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(parameters, orderSide, lastPrice: lastPrice, currentAtr: currentAtr);
+        BracketOrderDefinition[] bracketOrdersDefinitions = CreateBracketOrdersDefinitions(orderSide, lastPrice: lastPrice, currentAtr: currentAtr, parameters);
 
         tradeConditionLogs.Add("  Bracket orders:");
         foreach (BracketOrderDefinition bracketOrderDefinition in bracketOrdersDefinitions)
@@ -1263,14 +1263,14 @@ internal class Program
     /// <summary>
     /// Creates bracket order definitions for the bracketed order.
     /// </summary>
-    /// <param name="parameters">Program parameters.</param>
     /// <param name="orderSide">Side of the working order.</param>
     /// <param name="lastPrice">Price of the last trade.</param>
     /// <param name="currentAtr">Current ATR value.</param>
+    /// <param name="parameters">Program parameters.</param>
     /// <returns>List of bracket orders.</returns>
-    private static BracketOrderDefinition[] CreateBracketOrdersDefinitions(Parameters parameters, OrderSide orderSide, decimal lastPrice, decimal currentAtr)
+    private static BracketOrderDefinition[] CreateBracketOrdersDefinitions(OrderSide orderSide, decimal lastPrice, decimal currentAtr, Parameters parameters)
     {
-        clog.Debug($"* {nameof(parameters)}='{parameters}',{nameof(orderSide)}={orderSide},{nameof(lastPrice)}={lastPrice},{nameof(currentAtr)}={currentAtr}");
+        clog.Debug($"* {nameof(orderSide)}={orderSide},{nameof(lastPrice)}={lastPrice},{nameof(currentAtr)}={currentAtr},{nameof(parameters)}='{parameters}'");
 
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[parameters.StopLossCount + parameters.TakeProfitCount];
 
