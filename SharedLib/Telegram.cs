@@ -9,7 +9,6 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 /// <summary>
 /// Telegram API for samples that want to send notifications to Telegram.
 /// </summary>
-/// <remarks>In order for those samples to work, you have to set a valid <see cref="Credentials.TelegramApiToken"/> in <see cref="Credentials"/>.</remarks>
 public class Telegram : IAsyncDisposable
 {
     /// <summary>URL-encoded Telegram group ID to which to send messages.</summary>

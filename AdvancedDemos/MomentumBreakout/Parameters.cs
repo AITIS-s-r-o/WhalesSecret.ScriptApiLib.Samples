@@ -120,6 +120,9 @@ public class Parameters
     /// <summary>Time period to generate the first report and between generating reports.</summary>
     public TimeSpan ReportPeriod { get; }
 
+    /// <summary>Telegram group ID to send messages to, or <c>null</c> to avoid sending messages to Telegram.</summary>
+    public string? TelegramGroupId { get; }
+
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
@@ -152,6 +155,7 @@ public class Parameters
     /// <param name="orderIdPrefix">Prefix of client order IDs of the trading orders.</param>
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
+    /// <param name="telegramGroupId">Telegram group ID to send messages to, or <c>null</c> to avoid sending messages to Telegram.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">
     /// <item><paramref name="appDataPath"/> is <c>null</c>, or</item>
@@ -178,7 +182,8 @@ public class Parameters
     /// <item><paramref name="tradeCooldownPeriod"/> is not a positive number, or</item>
     /// <item><paramref name="orderIdPrefix"/> is <c>null</c>, empty, or longer than <see cref="MaxOrderIdPrefixLength"/>, or</item>
     /// <item><paramref name="budgetRequest"/> has zero initial budget for either the base or the quote symbol of <paramref name="symbolPair"/>, or</item>
-    /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
+    /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
+    /// <item><paramref name="telegramGroupId"/> is an empty string.</item>
     /// </list>
     /// </exception>
     [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity",
@@ -188,7 +193,7 @@ public class Parameters
         int breakoutLookback, decimal breakoutAtrSize, int volumeLookback, decimal volumeAvgSize, int volatilityLookback, decimal volatilityAvgSize, int maxTradesPerDay,
         int maxOpenPositions, CandleWidth candleWidth, int stopLossCount, int takeProfitCount, decimal firstStopLossAtr, decimal nextStopLossAtrIncrement,
         decimal firstTakeProfitAtr, decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, string orderIdPrefix, BudgetRequest budgetRequest,
-        TimeSpan reportPeriod)
+        TimeSpan reportPeriod, string? telegramGroupId)
     {
         if (appDataPath is null)
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
@@ -280,6 +285,9 @@ public class Parameters
         if (reportPeriod <= TimeSpan.Zero)
             throw new InvalidArgumentException($"'{nameof(reportPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(reportPeriod));
 
+        if ((telegramGroupId is not null) && (telegramGroupId.Length == 0))
+            throw new InvalidArgumentException($"'{nameof(telegramGroupId)}' must not be an empty string.", parameterName: nameof(telegramGroupId));
+
         this.AppDataPath = appDataPath;
         this.ExchangeMarket = exchangeMarket;
         this.SymbolPair = symbolPair;
@@ -307,6 +315,7 @@ public class Parameters
         this.OrderIdPrefix = orderIdPrefix;
         this.BudgetRequest = budgetRequest;
         this.ReportPeriod = reportPeriod;
+        this.TelegramGroupId = telegramGroupId;
     }
 
     /// <summary>
@@ -366,7 +375,7 @@ public class Parameters
     public override string ToString()
     {
         string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},{30}={31}"
-            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}={47},{48}='{49}',{50}=`{51}`,{52}={53}]";
+            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}={47},{48}='{49}',{50}=`{51}`,{52}={53},{54}=`{55}`]";
         return string.Format
         (
             CultureInfo.InvariantCulture,
@@ -397,7 +406,8 @@ public class Parameters
             nameof(this.TradeCooldownPeriod), this.TradeCooldownPeriod,
             nameof(this.OrderIdPrefix), this.OrderIdPrefix,
             nameof(this.BudgetRequest), this.BudgetRequest,
-            nameof(this.ReportPeriod), this.ReportPeriod
+            nameof(this.ReportPeriod), this.ReportPeriod,
+            nameof(this.TelegramGroupId), this.TelegramGroupId
         );
     }
 }
