@@ -97,6 +97,7 @@ public static class Reports
 
         _ = fileContentBuilder.AppendLine();
 
+        // Format CSV data.
         decimal prevValue = 0;
 
         for (int i = -1; i < budgetReports.Count; i++)

@@ -352,11 +352,12 @@ public class Parameters
             if (parameters is null)
                 throw new JsonException($"Deserialization of contents of file '{filePath}' resulted in null.");
         }
+        catch (JsonException)
+        {
+            throw;
+        }
         catch (Exception e)
         {
-            if (e is JsonException)
-                throw;
-
             throw new JsonException($"Deserialization of contents of file '{filePath}' failed.", e);
         }
 
