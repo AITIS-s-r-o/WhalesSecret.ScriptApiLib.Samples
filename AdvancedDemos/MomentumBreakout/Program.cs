@@ -1276,57 +1276,57 @@ internal class Program
 
         decimal slPercent = Math.Round(parameters.StopLossCount > 0 ? 100.0m / parameters.StopLossCount : 0, decimals: 2);
         decimal slPercentRemaining = 100.0m;
-        decimal slThresholdPrice = 0;
 
         int index = 0;
         if (parameters.StopLossCount > 0)
         {
-            slThresholdPrice = orderSide == OrderSide.Buy ? lastPrice - (currentAtr * parameters.FirstStopLossAtr) : lastPrice + (currentAtr * parameters.FirstStopLossAtr);
+            decimal slThresholdPrice = orderSide == OrderSide.Buy ? lastPrice - (currentAtr * parameters.FirstStopLossAtr) : lastPrice + (currentAtr * parameters.FirstStopLossAtr);
 
             bracketOrdersDefinitions[index] = new(BracketOrderType.StopLoss, thresholdPrice: slThresholdPrice, sizePercent: slPercent);
             index++;
 
             slPercentRemaining -= slPercent;
-        }
 
-        for (int i = 1; i < parameters.StopLossCount; i++)
-        {
-            slThresholdPrice = orderSide == OrderSide.Buy
-                ? slThresholdPrice - (currentAtr * parameters.NextStopLossAtrIncrement)
-                : slThresholdPrice + (currentAtr * parameters.NextStopLossAtrIncrement);
+            for (int i = 1; i < parameters.StopLossCount; i++)
+            {
+                slThresholdPrice = orderSide == OrderSide.Buy
+                    ? slThresholdPrice - (currentAtr * parameters.NextStopLossAtrIncrement)
+                    : slThresholdPrice + (currentAtr * parameters.NextStopLossAtrIncrement);
 
-            decimal sizePercent = index == parameters.StopLossCount - 1 ? slPercentRemaining : slPercent;
-            bracketOrdersDefinitions[index] = new(BracketOrderType.StopLoss, thresholdPrice: slThresholdPrice, sizePercent: sizePercent);
-            index++;
+                decimal sizePercent = index == parameters.StopLossCount - 1 ? slPercentRemaining : slPercent;
+                bracketOrdersDefinitions[index] = new(BracketOrderType.StopLoss, thresholdPrice: slThresholdPrice, sizePercent: sizePercent);
+                index++;
 
-            slPercentRemaining -= sizePercent;
+                slPercentRemaining -= sizePercent;
+            }
         }
 
         decimal tpPercent = Math.Round(parameters.TakeProfitCount > 0 ? 100.0m / parameters.TakeProfitCount: 0, decimals: 2);
         decimal tpPercentRemaining = 100.0m;
-        decimal tpThresholdPrice = 0;
 
         if (parameters.TakeProfitCount > 0)
         {
-            tpThresholdPrice = orderSide == OrderSide.Buy ? lastPrice + (currentAtr * parameters.FirstTakeProfitAtr) : lastPrice - (currentAtr * parameters.FirstTakeProfitAtr);
+            decimal tpThresholdPrice = orderSide == OrderSide.Buy
+                ? lastPrice + (currentAtr * parameters.FirstTakeProfitAtr)
+                : lastPrice - (currentAtr * parameters.FirstTakeProfitAtr);
 
             bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: tpPercent);
             index++;
 
             tpPercentRemaining -= tpPercent;
-        }
 
-        for (int i = 1; i < parameters.TakeProfitCount; i++)
-        {
-            tpThresholdPrice = orderSide == OrderSide.Buy
-                ? tpThresholdPrice + (currentAtr * parameters.NextTakeProfitAtrIncrement)
-                : tpThresholdPrice - (currentAtr * parameters.NextTakeProfitAtrIncrement);
+            for (int i = 1; i < parameters.TakeProfitCount; i++)
+            {
+                tpThresholdPrice = orderSide == OrderSide.Buy
+                    ? tpThresholdPrice + (currentAtr * parameters.NextTakeProfitAtrIncrement)
+                    : tpThresholdPrice - (currentAtr * parameters.NextTakeProfitAtrIncrement);
 
-            decimal sizePercent = i == parameters.TakeProfitCount - 1 ? tpPercentRemaining : tpPercent;
-            bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: sizePercent);
-            index++;
+                decimal sizePercent = i == parameters.TakeProfitCount - 1 ? tpPercentRemaining : tpPercent;
+                bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: sizePercent);
+                index++;
 
-            tpPercentRemaining -= sizePercent;
+                tpPercentRemaining -= sizePercent;
+            }
         }
 
         clog.Debug($"$={bracketOrdersDefinitions.LogJoin()}");
