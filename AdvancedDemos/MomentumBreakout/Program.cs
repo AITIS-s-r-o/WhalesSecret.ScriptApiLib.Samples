@@ -941,7 +941,7 @@ internal class Program
                     }
                     else
                     {
-                        await PrintInfoTelegramAsync($"Can not open new position because we have already created {parameters.MaxTradesPerDay} positions in the last 24 hours.",
+                        await PrintInfoTelegramAsync($"Cannot open new position because we have already created {parameters.MaxTradesPerDay} positions in the last 24 hours.",
                             cancellationToken).ConfigureAwait(false);
 
                         // Activate cooldown even if the order was not open.
@@ -950,7 +950,7 @@ internal class Program
                 }
                 else
                 {
-                    await PrintInfoTelegramAsync($"Can not open {(orderSide == OrderSide.Buy ? "long" : "short")} position because we have {positions} open {
+                    await PrintInfoTelegramAsync($"Cannot open {(orderSide == OrderSide.Buy ? "long" : "short")} position because we have {positions} open {
                         (positionSide == OrderSide.Buy ? "long" : "short")} positions. Maximum number of open positions is {parameters.MaxOpenPositions}.", cancellationToken)
                         .ConfigureAwait(false);
 
