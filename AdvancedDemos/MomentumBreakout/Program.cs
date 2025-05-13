@@ -1150,11 +1150,10 @@ internal class Program
 
             case BracketOrderFill bracketOrderFill:
             {
-                StringBuilder stringBuilder = new();
-
                 string type = bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
                 if (bracketOrderFill.Fills.Count > 0)
                 {
+                    StringBuilder stringBuilder = new();
                     string msg = $"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{
                         bracketOrderFill.Order}' has been filled:";
 
