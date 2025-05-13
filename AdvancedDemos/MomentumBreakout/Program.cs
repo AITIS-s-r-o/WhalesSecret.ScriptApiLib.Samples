@@ -778,7 +778,7 @@ internal class Program
         if (verbose)
         {
             clog.Trace($"* |{nameof(quotes)}|={quotes.Count},{nameof(volumeLookback)}={volumeLookback},{nameof(volumeAvgSize)}={volumeAvgSize},{
-                nameof(currentVolume)}={currentVolume},{nameof(verbose)}={verbose}");
+                nameof(currentVolume)}={currentVolume}");
         }
 
         // Average volume on the last candles.
