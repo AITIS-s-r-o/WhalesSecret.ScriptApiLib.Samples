@@ -94,6 +94,7 @@ internal class Program
     private static readonly AsyncAutoResetEvent newLiveBracketedOrder = new();
 
     /// <summary>List of UTC times when the positions have been opened. This is used to limit the number of trades per day.</summary>
+    /// <seealso cref="Parameters.MaxTradesPerDay"/>
     private static readonly List<DateTime> positionTimes = new();
 
     /// <summary>
