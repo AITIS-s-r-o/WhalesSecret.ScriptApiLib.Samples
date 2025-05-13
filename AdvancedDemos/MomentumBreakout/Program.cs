@@ -1390,8 +1390,7 @@ internal class Program
         }
         catch (Exception e)
         {
-            clog.Error($"Exception occurred in the report task: {e}");
-            throw new SanityCheckException("Exception occurred in the report task.", e);
+            throw new SanityCheckException($"Exception occurred in the report task: {e}");
         }
 
         clog.Debug("$");
@@ -1505,8 +1504,7 @@ internal class Program
         }
         catch (Exception e)
         {
-            clog.Error($"Exception occurred in the bracketed order termination monitoring task: {e}");
-            throw;
+            throw new SanityCheckException($"Exception occurred in the bracketed order termination monitoring task: {e}");
         }
 
         clog.Debug("$");
