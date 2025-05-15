@@ -6,7 +6,7 @@ Whale's Secret ScriptApiLib is a .NET library that provides unified API to diffe
 
 ## How to Start
 
-The simplest example is [PublicConnection sample](Connections/PublicConnection.cs) which simply connects to a selected exchange market without need to have credentials or license.
+The simplest example is [PublicConnection sample](BasicSamples/Connections/PublicConnection.cs) which simply connects to a selected exchange market without need to have credentials or license.
 Such a public connection enables you to download public market data, such as order books, tickers, or candlesticks.
 
 The core of this sample looks as follows:
@@ -19,13 +19,13 @@ ConnectionOptions connectionOptions = new(connectionType: ConnectionType.MarketD
 await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeMarket, connectionOptions).ConfigureAwait(false);
 ```
 
-## Running Samples
+## Running Basic Samples
 
 Make sure [.NET9](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) is installed on your computer. Build the samples .NET solution using the latest MSVS or any other .NET 
 tool of your choice. Then simply run the main executable as a console application in order to see the following usage instructions:
 
 ```
-Usage: WhalesSecret.ScriptApiLib.Samples <sampleName> <exchangeMarket>
+Usage: WhalesSecret.ScriptApiLib.Samples.BasicSamples <sampleName> <exchangeMarket>
 
     sampleName - Name of the sample to run. Following values are supported:
 
@@ -45,8 +45,12 @@ Usage: WhalesSecret.ScriptApiLib.Samples <sampleName> <exchangeMarket>
         Trading/Order.Size.Large - Basic order sample. Demonstrates how larger-sized orders can be placed. Requires credentials and a valid license.
         Trading/Order.Updates - Basic order's updates sample. Demonstrates how order's updates can be consumed. Requires credentials.
         Trading/Order.Builder - Basic order request builder sample. Demonstrates how orders can be build using the builder pattern. Requires credentials.
-        Trading/TradeOrder.History - Demonstrates getting historical trades and orders records. Requires credentials.
         Trading/Order.Open.List - Sample that demonstrates how to get a list of open orders. Requires credentials.
+        Trading/Order.CancelAll - Basic order's sample that demonstrates how to cancel all orders. Requires credentials.
+        Trading/TradeOrder.History - Demonstrates getting historical trades and orders records. Requires credentials.
+        Trading/Budget - Demonstrates working with trading strategy budget. Requires credentials.
+        Trading/BracketedOrder - Sample that demonstrates placing bracketed order. Requires credentials.
+        Trading/Interactive - Sample that demonstrates creating orders and cancelling them in an interactive mode. Requires credentials.
 
     exchangeMarket - Exchange market to use in the sample. Supported values are BinanceSpot,KucoinSpot
 ```
@@ -56,6 +60,12 @@ Choose the sample you want and run it in console:
 ```
 WhalesSecret.ScriptApiLib.Samples Subscriptions/Ticker.Basic BinanceSpot
 ```
+
+## Advanced Demos
+
+In the `AdvancedDemos` folder you can find more complex samples, eaching having its own project:
+- **DCA** - Direct Cost Averaging trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected quote asset. The bot also create reports about its performance and writes the report history it into a CSV file.
+- **MomentumBreakout** - More complex trading bot that implements Momentum Breakout trading strategy. This bot monitors short-period and long-period Exponential Moving Averages (EMAs) and looks for momentum breakouts. Each trade must be confirmed by Relative Strength Index (RSI) indicator to avoid buying in overbought conditions and selling in oversold conditions. Further, we require certain minimal volume to confirm strength of the breakout. The bot also uses Average True Range (ATR) to measure volatility and set dynamic stop-loss and take-profit levels. For full description of the algorithm please see description of [its Program class](AdvancedDemos/MomentumBreakout/Program.cs).
 
 ## Credentials
 
