@@ -24,8 +24,8 @@ Print("Waiting 60 seconds for you to make sure your machine is offline.");
 await Task.Delay(60_000);
 
 // Use: sudo netsh interface set interface name="Wi-Fi" admin=ENABLE
-Print("Waiting 60 seconds for you to make sure your machine is online.");
-await Task.Delay(60_000);
+Print("Waiting 120 seconds for you to make sure your machine is online.");
+await Task.Delay(120_000);
 
 Task OnConnectedAsync(ITradeApiClient tradeApiClient)
 {
