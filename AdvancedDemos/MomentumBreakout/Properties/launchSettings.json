@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout": {
+      "commandName": "Project",
+      "commandLineArgs": "input.json"
+    }
+  }
+}
