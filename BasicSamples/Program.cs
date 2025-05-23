@@ -26,6 +26,7 @@ public class Program
         new object[] { "Exchanges/ExchangeInformation", typeof(ExchangeInformation), "Demonstrates what kind of information can we get from the exchange market initialization."},
         new object[] { "Indicators/RSI", typeof(Rsi), "Demonstrates how to integrate an RSI indicator from a third party with Whale's Secrets ScriptApiLib. The sample also"
             + " demonstrates how to retrieve historical candle data."},
+        new object[] { "Indicators/Matrix", typeof(IndicatorMatrix), "Demonstrates how to calculate many different indicators on different timeframes."},
         new object[] { "Subscriptions/Candle.Basic", typeof(CandleBasic), "Basic candle subscription sample. Demonstrates how a candle subscription can created and consumed."},
         new object[] { "Subscriptions/Candle.Set", typeof(CandleSet), "Advanced candle subscription sample. Demonstrates how multiple candlestick subscriptions can be created and"
             + " consumed at the same time."},

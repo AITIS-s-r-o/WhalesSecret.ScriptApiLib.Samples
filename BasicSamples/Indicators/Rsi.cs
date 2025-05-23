@@ -8,6 +8,7 @@ using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using System.Collections.Generic;
 using System.Linq;
 using Skender.Stock.Indicators;
+using WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
 namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Indicators;
 
@@ -53,7 +54,7 @@ public class Rsi : IScriptApiSample
 
         List<Quote> quotes = new(capacity: candlestickData.Candles.Count + 100);
         foreach (Candle candle in candlestickData.Candles)
-            quotes.Add(this.QuoteFromCandle(candle));
+            quotes.Add(CandleUtils.QuoteFromCandle(candle));
 
         Console.WriteLine();
         Console.WriteLine($"Last closed candle: {lastClosedCandle}");
@@ -77,7 +78,7 @@ public class Rsi : IScriptApiSample
 
             Console.WriteLine($"New closed candle arrived: {lastClosedCandle}");
 
-            quotes.Add(this.QuoteFromCandle(lastClosedCandle));
+            quotes.Add(CandleUtils.QuoteFromCandle(lastClosedCandle));
             this.ReportRsi(quotes);
         }
 
@@ -102,25 +103,5 @@ public class Rsi : IScriptApiSample
         };
 
         Console.WriteLine($"Current RSI: {lastRsi.Date} -> {lastRsi.Rsi}{interpretation}");
-    }
-
-    /// <summary>
-    /// Converts Whale's Secret candle representation to OHLCV data format for <see href="https://dotnet.stockindicators.dev/">Skender.Stock.Indicators</see>.
-    /// </summary>
-    /// <param name="candle">Whale's Secret candle to convert.</param>
-    /// <returns><see href="https://dotnet.stockindicators.dev/">Skender.Stock.Indicators</see> quote representing the candle.</returns>
-    private Quote QuoteFromCandle(Candle candle)
-    {
-        Quote quote = new()
-        {
-            Date = candle.Timestamp,
-            Open = candle.OpenPrice,
-            High = candle.HighPrice,
-            Low = candle.LowPrice,
-            Close = candle.ClosePrice,
-            Volume = candle.BaseVolume,
-        };
-
-        return quote;
     }
 }
