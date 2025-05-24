@@ -58,6 +58,9 @@ public class IndicatorMatrix : IScriptApiSample
     /// <summary>List of periods for BBP indicator that we calculate.</summary>
     private static readonly int[] bbpLookbacks = { 5, 10, 13, 20, 26 };
 
+    /// <summary>List of periods for HMA indicator that we calculate.</summary>
+    private static readonly int[] hmaLookbacks = { 9, 21, 50, 100, 200 };
+
     /// <summary>Symbol pair used in the sample.</summary>
     private static readonly SymbolPair symbolPair = SymbolPair.BTC_USDT;
 
@@ -112,7 +115,8 @@ public class IndicatorMatrix : IScriptApiSample
             if (!candleWidth.ToTimeSpan(out TimeSpan? candleTimeSpan))
                 throw new SanityCheckException($"Unable to convert candle width {candleWidth} to timespan.");
 
-            TimeSpan historyNeeded = candleTimeSpan.Value * 210;
+            // To be able to calculate HMA(200) we need 200 + sqrt(200) - 1 candles.
+            TimeSpan historyNeeded = candleTimeSpan.Value * 220;
             DateTime now = DateTime.UtcNow;
             DateTime startTime = now.Add(-historyNeeded);
             CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(symbolPair, candleWidth, startTime: startTime, endTime: now, timeoutCts.Token)
@@ -134,6 +138,8 @@ public class IndicatorMatrix : IScriptApiSample
         this.AwesomeOscilator();
         this.AverageDirectionalIndex();
         this.BullBearPower();
+        this.HullMovingAverage();
+        this.IchimokuCloud();
 
         this.Summary();
 
@@ -555,6 +561,152 @@ public class IndicatorMatrix : IScriptApiSample
             Console.WriteLine($"BBP({lookback}) neutral:    {string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine();
         }
+
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Calculates and prints HMA analysis.
+    /// </summary>
+    /// <seealso href="https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/hull-moving-average-hma"/>
+    private void HullMovingAverage()
+    {
+        Console.WriteLine("HMA");
+        Console.WriteLine("===");
+        Console.WriteLine();
+
+        List<CandleWidth> buyCandleWidths = new();
+        List<CandleWidth> sellCandleWidths = new();
+        List<CandleWidth> neutralCandleWidths = new();
+
+        foreach (int lookback in hmaLookbacks)
+        {
+            buyCandleWidths.Clear();
+            sellCandleWidths.Clear();
+            neutralCandleWidths.Clear();
+
+            foreach (CandleWidth candleWidth in candleWidths)
+            {
+                List<Quote> quotes = this.quotesByCandleWidth[candleWidth];
+                IEnumerable<HmaResult> hmaResult = quotes.GetHma(lookback);
+                double? hma = hmaResult.Last().Hma;
+                if (hma is null)
+                    throw new SanityCheckException($"Unable to calculate HMA({lookback}).");
+
+                decimal priceHmaDiff = Math.Abs(this.currentPrice - (decimal)hma.Value);
+                decimal diffRatio = priceHmaDiff / this.currentPrice;
+
+                // The current price is NOT within 3% of the EMA.
+                if (diffRatio > 0.03m)
+                {
+                    if (this.currentPrice > (decimal)hma.Value)
+                    {
+                        buyCandleWidths.Add(candleWidth);
+                        this.SummaryBuy(candleWidth);
+                    }
+                    else
+                    {
+                        sellCandleWidths.Add(candleWidth);
+                        this.SummarySell(candleWidth);
+                    }
+                }
+                else
+                {
+                    neutralCandleWidths.Add(candleWidth);
+                    this.SummaryNeutral(candleWidth);
+                }
+            }
+
+            Console.WriteLine($"HMA({lookback}) buy:        {string.Join(", ", buyCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"HMA({lookback}) sell:       {string.Join(", ", sellCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"HMA({lookback}) neutral:    {string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine();
+        }
+
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Calculates and prints Ichimoku analysis.
+    /// </summary>
+    /// <seealso href="https://www.investopedia.com/terms/i/ichimoku-cloud.asp"/>
+    private void IchimokuCloud()
+    {
+        Console.WriteLine("Ichimoku");
+        Console.WriteLine("========");
+        Console.WriteLine();
+
+        List<CandleWidth> buyCandleWidths = new();
+        List<CandleWidth> sellCandleWidths = new();
+        List<CandleWidth> neutralCandleWidths = new();
+
+        foreach (CandleWidth candleWidth in candleWidths)
+        {
+            List<Quote> quotes = this.quotesByCandleWidth[candleWidth];
+            IEnumerable<IchimokuResult> ichimokuResult = quotes.GetIchimoku();
+            decimal? senkouSpanA = ichimokuResult.Last().SenkouSpanA;
+            decimal? senkouSpanB = ichimokuResult.Last().SenkouSpanB;
+            decimal? tenkanSen = ichimokuResult.Last().TenkanSen;
+            decimal? kijunSen = ichimokuResult.Last().KijunSen;
+            decimal? chikouSpan26 = ichimokuResult.TakeLast(27).First().ChikouSpan;
+
+            if (senkouSpanA is null)
+                throw new SanityCheckException("Unable to calculate Senkou Span A of Ichimoku.");
+
+            if (senkouSpanB is null)
+                throw new SanityCheckException("Unable to calculate Senkou Span B of Ichimoku.");
+
+            if (tenkanSen is null)
+                throw new SanityCheckException("Unable to calculate Tenkan-sen of Ichimoku.");
+
+            if (kijunSen is null)
+                throw new SanityCheckException("Unable to calculate Kijun-sen of Ichimoku.");
+
+            if (chikouSpan26 is null)
+                throw new SanityCheckException("Unable to calculate Chikou Span 26 of Ichimoku.");
+
+            bool isNeutral = true;
+
+            decimal prev26Price = quotes[^26].Close;
+
+            // The price is above the cloud (Senkou Span A and B) and the cloud is green.
+            if ((this.currentPrice > senkouSpanA.Value) && (this.currentPrice > senkouSpanB.Value) && (senkouSpanA.Value > senkouSpanB.Value))
+            {
+                if (tenkanSen.Value > kijunSen.Value)
+                {
+                    if (chikouSpan26.Value > prev26Price)
+                    {
+                        buyCandleWidths.Add(candleWidth);
+                        this.SummaryBuy(candleWidth);
+                        isNeutral = false;
+                    }
+                }
+            }
+            // The price is below the cloud (Senkou Span A and B) and the cloud is red.
+            else if ((this.currentPrice < senkouSpanA.Value) && (this.currentPrice < senkouSpanB.Value) && (senkouSpanA.Value < senkouSpanB.Value))
+            {
+                if (tenkanSen.Value < kijunSen.Value)
+                {
+                    if (chikouSpan26.Value < prev26Price)
+                    {
+                        sellCandleWidths.Add(candleWidth);
+                        this.SummarySell(candleWidth);
+                        isNeutral = false;
+                    }
+                }
+            }
+
+            if (isNeutral)
+            {
+                neutralCandleWidths.Add(candleWidth);
+                this.SummaryNeutral(candleWidth);
+            }
+        }
+
+        Console.WriteLine($"Ichimoku buy:        {string.Join(", ", buyCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+        Console.WriteLine($"Ichimoku sell:       {string.Join(", ", sellCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+        Console.WriteLine($"Ichimoku neutral:    {string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+        Console.WriteLine();
 
         Console.WriteLine();
     }
