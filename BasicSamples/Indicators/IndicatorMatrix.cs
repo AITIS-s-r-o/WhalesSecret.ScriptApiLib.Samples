@@ -40,6 +40,15 @@ public class IndicatorMatrix : IScriptApiSample
     /// <summary>List of periods for RSI indicator that we calculate.</summary>
     private static readonly int[] rsiLookbacks = { 7, 9, 14, 21, 25 };
 
+    /// <summary>List of periods for stochastic RSI indicator that we calculate.</summary>
+    private static readonly int[][] stochRsiLookbacks =
+    {
+        new int[] { 7, 7, 3, 3 },
+        new int[] { 9, 9, 3, 3 },
+        new int[] { 14, 14, 3, 3 },
+        new int[] { 21, 21, 5, 5 },
+    };
+
     /// <summary>List of periods for CCI indicator that we calculate.</summary>
     private static readonly int[] cciLookbacks = { 10, 14, 20, 30, 50 };
 
@@ -76,6 +85,9 @@ public class IndicatorMatrix : IScriptApiSample
         new int[] { 12, 26, 9 },
         new int[] { 21, 50, 9 },
     };
+
+    /// <summary>List of periods for WilliamsR indicator that we calculate.</summary>
+    private static readonly int[] williamsRLookbacks = { 5, 7, 14, 21, 28 };
 
     /// <summary>Symbol pair used in the sample.</summary>
     private static readonly SymbolPair symbolPair = SymbolPair.BTC_USDT;
@@ -150,6 +162,7 @@ public class IndicatorMatrix : IScriptApiSample
 
         this.MovingAverages();
         this.RelativeStrengthIndex();
+        this.StochasticRelativeStrengthIndex();
         this.CommodityChannelIndex();
         this.AwesomeOscilator();
         this.AverageDirectionalIndex();
@@ -158,6 +171,7 @@ public class IndicatorMatrix : IScriptApiSample
         this.IchimokuCloud();
         this.UltimateOscillator();
         this.MovingAverageConvergenceDivergence();
+        this.WilliamsPercentRange();
 
         this.Summary();
 
@@ -310,6 +324,64 @@ public class IndicatorMatrix : IScriptApiSample
             Console.WriteLine($"RSI({lookback}) oversold:      {string.Join(", ", oversoldCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine($"RSI({lookback}) overbought:    {string.Join(", ", overboughtCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine($"RSI({lookback}) neutral:       {string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine();
+        }
+
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Calculates and prints stochastic RSI analysis.
+    /// </summary>
+    /// <seealso href="https://www.investopedia.com/terms/s/stochrsi.asp"/>
+    private void StochasticRelativeStrengthIndex()
+    {
+        Console.WriteLine("StochRSI");
+        Console.WriteLine("========");
+        Console.WriteLine();
+
+        List<CandleWidth> oversoldCandleWidths = new();
+        List<CandleWidth> overboughtCandleWidths = new();
+        List<CandleWidth> neutralCandleWidths = new();
+
+        foreach (int[] lookbacks in stochRsiLookbacks)
+        {
+            oversoldCandleWidths.Clear();
+            overboughtCandleWidths.Clear();
+            neutralCandleWidths.Clear();
+
+            foreach (CandleWidth candleWidth in candleWidths)
+            {
+                List<Quote> quotes = this.quotesByCandleWidth[candleWidth];
+                IEnumerable<StochRsiResult> stochRsiResult = quotes.GetStochRsi(rsiPeriods: lookbacks[0], stochPeriods: lookbacks[1], signalPeriods: lookbacks[2],
+                    smoothPeriods: lookbacks[3]);
+                double? stochRsi = stochRsiResult.Last().StochRsi;
+                if (stochRsi is null)
+                    throw new SanityCheckException($"Unable to calculate stochastic RSI({lookbacks[0]},{lookbacks[1]},{lookbacks[2]},{lookbacks[3]}).");
+
+                if (stochRsi < 0.2)
+                {
+                    oversoldCandleWidths.Add(candleWidth);
+                    this.SummaryBuy(candleWidth);
+                }
+                else if (stochRsi > 0.8)
+                {
+                    overboughtCandleWidths.Add(candleWidth);
+                    this.SummarySell(candleWidth);
+                }
+                else
+                {
+                    neutralCandleWidths.Add(candleWidth);
+                    this.SummaryNeutral(candleWidth);
+                }
+            }
+
+            Console.WriteLine($"StochRSI({lookbacks[0]},{lookbacks[1]},{lookbacks[2]},{lookbacks[3]}) oversold:      {
+                string.Join(", ", oversoldCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"StochRSI({lookbacks[0]},{lookbacks[1]},{lookbacks[2]},{lookbacks[3]}) overbought:    {
+                string.Join(", ", overboughtCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"StochRSI({lookbacks[0]},{lookbacks[1]},{lookbacks[2]},{lookbacks[3]}) neutral:       {
+                string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine();
         }
 
@@ -799,7 +871,7 @@ public class IndicatorMatrix : IScriptApiSample
         List<CandleWidth> sellCandleWidths = new();
         List<CandleWidth> neutralCandleWidths = new();
 
-        foreach (int[] lookbacks in uoLookbacks)
+        foreach (int[] lookbacks in macdLookbacks)
         {
             buyCandleWidths.Clear();
             sellCandleWidths.Clear();
@@ -843,6 +915,60 @@ public class IndicatorMatrix : IScriptApiSample
                 string.Join(", ", sellCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine($"MACD({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) neutral:    {
                 string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine();
+        }
+
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Calculates and prints WilliamsR analysis.
+    /// </summary>
+    /// <seealso href="https://howtotrade.com/indicators/williams-percent-range/"/>
+    private void WilliamsPercentRange()
+    {
+        Console.WriteLine("WilliamsR");
+        Console.WriteLine("=========");
+        Console.WriteLine();
+
+        List<CandleWidth> oversoldCandleWidths = new();
+        List<CandleWidth> overboughtCandleWidths = new();
+        List<CandleWidth> neutralCandleWidths = new();
+
+        foreach (int lookback in williamsRLookbacks)
+        {
+            oversoldCandleWidths.Clear();
+            overboughtCandleWidths.Clear();
+            neutralCandleWidths.Clear();
+
+            foreach (CandleWidth candleWidth in candleWidths)
+            {
+                List<Quote> quotes = this.quotesByCandleWidth[candleWidth];
+                IEnumerable<WilliamsResult> williamsRResult = quotes.GetWilliamsR(lookback);
+                double? williamsR = williamsRResult.Last().WilliamsR;
+                if (williamsR is null)
+                    throw new SanityCheckException($"Unable to calculate WilliamsR({lookback}).");
+
+                if (williamsR < -80)
+                {
+                    oversoldCandleWidths.Add(candleWidth);
+                    this.SummaryBuy(candleWidth);
+                }
+                else if (williamsR > -20)
+                {
+                    overboughtCandleWidths.Add(candleWidth);
+                    this.SummarySell(candleWidth);
+                }
+                else
+                {
+                    neutralCandleWidths.Add(candleWidth);
+                    this.SummaryNeutral(candleWidth);
+                }
+            }
+
+            Console.WriteLine($"WilliamsR({lookback}) oversold:      {string.Join(", ", oversoldCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"WilliamsR({lookback}) overbought:    {string.Join(", ", overboughtCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"WilliamsR({lookback}) neutral:       {string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine();
         }
 
