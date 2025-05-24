@@ -17,6 +17,24 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Indicators;
 /// Sample that demonstrates how to calculate many different indicators on different timeframes and a summary of all results. <see href="https://dotnet.stockindicators.dev/">
 /// Skender.Stock.Indicators</see> is used for indicator calculation.
 /// </summary>
+/// <remarks>
+/// Currently calculated and interpreted indicators in this samples are:
+/// <list type="bullet">
+/// <item>Simple Moving Average,</item>
+/// <item>Exponential Moving Average,</item>
+/// <item>Relative Strength Index,</item>
+/// <item>Stochastic Relative Strength Index,</item>
+/// <item>Commodity Channel Index,</item>
+/// <item>Awesome Oscillator,</item>
+/// <item>Average Directional Index,</item>
+/// <item>Bull Bear Power,</item>
+/// <item>Hull Moving Average,</item>
+/// <item>Ichimoku Cloud,</item>
+/// <item>Ultimate Oscillator,</item>
+/// <item>Moving Average Convergence Divergence,</item>
+/// <item>Williams Percent Range.</item>
+/// </list>
+/// </remarks>
 public class IndicatorMatrix : IScriptApiSample
 {
     /// <summary>Timeframes for which the sample calculates indicator values.</summary>
@@ -164,7 +182,7 @@ public class IndicatorMatrix : IScriptApiSample
         this.RelativeStrengthIndex();
         this.StochasticRelativeStrengthIndex();
         this.CommodityChannelIndex();
-        this.AwesomeOscilator();
+        this.AwesomeOscillator();
         this.AverageDirectionalIndex();
         this.BullBearPower();
         this.HullMovingAverage();
@@ -446,7 +464,7 @@ public class IndicatorMatrix : IScriptApiSample
     /// Calculates and prints AO analysis.
     /// </summary>
     /// <seealso href="https://dotnet.stockindicators.dev/indicators/Awesome/#content"/>
-    private void AwesomeOscilator()
+    private void AwesomeOscillator()
     {
         Console.WriteLine("AO");
         Console.WriteLine("==");
