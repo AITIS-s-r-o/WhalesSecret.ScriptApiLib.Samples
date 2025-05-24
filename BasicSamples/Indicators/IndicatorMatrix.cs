@@ -61,6 +61,14 @@ public class IndicatorMatrix : IScriptApiSample
     /// <summary>List of periods for HMA indicator that we calculate.</summary>
     private static readonly int[] hmaLookbacks = { 9, 21, 50, 100, 200 };
 
+    /// <summary>List of periods for UO indicator that we calculate.</summary>
+    private static readonly int[][] uoLookbacks =
+    {
+        new int[] { 5, 10, 20 },
+        new int[] { 7, 14, 28 },
+        new int[] { 10, 20, 40 },
+    };
+
     /// <summary>Symbol pair used in the sample.</summary>
     private static readonly SymbolPair symbolPair = SymbolPair.BTC_USDT;
 
@@ -140,6 +148,7 @@ public class IndicatorMatrix : IScriptApiSample
         this.BullBearPower();
         this.HullMovingAverage();
         this.IchimokuCloud();
+        this.UltimateOscillator();
 
         this.Summary();
 
@@ -351,7 +360,6 @@ public class IndicatorMatrix : IScriptApiSample
 
         Console.WriteLine();
     }
-
 
     /// <summary>
     /// Calculates and prints AO analysis.
@@ -707,6 +715,63 @@ public class IndicatorMatrix : IScriptApiSample
         Console.WriteLine($"Ichimoku sell:       {string.Join(", ", sellCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
         Console.WriteLine($"Ichimoku neutral:    {string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
         Console.WriteLine();
+
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Calculates and prints PPO analysis.
+    /// </summary>
+    /// <seealso href="https://www.investopedia.com/articles/investing/051214/use-percentage-price-oscillator-elegant-indicator-picking-stocks.asp"/>
+    private void UltimateOscillator()
+    {
+        Console.WriteLine("UO");
+        Console.WriteLine("==");
+        Console.WriteLine();
+
+        List<CandleWidth> oversoldCandleWidths = new();
+        List<CandleWidth> overboughtCandleWidths = new();
+        List<CandleWidth> neutralCandleWidths = new();
+
+        foreach (int[] lookbacks in uoLookbacks)
+        {
+            oversoldCandleWidths.Clear();
+            overboughtCandleWidths.Clear();
+            neutralCandleWidths.Clear();
+
+            foreach (CandleWidth candleWidth in candleWidths)
+            {
+                List<Quote> quotes = this.quotesByCandleWidth[candleWidth];
+                IEnumerable<UltimateResult> ultimateResult = quotes.GetUltimate(shortPeriods: lookbacks[0], middlePeriods: lookbacks[1], longPeriods: lookbacks[2]);
+                double? uo = ultimateResult.Last().Ultimate;
+                if (uo is null)
+                    throw new SanityCheckException($"Unable to calculate UO({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}).");
+
+                if (uo < 30)
+                {
+                    oversoldCandleWidths.Add(candleWidth);
+                    this.SummaryBuy(candleWidth);
+                }
+                else if (uo > 70)
+                {
+                    overboughtCandleWidths.Add(candleWidth);
+                    this.SummarySell(candleWidth);
+                }
+                else
+                {
+                    neutralCandleWidths.Add(candleWidth);
+                    this.SummaryNeutral(candleWidth);
+                }
+            }
+
+            Console.WriteLine($"UO({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) oversold:      {
+                string.Join(", ", oversoldCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"UO({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) overbought:    {
+                string.Join(", ", overboughtCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"UO({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) neutral:       {
+                string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine();
+        }
 
         Console.WriteLine();
     }
