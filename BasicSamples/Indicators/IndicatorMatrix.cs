@@ -69,6 +69,14 @@ public class IndicatorMatrix : IScriptApiSample
         new int[] { 10, 20, 40 },
     };
 
+    /// <summary>List of periods for MACD indicator that we calculate.</summary>
+    private static readonly int[][] macdLookbacks =
+    {
+        new int[] { 5, 13, 6 },
+        new int[] { 12, 26, 9 },
+        new int[] { 21, 50, 9 },
+    };
+
     /// <summary>Symbol pair used in the sample.</summary>
     private static readonly SymbolPair symbolPair = SymbolPair.BTC_USDT;
 
@@ -149,6 +157,7 @@ public class IndicatorMatrix : IScriptApiSample
         this.HullMovingAverage();
         this.IchimokuCloud();
         this.UltimateOscillator();
+        this.MovingAverageConvergenceDivergence();
 
         this.Summary();
 
@@ -769,6 +778,70 @@ public class IndicatorMatrix : IScriptApiSample
             Console.WriteLine($"UO({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) overbought:    {
                 string.Join(", ", overboughtCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine($"UO({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) neutral:       {
+                string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine();
+        }
+
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Calculates and prints MACD analysis.
+    /// </summary>
+    /// <seealso href="https://www.investopedia.com/terms/m/macd.asp"/>
+    private void MovingAverageConvergenceDivergence()
+    {
+        Console.WriteLine("MACD");
+        Console.WriteLine("====");
+        Console.WriteLine();
+
+        List<CandleWidth> buyCandleWidths = new();
+        List<CandleWidth> sellCandleWidths = new();
+        List<CandleWidth> neutralCandleWidths = new();
+
+        foreach (int[] lookbacks in uoLookbacks)
+        {
+            buyCandleWidths.Clear();
+            sellCandleWidths.Clear();
+            neutralCandleWidths.Clear();
+
+            foreach (CandleWidth candleWidth in candleWidths)
+            {
+                List<Quote> quotes = this.quotesByCandleWidth[candleWidth];
+                IEnumerable<MacdResult> macdResult = quotes.GetMacd(fastPeriods: lookbacks[0], slowPeriods: lookbacks[1], signalPeriods: lookbacks[2]);
+                double? macd = macdResult.Last().Macd;
+                if (macd is null)
+                    throw new SanityCheckException($"Unable to calculate MACD({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}).");
+
+                double? signal = macdResult.Last().Signal;
+                if (signal is null)
+                    throw new SanityCheckException($"Unable to calculate signal line of MACD({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}).");
+
+                if (Math.Abs(macd.Value) > 0.2)
+                {
+                    if (macd > signal)
+                    {
+                        buyCandleWidths.Add(candleWidth);
+                        this.SummaryBuy(candleWidth);
+                    }
+                    else
+                    {
+                        sellCandleWidths.Add(candleWidth);
+                        this.SummarySell(candleWidth);
+                    }
+                }
+                else
+                {
+                    neutralCandleWidths.Add(candleWidth);
+                    this.SummaryNeutral(candleWidth);
+                }
+            }
+
+            Console.WriteLine($"MACD({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) buy:        {
+                string.Join(", ", buyCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"MACD({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) sell:       {
+                string.Join(", ", sellCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
+            Console.WriteLine($"MACD({lookbacks[0]}, {lookbacks[1]}, {lookbacks[2]}) neutral:    {
                 string.Join(", ", neutralCandleWidths.Select(CandleUtils.CandleWidthToShortString))}");
             Console.WriteLine();
         }
