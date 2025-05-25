@@ -1079,7 +1079,8 @@ public class IndicatorMatrix : IScriptApiSample
     {
         string key = this.GetSummaryKey(candleWidth, result);
 
-        ref int value = ref CollectionsMarshal.GetValueRefOrAddDefault(this.summary, key, out _);
+        _ = this.summary.TryGetValue(key, out int value);
         value++;
+        this.summary[key] = value;
     }
 }
