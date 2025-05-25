@@ -37,6 +37,9 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Indicators;
 /// </remarks>
 public class IndicatorMatrix : IScriptApiSample
 {
+    /// <summary>Symbol pair used in the sample.</summary>
+    private static readonly SymbolPair symbolPair = SymbolPair.BTC_USDT;
+
     /// <summary>Timeframes for which the sample calculates indicator values.</summary>
     private static readonly CandleWidth[] candleWidths =
     {
@@ -106,9 +109,6 @@ public class IndicatorMatrix : IScriptApiSample
 
     /// <summary>List of periods for WilliamsR indicator that we calculate.</summary>
     private static readonly int[] williamsRLookbacks = { 5, 7, 14, 21, 28 };
-
-    /// <summary>Symbol pair used in the sample.</summary>
-    private static readonly SymbolPair symbolPair = SymbolPair.BTC_USDT;
 
     /// <summary>List of quotes mapped to their candle widths.</summary>
     private readonly Dictionary<CandleWidth, List<Quote>> quotesByCandleWidth;
