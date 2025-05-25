@@ -27,12 +27,12 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Indicators;
 /// <item>Commodity Channel Index (CCI),</item>
 /// <item>Awesome Oscillator (AO),</item>
 /// <item>Average Directional Index (ADX),</item>
-/// <item>Bull Bear Power,</item>
-/// <item>Hull Moving Average,</item>
+/// <item>Bull Bear Power (BBP),</item>
+/// <item>Hull Moving Average (HMA),</item>
 /// <item>Ichimoku Cloud,</item>
 /// <item>Ultimate Oscillator,</item>
 /// <item>Moving Average Convergence Divergence (MACD), and</item>
-/// <item>Williams Percent Range.</item>
+/// <item>Williams Percent Range (WilliamsR).</item>
 /// </list>
 /// </remarks>
 public class IndicatorMatrix : IScriptApiSample
