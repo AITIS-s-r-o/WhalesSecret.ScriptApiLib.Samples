@@ -627,8 +627,8 @@ public class IndicatorMatrix : IScriptApiSample
                 decimal priceEmaDiff = Math.Abs(this.currentPrice - (decimal)ema.Value);
                 decimal diffRatio = priceEmaDiff / this.currentPrice;
 
-                bool bullRising = bullLast > bearLast;
-                bool bearRising = bearLast > bullLast;
+                bool bullRising = bullLast.Value > bullSecondLast.Value;
+                bool bearRising = bearLast.Value > bearSecondLast.Value;
                 bool bullFalling = !bullRising;
                 bool bearFalling = !bearRising;
                 bool isNeutral = true;
