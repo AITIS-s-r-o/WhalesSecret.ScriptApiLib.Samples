@@ -161,7 +161,7 @@ public class IndicatorMatrix : IScriptApiSample
             if (!candleWidth.ToTimeSpan(out TimeSpan? candleTimeSpan))
                 throw new SanityCheckException($"Unable to convert candle width {candleWidth} to timespan.");
 
-            // To be able to calculate HMA(200) we need 200 + sqrt(200) - 1 candles.
+            // To be able to calculate HMA(200), we need 200 + sqrt(200) - 1 candles.
             TimeSpan historyNeeded = candleTimeSpan.Value * 220;
             DateTime now = DateTime.UtcNow;
             DateTime startTime = now.Add(-historyNeeded);
