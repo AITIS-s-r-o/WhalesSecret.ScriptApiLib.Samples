@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-using System;
 using Skender.Stock.Indicators;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using WhalesSecret.TradeScriptLib.Exceptions;
