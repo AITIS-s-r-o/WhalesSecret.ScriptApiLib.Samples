@@ -235,11 +235,11 @@ public class IndicatorMatrix : IScriptApiSample
                 if (ema is null)
                     throw new SanityCheckException($"Unable to calculate {lookback}-EMA.");
 
-                decimal priceEmaDiff = Math.Abs(this.currentPrice - (decimal)ema.Value);
-                decimal diffRatioEma = priceEmaDiff / this.currentPrice;
-
                 decimal priceSmaDiff = Math.Abs(this.currentPrice - (decimal)sma.Value);
                 decimal diffRatioSma = priceSmaDiff / this.currentPrice;
+
+                decimal priceEmaDiff = Math.Abs(this.currentPrice - (decimal)ema.Value);
+                decimal diffRatioEma = priceEmaDiff / this.currentPrice;
 
                 // The current price is NOT within 3% of the SMA.
                 if (diffRatioSma > 0.03m)
