@@ -20,18 +20,18 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Indicators;
 /// <remarks>
 /// Currently calculated and interpreted indicators in this samples are:
 /// <list type="bullet">
-/// <item>Simple Moving Average,</item>
-/// <item>Exponential Moving Average,</item>
-/// <item>Relative Strength Index,</item>
-/// <item>Stochastic Relative Strength Index,</item>
-/// <item>Commodity Channel Index,</item>
-/// <item>Awesome Oscillator,</item>
-/// <item>Average Directional Index,</item>
+/// <item>Simple Moving Average (SMA),</item>
+/// <item>Exponential Moving Average (EMA),</item>
+/// <item>Relative Strength Index (RSI),</item>
+/// <item>Stochastic Relative Strength Index (SRSI),</item>
+/// <item>Commodity Channel Index (CCI),</item>
+/// <item>Awesome Oscillator (AO),</item>
+/// <item>Average Directional Index (ADX),</item>
 /// <item>Bull Bear Power,</item>
 /// <item>Hull Moving Average,</item>
 /// <item>Ichimoku Cloud,</item>
 /// <item>Ultimate Oscillator,</item>
-/// <item>Moving Average Convergence Divergence,</item>
+/// <item>Moving Average Convergence Divergence (MACD), and</item>
 /// <item>Williams Percent Range.</item>
 /// </list>
 /// </remarks>
