@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualStudio.Threading;
 using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -96,7 +97,7 @@ internal class Program
 
     /// <summary>
     /// Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/>, <see cref="openPositions"/>, <see cref="workingOrderAvgFillPrice"/>,
-    /// <see cref="stopLossFilledWeight"/>, and <see cref="takeProfitFilledWeight"/>.
+    /// <see cref="stopLossFilledWeight"/>, <see cref="takeProfitFilledWeight"/>, <see cref="stopLossFilledCount"/>, and <see cref="takeProfitFilledCount"/>.
     /// </summary>
     private static readonly Lock liveLock = new();
 
@@ -135,6 +136,23 @@ internal class Program
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     /// <seealso cref="stopLossFilledWeight"/>
     private static decimal takeProfitFilledWeight;
+
+    /// <summary>Cumulative count of all stop-loss fills.</summary>
+    /// <remarks>
+    /// If there are <c>N</c> stop-loss bracket orders, the number is incremented by <c>1/N</c> for each stop-loss order that is filled.
+    /// <para>All access has to be protected by <see cref="liveLock"/>.</para>
+    /// </remarks>
+    private static decimal stopLossFilledCount;
+
+    /// <summary>Cumulative count of all take-profit fills.</summary>
+    /// <remarks>
+    /// If there are <c>N</c> take-profit bracket orders, the number is incremented by <c>1/N</c> for each take-profit order that is filled.
+    /// <para>All access has to be protected by <see cref="liveLock"/>.</para>
+    /// </remarks>
+    private static decimal takeProfitFilledCount;
+
+    /// <summary>Program parameters, or <c>null</c> if it is not initialized yet.</summary>
+    private static Parameters? parameters;
 
     /// <summary>
     /// Application that trades a Direct Cost Averaging (DCA) strategy.
@@ -209,7 +227,7 @@ internal class Program
         }
 
         string parametersFilePath = args[0];
-        Parameters parameters = Parameters.LoadFromJson(parametersFilePath);
+        parameters = Parameters.LoadFromJson(parametersFilePath);
 
         PrintInfo("Press Ctrl+C to terminate the program.");
         PrintInfo();
@@ -1169,8 +1187,10 @@ internal class Program
                     decimal slWeight, tpWeight;
                     lock (liveLock)
                     {
-                        clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight}, take-profit filled weight is {
-                            takeProfitFilledWeight}, working order average filled price is {workingOrderAvgFillPrice}.");
+                        clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight} and count is {stopLossFilledCount}/{
+                            stopLossFilledCount + takeProfitFilledCount}, take-profit filled weight is {
+                            takeProfitFilledWeight} and count is {takeProfitFilledCount}/{stopLossFilledCount + takeProfitFilledCount}, working order average filled price is {
+                            workingOrderAvgFillPrice}.");
 
                         foreach (FillData fillData in bracketOrderFill.Fills)
                         {
@@ -1181,11 +1201,21 @@ internal class Program
                                 decimal priceDiff = Math.Abs(fillData.LastAveragePrice.Value - workingOrderAvgFillPrice);
                                 decimal weight = priceDiff * fillData.LastSize;
 
-                                clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {
-                                    weight}.");
+                                clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {weight}.");
 
-                                if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss) stopLossFilledWeight += weight;
-                                else takeProfitFilledWeight += weight;
+                                if (parameters is null)
+                                    throw new SanityCheckException("Parameters is not initialized.");
+
+                                if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss)
+                                {
+                                    stopLossFilledWeight += weight;
+                                    stopLossFilledCount += 1m / parameters.StopLossCount;
+                                }
+                                else
+                                {
+                                    takeProfitFilledWeight += weight;
+                                    takeProfitFilledCount += 1m / parameters.TakeProfitCount;
+                                }
                             }
                         }
 
