@@ -125,7 +125,7 @@ internal class Program
 
     /// <summary>Cumulative weight of all stop-loss fills.</summary>
     /// <remarks>
-    /// Weight of a fill is calculated as its price distance from the <see cref="workingOrderAvgFillPrice">working order average fill price</see> multiplied by the price of
+    /// Weight of a fill is calculated as its price distance from the <see cref="workingOrderAvgFillPrice">working order average fill price</see> multiplied by the size of
     /// the fill.
     /// <para>All access has to be protected by <see cref="liveLock"/>.</para>
     /// </remarks>
