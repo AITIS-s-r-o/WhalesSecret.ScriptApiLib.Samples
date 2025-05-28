@@ -1200,7 +1200,8 @@ internal class Program
                                 decimal priceDiff = Math.Abs(fillData.LastAveragePrice.Value - workingOrderAvgFillPrice);
                                 decimal weight = priceDiff * fillData.LastSize;
 
-                                clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {weight}.");
+                                clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {
+                                    weight}.");
 
                                 if (parameters is null)
                                     throw new SanityCheckException("Parameters is not initialized.");
