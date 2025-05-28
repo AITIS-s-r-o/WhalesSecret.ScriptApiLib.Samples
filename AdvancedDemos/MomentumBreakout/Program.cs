@@ -1172,74 +1172,7 @@ internal class Program
 
             case BracketOrderFill bracketOrderFill:
             {
-                string type = bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
-                if (bracketOrderFill.Fills.Count > 0)
-                {
-                    StringBuilder stringBuilder = new();
-                    string msg = $"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{
-                        bracketOrderFill.Order}' has been filled:";
-
-                    _ = stringBuilder
-                        .AppendLine(msg)
-                        .AppendLine("<code>");
-
-                    decimal slWeight, tpWeight, slCount, tpCount;
-                    lock (liveLock)
-                    {
-                        clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight}, take-profit filled weight is {
-                            takeProfitFilledWeight}, working order average filled price is {workingOrderAvgFillPrice}.");
-
-                        foreach (FillData fillData in bracketOrderFill.Fills)
-                        {
-                            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
-
-                            if ((workingOrderAvgFillPrice != 0) && (fillData.LastAveragePrice is not null))
-                            {
-                                decimal priceDiff = Math.Abs(fillData.LastAveragePrice.Value - workingOrderAvgFillPrice);
-                                decimal weight = priceDiff * fillData.LastSize;
-
-                                clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {
-                                    weight}.");
-
-                                if (parameters is null)
-                                    throw new SanityCheckException("Parameters is not initialized.");
-
-                                if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss)
-                                {
-                                    stopLossFilledWeight += weight;
-                                    stopLossFilledCount += 1m / parameters.StopLossCount;
-                                }
-                                else
-                                {
-                                    takeProfitFilledWeight += weight;
-                                    takeProfitFilledCount += 1m / parameters.TakeProfitCount;
-                                }
-                            }
-                        }
-
-                        slWeight = stopLossFilledWeight;
-                        tpWeight = takeProfitFilledWeight;
-                        slCount = stopLossFilledCount;
-                        tpCount = takeProfitFilledCount;
-                    }
-
-                    _ = stringBuilder.AppendLine("</code>");
-                    _ = stringBuilder.AppendLine();
-
-                    decimal totalCount = slCount + tpCount;
-                    decimal pnlWeight = tpWeight - slWeight;
-
-                    _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
-                        $"New total stop-loss weight is {slWeight} and count is {slCount/totalCount}; take-profit weight is {tpWeight} and count is {tpCount/totalCount}, PnL weight is {pnlWeight}.");
-
-                    _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
-                }
-                else
-                {
-                    _ = PrintInfoTelegramAsync($"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{
-                        bracketOrderFill.Order}' has been filled completely.", CancellationToken.None);
-                }
-
+                ProcessBracketOrderFill(bracketOrderFill);
                 break;
             }
 
@@ -1295,6 +1228,83 @@ internal class Program
 
         clog.Debug("$");
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Processes bracketed order fill update.
+    /// </summary>
+    /// <param name="bracketOrderFill">Fill update to process.</param>
+    private static void ProcessBracketOrderFill(BracketOrderFill bracketOrderFill)
+    {
+        clog.Debug($"* {nameof(bracketOrderFill)}='{bracketOrderFill}'");
+
+        string type = bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
+        if (bracketOrderFill.Fills.Count > 0)
+        {
+            StringBuilder stringBuilder = new();
+            string msg = $"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{bracketOrderFill.Order}' has been filled:";
+
+            _ = stringBuilder
+                .AppendLine(msg)
+                .AppendLine("<code>");
+
+            decimal slWeight, tpWeight, slCount, tpCount;
+            lock (liveLock)
+            {
+                clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight}, take-profit filled weight is {
+                    takeProfitFilledWeight}, working order average filled price is {workingOrderAvgFillPrice}.");
+
+                foreach (FillData fillData in bracketOrderFill.Fills)
+                {
+                    _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"  {fillData}");
+
+                    if ((workingOrderAvgFillPrice != 0) && (fillData.LastAveragePrice is not null))
+                    {
+                        decimal priceDiff = Math.Abs(fillData.LastAveragePrice.Value - workingOrderAvgFillPrice);
+                        decimal weight = priceDiff * fillData.LastSize;
+
+                        clog.Trace($"Last price is {fillData.LastAveragePrice.Value}, price difference is {priceDiff}, last size is {fillData.LastSize}, filled weight is {weight}.");
+
+                        if (parameters is null)
+                            throw new SanityCheckException("Parameters is not initialized.");
+
+                        if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss)
+                        {
+                            stopLossFilledWeight += weight;
+                            stopLossFilledCount += 1m / parameters.StopLossCount;
+                        }
+                        else
+                        {
+                            takeProfitFilledWeight += weight;
+                            takeProfitFilledCount += 1m / parameters.TakeProfitCount;
+                        }
+                    }
+                }
+
+                slWeight = stopLossFilledWeight;
+                tpWeight = takeProfitFilledWeight;
+                slCount = stopLossFilledCount;
+                tpCount = takeProfitFilledCount;
+            }
+
+            _ = stringBuilder.AppendLine("</code>");
+            _ = stringBuilder.AppendLine();
+
+            decimal totalCount = slCount + tpCount;
+            decimal pnlWeight = tpWeight - slWeight;
+
+            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"New total stop-loss weight is {slWeight} and count is {slCount / totalCount}; take-profit weight is {tpWeight} and count is {tpCount / totalCount}, PnL weight is {pnlWeight}.");
+
+            _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
+        }
+        else
+        {
+            _ = PrintInfoTelegramAsync($"{type} #{bracketOrderFill.Index} bracket order '{bracketOrderFill.ClientOrderId}' of live bracketed order '{
+                bracketOrderFill.Order}' has been filled completely.", CancellationToken.None);
+        }
+
+        clog.Debug("$");
     }
 
     /// <summary>
