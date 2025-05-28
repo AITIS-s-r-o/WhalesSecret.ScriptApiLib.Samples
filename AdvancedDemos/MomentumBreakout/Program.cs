@@ -452,8 +452,8 @@ internal class Program
                         Candle closedCandle = await candleTask.ConfigureAwait(false);
                         clog.Debug($"New closed candle received: {closedCandle}");
 
-                        ProcessClosedCandle(closedCandle, quotes, maxQuotes: maxQuotes, quotesBuffer: quotesBuffer, parameters, ref currentShortEma, ref currentLongEma, ref currentRsi,
-                            ref currentAtr);
+                        ProcessClosedCandle(closedCandle, quotes, maxQuotes: maxQuotes, quotesBuffer: quotesBuffer, parameters, ref currentShortEma, ref currentLongEma,
+                            ref currentRsi, ref currentAtr);
 
                         // Refresh task.
                         candleTask = candleSubscription.WaitNextClosedCandlestickAsync(candleWidth, cancellationToken);
@@ -491,14 +491,15 @@ internal class Program
                                 {
                                     bool entry = await ProcessNewPriceAsync(tradeClient, orderRequestBuilder, quotes, lastPrice: lastPrice,
                                         currentShortEma: (decimal)currentShortEma.Value, currentLongEma: (decimal)currentLongEma.Value, currentRsi: (decimal)currentRsi.Value,
-                                        currentAtr: (decimal)currentAtr.Value, currentVolume: currentVolume.Value, parameters, debugIteration, tradeConditionLogs, cancellationToken)
-                                        .ConfigureAwait(false);
+                                        currentAtr: (decimal)currentAtr.Value, currentVolume: currentVolume.Value, parameters, debugIteration, tradeConditionLogs,
+                                        cancellationToken).ConfigureAwait(false);
 
                                     if (entry)
                                     {
                                         DateTime lastEntry = DateTime.UtcNow;
                                         nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
-                                        await PrintInfoTelegramAsync($"New trade has been attempted. Cooldown period of {parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.", cancellationToken).ConfigureAwait(false);
+                                        await PrintInfoTelegramAsync($"New trade has been attempted. Cooldown period of {parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.", cancellationToken)
+                                            .ConfigureAwait(false);
                                     }
                                 }
                                 else clog.Trace("Waiting for the required values for calculation to be available.");
@@ -1293,8 +1294,8 @@ internal class Program
             decimal totalCount = slCount + tpCount;
             decimal pnlWeight = tpWeight - slWeight;
 
-            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
-                $"New total stop-loss weight is {slWeight} and count is {slCount / totalCount}; take-profit weight is {tpWeight} and count is {tpCount / totalCount}, PnL weight is {pnlWeight}.");
+            _ = stringBuilder.Append(CultureInfo.InvariantCulture, $"New total stop-loss weight is {slWeight} and count is {slCount / totalCount}; ");
+            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"take-profit weight is {tpWeight} and count is {tpCount / totalCount}, PnL weight is {pnlWeight}.");
 
             _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
         }
