@@ -1183,13 +1183,11 @@ internal class Program
                         .AppendLine(msg)
                         .AppendLine("<code>");
 
-                    decimal slWeight, tpWeight;
+                    decimal slWeight, tpWeight, slCount, tpCount;
                     lock (liveLock)
                     {
-                        clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight} and count is {stopLossFilledCount}/{
-                            stopLossFilledCount + takeProfitFilledCount}, take-profit filled weight is {
-                            takeProfitFilledWeight} and count is {takeProfitFilledCount}/{stopLossFilledCount + takeProfitFilledCount}, working order average filled price is {
-                            workingOrderAvgFillPrice}.");
+                        clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight}, take-profit filled weight is {
+                            takeProfitFilledWeight}, working order average filled price is {workingOrderAvgFillPrice}.");
 
                         foreach (FillData fillData in bracketOrderFill.Fills)
                         {
@@ -1221,14 +1219,18 @@ internal class Program
 
                         slWeight = stopLossFilledWeight;
                         tpWeight = takeProfitFilledWeight;
+                        slCount = stopLossFilledCount;
+                        tpCount = takeProfitFilledCount;
                     }
 
                     _ = stringBuilder.AppendLine("</code>");
                     _ = stringBuilder.AppendLine();
 
+                    decimal totalCount = slCount + tpCount;
                     decimal pnlWeight = tpWeight - slWeight;
+
                     _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
-                        $"New total stop-loss weight is {slWeight}, take-profit weight is {tpWeight}, PnL weight is {pnlWeight}.");
+                        $"New total stop-loss weight is {slWeight} and count is {slCount/totalCount}; take-profit weight is {tpWeight} and count is {tpCount/totalCount}, PnL weight is {pnlWeight}.");
 
                     _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
                 }
