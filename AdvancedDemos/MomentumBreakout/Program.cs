@@ -1294,8 +1294,8 @@ internal class Program
             decimal totalCount = slCount + tpCount;
             decimal pnlWeight = tpWeight - slWeight;
 
-            _ = stringBuilder.Append(CultureInfo.InvariantCulture, $"New total stop-loss weight is {slWeight} and count is {slCount / totalCount}; ");
-            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"take-profit weight is {tpWeight} and count is {tpCount / totalCount}, PnL weight is {pnlWeight}.");
+            _ = stringBuilder.Append(CultureInfo.InvariantCulture, $"New total stop-loss weight is {slWeight} and count is {slCount}/{totalCount}; ");
+            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"take-profit weight is {tpWeight} and count is {tpCount}/{totalCount}, PnL weight is {pnlWeight}.");
 
             _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
         }
