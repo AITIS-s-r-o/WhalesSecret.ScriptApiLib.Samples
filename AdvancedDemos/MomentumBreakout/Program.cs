@@ -97,7 +97,7 @@ internal class Program
 
     /// <summary>
     /// Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/>, <see cref="openPositions"/>, <see cref="workingOrderAvgFillPriceMap"/>,
-    /// <see cref="workingOrderBaseSizeMap"/>, <see cref="stopLossFilledWeight"/>, <see cref="takeProfitFilledWeight"/>, <see cref="stopLossFilledCount"/>, 
+    /// <see cref="workingOrderBaseSizeMap"/>, <see cref="stopLossFilledWeight"/>, <see cref="takeProfitFilledWeight"/>, <see cref="stopLossFilledCount"/>,
     /// and <see cref="takeProfitFilledCount"/>.
     /// </summary>
     private static readonly Lock liveLock = new();
