@@ -1262,7 +1262,7 @@ internal class Program
             decimal slWeight, tpWeight, slCount, tpCount;
             lock (liveLock)
             {
-                _ = workingOrderAvgFillPriceMap.TryGetValue(bracketOrderFill.ClientOrderId, out decimal workingOrderAvgFillPrice);
+                _ = workingOrderAvgFillPriceMap.TryGetValue(bracketOrderFill.Order.WorkingClientOrderId, out decimal workingOrderAvgFillPrice);
 
                 clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight}, take-profit filled weight is {
                     takeProfitFilledWeight}, working order average filled price is {workingOrderAvgFillPrice}.");
