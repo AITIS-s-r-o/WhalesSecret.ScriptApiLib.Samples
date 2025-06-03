@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualStudio.Threading;
 using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -1063,7 +1064,8 @@ internal class Program
                 openPositions++;
                 positions = openPositions;
 
-                workingOrderBaseSizeMap[liveBracketedOrder.WorkingClientOrderId] = orderSizeInBaseSymbol;
+                workingOrderBaseSizeMap[liveBracketedOrder.WorkingClientOrderId] = workingOrderRequest.Size;
+                clog.Debug($"Base size of the working order ID '{liveBracketedOrder.WorkingClientOrderId}' is {workingOrderRequest.Size}.");
             }
 
             positionTimes.Add(DateTime.UtcNow);
