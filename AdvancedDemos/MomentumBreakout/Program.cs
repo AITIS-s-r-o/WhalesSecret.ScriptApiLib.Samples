@@ -83,7 +83,7 @@ internal class Program
     /// <summary>Name of the report file.</summary>
     private const string ReportFileName = $"{StrategyName}-budgetReport.csv";
 
-    /// <summary>Live bracketed orders termination tasks mapped to the bracketed orders.</summary>
+    /// <summary>Live bracketed orders termination tasks mapped by the bracketed orders.</summary>
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static readonly Dictionary<ILiveBracketedOrder, Task> liveBracketedOrdersTerminationTasksMap = new();
 
@@ -95,13 +95,22 @@ internal class Program
     private static readonly List<DateTime> positionTimes = new();
 
     /// <summary>
-    /// Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/>, <see cref="openPositions"/>, <see cref="workingOrderAvgFillPrice"/>,
-    /// <see cref="stopLossFilledWeight"/>, <see cref="takeProfitFilledWeight"/>, <see cref="stopLossFilledCount"/>, and <see cref="takeProfitFilledCount"/>.
+    /// Lock object to be used when accessing <see cref="liveBracketedOrdersTerminationTasksMap"/>, <see cref="openPositions"/>, <see cref="workingOrderAvgFillPriceMap"/>,
+    /// <see cref="workingOrderBaseSizeMap"/>, <see cref="stopLossFilledWeight"/>, <see cref="takeProfitFilledWeight"/>, <see cref="stopLossFilledCount"/>,
+    /// and <see cref="takeProfitFilledCount"/>.
     /// </summary>
     private static readonly Lock liveLock = new();
 
     /// <summary>Class logger.</summary>
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
+
+    /// <summary>Average price of the working orders' fills, or <c>0</c> if the information is not available, mapped by the working order's client order ID.</summary>
+    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
+    private static readonly Dictionary<string, decimal> workingOrderAvgFillPriceMap = new();
+
+    /// <summary>Sizes (in the base symbol) of the working orders mapped by the working order's client order ID.</summary>
+    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
+    private static readonly Dictionary<string, decimal> workingOrderBaseSizeMap = new();
 
     /// <summary>Cancellation token that is canceled when the shutdown is initiated, or <c>null</c> if not initialized yet.</summary>
     private static CancellationToken? shutdownToken;
@@ -119,14 +128,9 @@ internal class Program
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static int openPositions;
 
-    /// <summary>Average price of the working order's fills, or <c>0</c> if the information is not available.</summary>
-    /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
-    private static decimal workingOrderAvgFillPrice;
-
     /// <summary>Cumulative weight of all stop-loss fills.</summary>
     /// <remarks>
-    /// Weight of a fill is calculated as its price distance from the <see cref="workingOrderAvgFillPrice">working order average fill price</see> multiplied by the size of
-    /// the fill.
+    /// Weight of a fill is calculated as its price distance from the working order average fill price multiplied by the size of the fill.
     /// <para>All access has to be protected by <see cref="liveLock"/>.</para>
     /// </remarks>
     private static decimal stopLossFilledWeight;
@@ -1059,6 +1063,9 @@ internal class Program
             {
                 openPositions++;
                 positions = openPositions;
+
+                workingOrderBaseSizeMap[liveBracketedOrder.WorkingClientOrderId] = workingOrderRequest.Size;
+                clog.Debug($"Base size of the working order ID '{liveBracketedOrder.WorkingClientOrderId}' is {workingOrderRequest.Size}.");
             }
 
             positionTimes.Add(DateTime.UtcNow);
@@ -1146,7 +1153,9 @@ internal class Program
                     lock (liveLock)
                     {
                         decimal? cumAvgPrice = workingOrderFill.Fills[^1].CumulativeAveragePrice;
-                        workingOrderAvgFillPrice = cumAvgPrice ?? 0;
+
+                        workingOrderAvgFillPriceMap[workingOrderFill.ClientOrderId] = cumAvgPrice ?? 0;
+
                         _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"Working order fill average price is {cumAvgPrice}.");
                     }
 
@@ -1252,8 +1261,12 @@ internal class Program
             decimal slWeight, tpWeight, slCount, tpCount;
             lock (liveLock)
             {
+                _ = workingOrderAvgFillPriceMap.TryGetValue(bracketOrderFill.Order.WorkingClientOrderId, out decimal workingOrderAvgFillPrice);
+
                 clog.Trace($"Current stop-loss filled weight is {stopLossFilledWeight}, take-profit filled weight is {
                     takeProfitFilledWeight}, working order average filled price is {workingOrderAvgFillPrice}.");
+
+                _ = workingOrderBaseSizeMap.TryGetValue(bracketOrderFill.Order.WorkingClientOrderId, out decimal workingOrderBaseSize);
 
                 foreach (FillData fillData in bracketOrderFill.Fills)
                 {
@@ -1272,12 +1285,16 @@ internal class Program
                         if (bracketOrderFill.BracketOrderType == BracketOrderType.StopLoss)
                         {
                             stopLossFilledWeight += weight;
-                            stopLossFilledCount += 1m / parameters.StopLossCount;
+
+                            if (workingOrderBaseSize != 0)
+                                stopLossFilledCount += fillData.LastSize / workingOrderBaseSize;
                         }
                         else
                         {
                             takeProfitFilledWeight += weight;
-                            takeProfitFilledCount += 1m / parameters.TakeProfitCount;
+
+                            if (workingOrderBaseSize != 0)
+                                takeProfitFilledCount += fillData.LastSize / workingOrderBaseSize;
                         }
                     }
                 }
@@ -1507,6 +1524,10 @@ internal class Program
                                     throw new SanityCheckException($"Unable to remove live bracketed order '{liveBracketedOrder}' from the map.");
 
                                 clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
+
+                                string workingClientOrderId = liveBracketedOrder.WorkingClientOrderId;
+                                _ = workingOrderAvgFillPriceMap.Remove(workingClientOrderId);
+                                _ = workingOrderBaseSizeMap.Remove(workingClientOrderId);
 
                                 openPositions--;
                                 _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
