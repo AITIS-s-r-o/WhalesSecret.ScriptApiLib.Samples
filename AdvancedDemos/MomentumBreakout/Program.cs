@@ -1526,6 +1526,10 @@ internal class Program
 
                                 clog.Debug($"Live bracketed order '{liveBracketedOrder}' has been removed from the map.");
 
+                                string workingClientOrderId = liveBracketedOrder.WorkingClientOrderId;
+                                _ = workingOrderAvgFillPriceMap.Remove(workingClientOrderId);
+                                _ = workingOrderBaseSizeMap.Remove(workingClientOrderId);
+
                                 openPositions--;
                                 _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
                                     $"Live bracketed order '{liveBracketedOrder}' has been completed. There are now {openPositions} open positions.");
