@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.VisualStudio.Threading;
 using Skender.Stock.Indicators;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -84,7 +83,7 @@ internal class Program
     /// <summary>Name of the report file.</summary>
     private const string ReportFileName = $"{StrategyName}-budgetReport.csv";
 
-    /// <summary>Live bracketed orders termination tasks mapped to the bracketed orders.</summary>
+    /// <summary>Live bracketed orders termination tasks mapped by the bracketed orders.</summary>
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static readonly Dictionary<ILiveBracketedOrder, Task> liveBracketedOrdersTerminationTasksMap = new();
 
@@ -105,11 +104,11 @@ internal class Program
     /// <summary>Class logger.</summary>
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
 
-    /// <summary>Average price of the working orders' fills, or <c>0</c> if the information is not available, mapped to the working order's client order ID.</summary>
+    /// <summary>Average price of the working orders' fills, or <c>0</c> if the information is not available, mapped by the working order's client order ID.</summary>
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static readonly Dictionary<string, decimal> workingOrderAvgFillPriceMap = new();
 
-    /// <summary>Sizes (in the base symbol) of the working orders mapped to the working order's client order ID.</summary>
+    /// <summary>Sizes (in the base symbol) of the working orders mapped by the working order's client order ID.</summary>
     /// <remarks>All access has to be protected by <see cref="liveLock"/>.</remarks>
     private static readonly Dictionary<string, decimal> workingOrderBaseSizeMap = new();
 
