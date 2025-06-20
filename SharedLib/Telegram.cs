@@ -102,7 +102,7 @@ public class Telegram : IAsyncDisposable
     /// <param name="input">Input string to split.</param>
     /// <param name="maxLength">Maximum length of each output string.</param>
     /// <returns>List of strings that together form the input string and are all <paramref name="maxLength"/> long except for the last one, which can shorter.</returns>
-    public static string[] SplitStringByMaxLength(string input, int maxLength)
+    private static string[] SplitStringByMaxLength(string input, int maxLength)
     {
         if (string.IsNullOrEmpty(input))
             return Array.Empty<string>();
