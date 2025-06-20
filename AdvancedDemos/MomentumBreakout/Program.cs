@@ -1374,7 +1374,8 @@ internal class Program
                 ? lastPrice + (currentAtr * parameters.FirstTakeProfitAtr)
                 : lastPrice - (currentAtr * parameters.FirstTakeProfitAtr);
 
-            bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: tpPercent);
+            BracketOrderType takeProfitType = parameters.UseTakeProfitUsingLimitOrders ? BracketOrderType.TakeProfitUsingLimitOrder : BracketOrderType.TakeProfit;
+            bracketOrdersDefinitions[index] = new(takeProfitType, thresholdPrice: tpThresholdPrice, sizePercent: tpPercent);
             index++;
 
             tpPercentRemaining -= tpPercent;
