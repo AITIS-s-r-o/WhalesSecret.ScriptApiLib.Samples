@@ -89,7 +89,7 @@ public class Telegram : IAsyncDisposable
                 error = e.Message;
             }
 
-            if (error != null)
+            if (error is not null)
                 break;
         }
 
