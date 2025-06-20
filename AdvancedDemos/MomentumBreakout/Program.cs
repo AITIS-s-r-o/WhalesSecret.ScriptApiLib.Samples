@@ -199,7 +199,8 @@ internal class Program
     ///     }
     ///   },
     ///   "ReportPeriod": "12:00:00",
-    ///   "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES"
+    ///   "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES",
+    ///   "UseTakeProfitUsingLimitOrders": true
     /// }
     /// </code>
     /// </para>
