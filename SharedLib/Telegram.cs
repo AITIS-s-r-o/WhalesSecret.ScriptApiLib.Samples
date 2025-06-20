@@ -107,7 +107,7 @@ public class Telegram : IAsyncDisposable
         if (string.IsNullOrEmpty(input))
             return Array.Empty<string>();
 
-        // Calculate the number of chunks needed
+        // Calculate the number of chunks needed.
         int chunkCount = (int)Math.Ceiling((double)input.Length / maxLength);
         string[] result = new string[chunkCount];
 
