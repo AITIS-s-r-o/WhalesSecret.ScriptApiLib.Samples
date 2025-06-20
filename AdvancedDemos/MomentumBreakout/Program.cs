@@ -199,7 +199,8 @@ internal class Program
     ///     }
     ///   },
     ///   "ReportPeriod": "12:00:00",
-    ///   "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES"
+    ///   "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES",
+    ///   "UseTakeProfitUsingLimitOrders": true
     /// }
     /// </code>
     /// </para>
@@ -1313,8 +1314,9 @@ internal class Program
             decimal totalCount = slCount + tpCount;
             decimal pnlWeight = tpWeight - slWeight;
 
-            _ = stringBuilder.Append(CultureInfo.InvariantCulture, $"New total stop-loss weight is {slWeight} and count is {slCount}/{totalCount}; ");
-            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $"take-profit weight is {tpWeight} and count is {tpCount}/{totalCount}, PnL weight is {pnlWeight}.");
+            _ = stringBuilder.Append(CultureInfo.InvariantCulture, $"New total stop-loss weight is {slWeight:F2} and count is {slCount:F2}/{totalCount:F2}; ");
+            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"take-profit weight is {tpWeight:F2} and count is {tpCount:F2}/{totalCount:F2}, PnL weight is {pnlWeight:F2}.");
 
             _ = PrintInfoTelegramAsync(stringBuilder.ToString(), CancellationToken.None);
         }
@@ -1375,7 +1377,8 @@ internal class Program
                 ? lastPrice + (currentAtr * parameters.FirstTakeProfitAtr)
                 : lastPrice - (currentAtr * parameters.FirstTakeProfitAtr);
 
-            bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: tpPercent);
+            BracketOrderType takeProfitType = parameters.UseTakeProfitUsingLimitOrders ? BracketOrderType.TakeProfitUsingLimitOrder : BracketOrderType.TakeProfit;
+            bracketOrdersDefinitions[index] = new(takeProfitType, thresholdPrice: tpThresholdPrice, sizePercent: tpPercent);
             index++;
 
             tpPercentRemaining -= tpPercent;

@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using WhalesSecret.TradeScriptLib.Logging;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
@@ -11,6 +12,9 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 /// </summary>
 public class Telegram : IAsyncDisposable
 {
+    /// <summary>Maximum length of a Telegram message</summary>
+    private const int MaxMessageLength = 4096;
+
     /// <summary>URL-encoded Telegram group ID to which to send messages.</summary>
     private readonly string groupId;
 
@@ -58,30 +62,63 @@ public class Telegram : IAsyncDisposable
     /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
     public async Task<string?> SendMessageAsync(string message, CancellationToken cancellationToken)
     {
+        string[] parts = SplitStringByMaxLength(message, MaxMessageLength);
+
         string? error = null;
-        message = HttpUtility.UrlEncode(message);
-
-        string uri = $"https://api.telegram.org/bot{this.apiToken}/sendMessage?chat_id={this.groupId}&parse_mode=html&text={message}";
-
-        try
+        foreach (string part in parts)
         {
-            using HttpRequestMessage request = new(HttpMethod.Get, uri);
-            using HttpResponseMessage response = await this.httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            string encodedMessagePart = HttpUtility.UrlEncode(message);
 
-            if (!response.IsSuccessStatusCode)
-                error = $"Sending a HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";
-        }
-        catch (HttpRequestException e)
-        {
-            error = $"Sending a HTTP request to Telegram failed with HTTP request error {e.HttpRequestError}: {e.Message}";
-        }
-        catch (Exception e)
-        {
-            error = e.Message;
+            string uri = $"https://api.telegram.org/bot{this.apiToken}/sendMessage?chat_id={this.groupId}&parse_mode=html&text={encodedMessagePart}";
+
+            try
+            {
+                using HttpRequestMessage request = new(HttpMethod.Get, uri);
+                using HttpResponseMessage response = await this.httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                string responseContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+                if (!response.IsSuccessStatusCode)
+                    error = $"Sending a HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";
+            }
+            catch (HttpRequestException e)
+            {
+                error = $"Sending a HTTP request to Telegram failed with HTTP request error {e.HttpRequestError}: {e.Message}";
+            }
+            catch (Exception e)
+            {
+                error = e.Message;
+            }
+
+            if (error is not null)
+                break;
         }
 
         return error;
+    }
+
+    /// <summary>
+    /// Split string into chunks of a maximum length.
+    /// </summary>
+    /// <param name="input">Input string to split.</param>
+    /// <param name="maxLength">Maximum length of each output string.</param>
+    /// <returns>List of strings that together form the input string and are all <paramref name="maxLength"/> long except for the last one, which can shorter.</returns>
+    private static string[] SplitStringByMaxLength(string input, int maxLength)
+    {
+        if (string.IsNullOrEmpty(input))
+            return Array.Empty<string>();
+
+        // Calculate the number of chunks needed.
+        int chunkCount = (int)Math.Ceiling((double)input.Length / maxLength);
+        string[] result = new string[chunkCount];
+
+        for (int i = 0; i < chunkCount; i++)
+        {
+            int startIndex = i * maxLength;
+            int length = Math.Min(maxLength, input.Length - startIndex);
+            result[i] = input.Substring(startIndex, length);
+        }
+
+        return result;
     }
 
     /// <summary>
