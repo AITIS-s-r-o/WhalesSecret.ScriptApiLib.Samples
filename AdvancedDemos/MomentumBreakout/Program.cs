@@ -502,8 +502,8 @@ internal class Program
                                     {
                                         DateTime lastEntry = DateTime.UtcNow;
                                         nextEntry = lastEntry.Add(parameters.TradeCooldownPeriod * candleTimeSpan.Value);
-                                        string msg = $"New trade has been attempted. Cooldown period of {parameters.TradeCooldownPeriod} candles activated. "
-                                            + $"Next trade entry time set to {nextEntry}.";
+                                        string msg = $"New trade has been attempted. Cooldown period of {
+                                            parameters.TradeCooldownPeriod} candles activated. Next trade entry time set to {nextEntry}.";
                                         await PrintInfoTelegramAsync(msg, cancellationToken).ConfigureAwait(false);
                                     }
                                 }
