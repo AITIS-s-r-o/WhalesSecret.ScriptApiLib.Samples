@@ -57,7 +57,9 @@ public class Parameters
     /// <summary>Number of candles for volatility confirmation.</summary>
     public int VolatilityLookback { get; }
 
-    /// <summary>Size of the current Average True Range (ATR) in multiples of the ATR average over <see cref="VolatilityLookback"/> period required for volatility confirmation.</summary>
+    /// <summary>
+    /// Size of the current Average True Range (ATR) in multiples of the ATR average over <see cref="VolatilityLookback"/> period required for volatility confirmation.
+    /// </summary>
     /// <seealso href="https://www.investopedia.com/terms/a/atr.asp"/>
     public decimal VolatilityAvgSize { get; }
 
@@ -123,6 +125,9 @@ public class Parameters
     /// <summary>Telegram group ID to send messages to, or <c>null</c> to avoid sending messages to Telegram.</summary>
     public string? TelegramGroupId { get; }
 
+    /// <summary><c>true</c> to use <see cref="BracketOrderType.TakeProfitUsingLimitOrder"/>, <c>false</c> to use <see cref="BracketOrderType.TakeProfit"/>.</summary>
+    public bool UseTakeProfitUsingLimitOrders { get; }
+
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
@@ -156,6 +161,8 @@ public class Parameters
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
     /// <param name="telegramGroupId">Telegram group ID to send messages to, or <c>null</c> to avoid sending messages to Telegram.</param>
+    /// <param name="useTakeProfitUsingLimitOrders"><c>true</c> to use <see cref="BracketOrderType.TakeProfitUsingLimitOrder"/>, <c>false</c> to use
+    /// <see cref="BracketOrderType.TakeProfit"/>.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">
     /// <item><paramref name="appDataPath"/> is <c>null</c>, or</item>
@@ -193,7 +200,7 @@ public class Parameters
         int breakoutLookback, decimal breakoutAtrSize, int volumeLookback, decimal volumeAvgSize, int volatilityLookback, decimal volatilityAvgSize, int maxTradesPerDay,
         int maxOpenPositions, CandleWidth candleWidth, int stopLossCount, int takeProfitCount, decimal firstStopLossAtr, decimal nextStopLossAtrIncrement,
         decimal firstTakeProfitAtr, decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, string orderIdPrefix, BudgetRequest budgetRequest,
-        TimeSpan reportPeriod, string? telegramGroupId)
+        TimeSpan reportPeriod, string? telegramGroupId, bool useTakeProfitUsingLimitOrders)
     {
         if (appDataPath is null)
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
@@ -316,6 +323,7 @@ public class Parameters
         this.BudgetRequest = budgetRequest;
         this.ReportPeriod = reportPeriod;
         this.TelegramGroupId = telegramGroupId;
+        this.UseTakeProfitUsingLimitOrders = useTakeProfitUsingLimitOrders;
     }
 
     /// <summary>
@@ -375,7 +383,7 @@ public class Parameters
     public override string ToString()
     {
         string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},{30}={31}"
-            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}={47},{48}='{49}',{50}=`{51}`,{52}={53},{54}=`{55}`]";
+            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}={47},{48}='{49}',{50}=`{51}`,{52}={53},{54}=`{55}`,{56}={57}]";
         return string.Format
         (
             CultureInfo.InvariantCulture,
@@ -407,7 +415,8 @@ public class Parameters
             nameof(this.OrderIdPrefix), this.OrderIdPrefix,
             nameof(this.BudgetRequest), this.BudgetRequest,
             nameof(this.ReportPeriod), this.ReportPeriod,
-            nameof(this.TelegramGroupId), this.TelegramGroupId
+            nameof(this.TelegramGroupId), this.TelegramGroupId,
+            nameof(this.UseTakeProfitUsingLimitOrders), this.UseTakeProfitUsingLimitOrders
         );
     }
 }
