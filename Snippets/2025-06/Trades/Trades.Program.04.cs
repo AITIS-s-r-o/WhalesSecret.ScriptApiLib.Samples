@@ -19,13 +19,12 @@ ITradeApiClient client = await scriptApi.ConnectAsync(ExchangeMarket.KucoinSpot)
 Print("Connected to KuCoin.");
 
 DateOnly yesterdayDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+IReadOnlyList<IOrder> orders = await client.GetOrdersAsync(yesterdayDate);
+Print($"For {yesterdayDate}, there were {orders.Count} orders:");
 
-IReadOnlyList<ITrade> trades = await client.GetTradesAsync(yesterdayDate);
-Print($"For {yesterdayDate}, there were {trades.Count} orders:");
-
-foreach (ITrade trade in trades)
+foreach (IOrder order in orders)
 {
-    Print($"Trade {trade.TradeId} belongs to order '{trade.Order}'.");
+    Print($"* {order}");
 }
 
 static void Print(string msg)
