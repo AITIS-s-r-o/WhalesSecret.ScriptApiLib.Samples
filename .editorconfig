@@ -7,7 +7,7 @@
 # top-most EditorConfig file
 root = true
 
-[*.{cs,vb,csproj,md,ps1,xaml,props,snippet,dic}]
+[*.{cs,vb,csproj,cshtml,md,ps1,xaml,props,snippet,json,js,css,dic}]
 end_of_line = crlf
 indent_style = space
 charset = utf-8
@@ -21,16 +21,12 @@ spelling_checkable_types = strings,identifiers,comments
 spelling_error_severity = information
 spelling_exclusion_path = .\exclusion.dic
 
-# PowerShell files
-[*.ps1]
-indent_size = 4
-
 # C# project files
 [*.{csproj,props}]
 indent_size = 2
 
 # Code files
-[*.{cs,vb,xaml}]
+[*.{cs,vb,xaml,ps1,json,cshtml,js,css}]
 indent_size = 4
 
 #### .NET Coding Conventions ####
@@ -3364,8 +3360,14 @@ dotnet_diagnostic.xUnit1030.severity = warning
 # Tasks that are created and run from another context (not within the currently running method or delegate) should not be returned or awaited on. Doing so can result in deadlocks
 # because awaiting a Task does not result in the awaiter "joining" the effort such that access to the main thread is shared. If the awaited Task requires the main thread, and the
 # caller that is awaiting it is blocking the main thread, a deadlock will result.
-# Disable reason: Whale's Secret Core is not a UI application.
-dotnet_diagnostic.VSTHRD003.severity = none
+dotnet_diagnostic.VSTHRD003.severity = warning
+
+# VSTHRD111: Use .ConfigureAwait(bool)
+# Some code bases, particularly libraries with no affinity to an app's UI thread, are advised to use .ConfigureAwait(false) for each and every await because it can avoid deadlocks 
+# after those calls start on an application's UI thread and the app later decides to synchronously block the UI thread waiting for those tasks to finish. Using 
+# .ConfigureAwait(false) also allows continuations to switch to a background thread even when no synchronous blocking would cause a deadlock, which makes for a more responsive 
+# application and possibly higher throughput of async operations.
+dotnet_diagnostic.VSTHRD111.severity = warning
 
 # Test files
 [*{Test.cs,Tests.cs}]
