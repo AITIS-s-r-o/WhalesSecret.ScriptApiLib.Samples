@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using WhalesSecret.TradeScriptLib.Logging;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
@@ -11,6 +12,9 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 /// </summary>
 public class Telegram : IAsyncDisposable
 {
+    /// <summary>Maximum length of a Telegram message</summary>
+    private const int MaxMessageLength = 4096;
+
     /// <summary>URL-encoded Telegram group ID to which to send messages.</summary>
     private readonly string groupId;
 
@@ -58,6 +62,9 @@ public class Telegram : IAsyncDisposable
     /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
     public async Task<string?> SendMessageAsync(string message, CancellationToken cancellationToken)
     {
+        if (message.Length > MaxMessageLength)
+            message = message.ToBoundedString(MaxMessageLength);
+
         string? error = null;
         message = HttpUtility.UrlEncode(message);
 
