@@ -18,15 +18,14 @@ scriptApi.SetCredentials(apiIdentity);
 ITradeApiClient client = await scriptApi.ConnectAsync(ExchangeMarket.KucoinSpot);
 Print("Connected to KuCoin.");
 
-// Suppose, we are interested in trades that were executed yesterday.
 DateOnly yesterdayDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
 
 IReadOnlyList<ITrade> trades = await client.GetTradesAsync(yesterdayDate);
-Print($"For {yesterdayDate}, there were {trades.Count} trades:");
+Print($"For {yesterdayDate}, there were {trades.Count} orders:");
 
 foreach (ITrade trade in trades)
 {
-    Print($"* {trade}");
+    Print($"Trade {trade.TradeId} belongs to order '{trade.Order}'.");
 }
 
 static void Print(string msg)

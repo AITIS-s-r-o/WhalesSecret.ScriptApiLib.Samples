@@ -3,7 +3,9 @@ using WhalesSecret.ScriptApiLib;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders;
+using WhalesSecret.TradeScriptLib.API.TradingV1.Trades;
 using WhalesSecret.TradeScriptLib.Entities;
+using WhalesSecret.TradeScriptLib.Entities.Orders;
 
 await using ScriptApi scriptApi = await ScriptApi.CreateAsync();
 
@@ -18,10 +20,15 @@ scriptApi.SetCredentials(apiIdentity);
 ITradeApiClient client = await scriptApi.ConnectAsync(ExchangeMarket.KucoinSpot);
 Print("Connected to KuCoin.");
 
-// Suppose, we are interested in trades that were executed yesterday.
 DateOnly yesterdayDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
 
-IReadOnlyList<ITrade> trades = await client.GetTradesAsync(yesterdayDate);
+TradeFilterOptions options = new()
+{
+    TradeSide = OrderSide.Buy,
+    OrderTypes = new HashSet<OrderType>() { OrderType.Limit }
+};
+
+IReadOnlyList<ITrade> trades = await client.GetTradesAsync(yesterdayDate, options);
 Print($"For {yesterdayDate}, there were {trades.Count} trades:");
 
 foreach (ITrade trade in trades)
