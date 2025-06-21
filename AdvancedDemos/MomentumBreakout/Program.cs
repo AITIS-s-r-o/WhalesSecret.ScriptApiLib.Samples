@@ -1390,7 +1390,7 @@ internal class Program
                     : tpThresholdPrice - (currentAtr * parameters.NextTakeProfitAtrIncrement);
 
                 decimal sizePercent = i == parameters.TakeProfitCount - 1 ? tpPercentRemaining : tpPercent;
-                bracketOrdersDefinitions[index] = new(BracketOrderType.TakeProfit, thresholdPrice: tpThresholdPrice, sizePercent: sizePercent);
+                bracketOrdersDefinitions[index] = new(takeProfitType, thresholdPrice: tpThresholdPrice, sizePercent: sizePercent);
                 index++;
 
                 tpPercentRemaining -= sizePercent;
