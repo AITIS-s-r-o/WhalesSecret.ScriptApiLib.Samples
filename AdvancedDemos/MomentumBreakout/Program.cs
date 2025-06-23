@@ -168,7 +168,27 @@ internal class Program
     /// <para>Example input file:
     /// <code>
     /// {
-    ///   "AppDataPath": "Data",
+    ///   "System": {
+    ///     "License": "INSERT YOUR WHALES SECRET LICENSE HERE OR USE null TO USE FREE MODE",
+    ///     "AppDataPath": "Data",
+    ///     "Telegram": {
+    ///       "GroupId": "INSERT YOUR TELEGRAM GROUP ID HERE",
+    ///       "ApiToken": "INSERT YOUR BOT'S Telegram API token"
+    ///     },
+    ///     "ApiKeys": {
+    ///       "Binance": {
+    ///         "HmacKey": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+    ///         "HmacSecret": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+    ///         "RsaKey": "INSERT YOUR Binance RSA API key HERE OR USE null TO USE HMAC key",
+    ///         "RsaSecret": "INSERT YOUR Binance RSA API secret OR USE null TO USE HMAC key"
+    ///       },
+    ///       "Kucoin": {
+    ///         "Key": "INSERT YOUR Kucoin API key HERE",
+    ///         "Secret": "INSERT YOUR Kucoin API secret HERE",
+    ///         "Passphrase": "INSERT YOUR Kucoin API passphrase HERE"
+    ///       }
+    ///     }
+    ///   },
     ///   "ExchangeMarket": "BinanceSpot",
     ///   "SymbolPair": "BTC/EUR",
     ///   "ShortEmaLookback": 20,
@@ -202,7 +222,6 @@ internal class Program
     ///     }
     ///   },
     ///   "ReportPeriod": "12:00:00",
-    ///   "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES",
     ///   "UseTakeProfitUsingLimitOrders": true
     /// }
     /// </code>
@@ -403,22 +422,22 @@ internal class Program
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
         // In order to unlock large orders, a valid license has to be used.
-        CreateOptions createOptions = new(appDataFolder: parameters.AppDataPath, license: License.WsLicense);
+        CreateOptions createOptions = new(appDataFolder: parameters.System.AppDataPath, license: parameters.System.License);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
         IApiIdentity apiIdentity = parameters.ExchangeMarket switch
         {
-            ExchangeMarket.BinanceSpot => Credentials.GetBinanceHmacApiIdentity(),
-            ExchangeMarket.KucoinSpot => Credentials.GetKucoinApiIdentity(),
+            ExchangeMarket.BinanceSpot => parameters.System.ApiKeys.GetBinanceApiIdentity(),
+            ExchangeMarket.KucoinSpot => parameters.System.ApiKeys.GetKucoinApiIdentity(),
             _ => throw new SanityCheckException($"Unsupported exchange market {parameters.ExchangeMarket} provided."),
         };
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
         scriptApi.SetCredentials(apiIdentity);
 
-        if (parameters.TelegramGroupId is not null)
-            telegram = new(groupId: parameters.TelegramGroupId, apiToken: Credentials.TelegramApiToken);
+        if (parameters.System.Telegram is not null)
+            telegram = new(groupId: parameters.System.Telegram.GroupId, apiToken: parameters.System.Telegram.ApiToken);
 
         try
         {
@@ -431,7 +450,7 @@ internal class Program
 
             await PrintInfoTelegramBatchedAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.", cancellationToken).ConfigureAwait(false);
 
-            string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
+            string reportFilePath = Path.Combine(parameters.System.AppDataPath, ReportFileName);
             Task reportTask = RunReportTaskAsync(reportFilePath, tradeClient, parameters.ReportPeriod, cancellationToken);
             Task bracketedOrderTerminationMonitoringTask = RunBracketedOrderTerminationMonitoringTaskAsync(cancellationToken);
 
