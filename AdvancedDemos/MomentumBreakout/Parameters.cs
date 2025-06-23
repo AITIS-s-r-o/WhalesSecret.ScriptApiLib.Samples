@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib.Converters;
+using WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets;
 using WhalesSecret.TradeScriptLib.Entities;
@@ -19,10 +20,10 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.MomentumBreakout;
 public class Parameters
 {
     /// <summary>Maximum length of <see cref="OrderIdPrefix"/>.</summary>
-    private const int MaxOrderIdPrefixLength = 8;
+    private const int MaxOrderIdPrefixLength = 5;
 
-    /// <summary>Path to the application data folder.</summary>
-    public string AppDataPath { get; }
+    /// <summary>Configuration of trading bots unrelated to the bot strategy.</summary>
+    public SystemConfig System { get; }
 
     /// <summary>Exchange market to run the bot at.</summary>
     public ExchangeMarket ExchangeMarket { get; }
@@ -122,16 +123,13 @@ public class Parameters
     /// <summary>Time period to generate the first report and between generating reports.</summary>
     public TimeSpan ReportPeriod { get; }
 
-    /// <summary>Telegram group ID to send messages to, or <c>null</c> to avoid sending messages to Telegram.</summary>
-    public string? TelegramGroupId { get; }
-
     /// <summary><c>true</c> to use <see cref="BracketOrderType.TakeProfitUsingLimitOrder"/>, <c>false</c> to use <see cref="BracketOrderType.TakeProfit"/>.</summary>
     public bool UseTakeProfitUsingLimitOrders { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="appDataPath">Path to the application data folder.</param>
+    /// <param name="system">Configuration of trading bots unrelated to the bot strategy.</param>
     /// <param name="exchangeMarket">Exchange market to DCA at.</param>
     /// <param name="symbolPair">Symbol pair to DCA.</param>
     /// <param name="shortEmaLookback">Number of candles for short-period EMA.</param>
@@ -160,12 +158,10 @@ public class Parameters
     /// <param name="orderIdPrefix">Prefix of client order IDs of the trading orders.</param>
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
-    /// <param name="telegramGroupId">Telegram group ID to send messages to, or <c>null</c> to avoid sending messages to Telegram.</param>
     /// <param name="useTakeProfitUsingLimitOrders"><c>true</c> to use <see cref="BracketOrderType.TakeProfitUsingLimitOrder"/>, <c>false</c> to use
     /// <see cref="BracketOrderType.TakeProfit"/>.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">
-    /// <item><paramref name="appDataPath"/> is <c>null</c>, or</item>
     /// <item><paramref name="shortEmaLookback"/> is not a positive number, or</item>
     /// <item><paramref name="shortEmaLookback"/> is greater than or equal to <paramref name="longEmaLookback"/>, or</item>
     /// <item><paramref name="rsiLookback"/> is not a positive number, or</item>
@@ -189,22 +185,18 @@ public class Parameters
     /// <item><paramref name="tradeCooldownPeriod"/> is not a positive number, or</item>
     /// <item><paramref name="orderIdPrefix"/> is <c>null</c>, empty, or longer than <see cref="MaxOrderIdPrefixLength"/>, or</item>
     /// <item><paramref name="budgetRequest"/> has zero initial budget for either the base or the quote symbol of <paramref name="symbolPair"/>, or</item>
-    /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
-    /// <item><paramref name="telegramGroupId"/> is an empty string.</item>
+    /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
     /// </list>
     /// </exception>
     [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity",
         Justification = "The cyclomatic complexity in this method is only caused by a large number of validation checks, which is fine.")]
     [JsonConstructor]
-    public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, int shortEmaLookback, int longEmaLookback, int rsiLookback, int atrLookback,
+    public Parameters(SystemConfig system, ExchangeMarket exchangeMarket, SymbolPair symbolPair, int shortEmaLookback, int longEmaLookback, int rsiLookback, int atrLookback,
         int breakoutLookback, decimal breakoutAtrSize, int volumeLookback, decimal volumeAvgSize, int volatilityLookback, decimal volatilityAvgSize, int maxTradesPerDay,
         int maxOpenPositions, CandleWidth candleWidth, int stopLossCount, int takeProfitCount, decimal firstStopLossAtr, decimal nextStopLossAtrIncrement,
         decimal firstTakeProfitAtr, decimal nextTakeProfitAtrIncrement, decimal positionSize, int tradeCooldownPeriod, string orderIdPrefix, BudgetRequest budgetRequest,
-        TimeSpan reportPeriod, string? telegramGroupId, bool useTakeProfitUsingLimitOrders)
+        TimeSpan reportPeriod, bool useTakeProfitUsingLimitOrders)
     {
-        if (appDataPath is null)
-            throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
-
         if (shortEmaLookback <= 0)
             throw new InvalidArgumentException($"'{nameof(shortEmaLookback)}' must be a positive number.", parameterName: nameof(shortEmaLookback));
 
@@ -292,10 +284,7 @@ public class Parameters
         if (reportPeriod <= TimeSpan.Zero)
             throw new InvalidArgumentException($"'{nameof(reportPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(reportPeriod));
 
-        if ((telegramGroupId is not null) && (telegramGroupId.Length == 0))
-            throw new InvalidArgumentException($"'{nameof(telegramGroupId)}' must not be an empty string.", parameterName: nameof(telegramGroupId));
-
-        this.AppDataPath = appDataPath;
+        this.System = system;
         this.ExchangeMarket = exchangeMarket;
         this.SymbolPair = symbolPair;
         this.ShortEmaLookback = shortEmaLookback;
@@ -322,7 +311,6 @@ public class Parameters
         this.OrderIdPrefix = orderIdPrefix;
         this.BudgetRequest = budgetRequest;
         this.ReportPeriod = reportPeriod;
-        this.TelegramGroupId = telegramGroupId;
         this.UseTakeProfitUsingLimitOrders = useTakeProfitUsingLimitOrders;
     }
 
@@ -382,13 +370,13 @@ public class Parameters
     /// <inheritdoc/>
     public override string ToString()
     {
-        string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},{30}={31}"
-            + ",{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}={47},{48}='{49}',{50}=`{51}`,{52}={53},{54}=`{55}`,{56}={57}]";
+        string format = "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19},{20}={21},{22}={23},{24}={25},{26}={27},{28}={29},"
+            + "{30}={31},{32}={33},{34}={35},{36}={37},{38}={39},{40}={41},{42}={43},{44}={45},{46}={47},{48}=`{49}`,{50}=`{51}`,{52}={53},{54}={55}]";
         return string.Format
         (
             CultureInfo.InvariantCulture,
             format,
-            nameof(this.AppDataPath), this.AppDataPath,
+            nameof(this.System), this.System,
             nameof(this.ExchangeMarket), this.ExchangeMarket,
             nameof(this.SymbolPair), this.SymbolPair,
             nameof(this.ShortEmaLookback), this.ShortEmaLookback,
@@ -415,7 +403,6 @@ public class Parameters
             nameof(this.OrderIdPrefix), this.OrderIdPrefix,
             nameof(this.BudgetRequest), this.BudgetRequest,
             nameof(this.ReportPeriod), this.ReportPeriod,
-            nameof(this.TelegramGroupId), this.TelegramGroupId,
             nameof(this.UseTakeProfitUsingLimitOrders), this.UseTakeProfitUsingLimitOrders
         );
     }
