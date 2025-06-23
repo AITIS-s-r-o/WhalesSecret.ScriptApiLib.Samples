@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib.Converters;
-using WhalesSecret.ScriptApiLib.Samples.SharedLib.System;
+using WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
