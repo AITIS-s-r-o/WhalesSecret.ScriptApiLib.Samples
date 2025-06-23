@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Web;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
