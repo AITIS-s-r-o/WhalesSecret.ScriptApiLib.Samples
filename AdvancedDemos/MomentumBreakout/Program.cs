@@ -1225,7 +1225,8 @@ internal class Program
             case BracketOrderCanceled bracketOrderCanceled:
             {
                 string type = bracketOrderCanceled.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
-                _ = PrintInfoTelegramBatchedAsync($"{type} #{bracketOrderCanceled.Index} bracket order '{bracketOrderCanceled.ClientOrderId} was canceled.", CancellationToken.None);
+                _ = PrintInfoTelegramBatchedAsync($"{type} #{bracketOrderCanceled.Index} bracket order '{bracketOrderCanceled.ClientOrderId} was canceled.",
+                    CancellationToken.None);
                 break;
             }
 
@@ -1465,7 +1466,8 @@ internal class Program
                     }
 
                     nextReport = time.Add(reportPeriod);
-                    await PrintInfoTelegramBatchedAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.", cancellationToken).ConfigureAwait(false);
+                    await PrintInfoTelegramBatchedAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.", cancellationToken)
+                        .ConfigureAwait(false);
                 }
 
                 TimeSpan delay = nextReport - time;
