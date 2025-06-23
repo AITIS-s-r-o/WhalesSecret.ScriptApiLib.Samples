@@ -236,7 +236,7 @@ internal class Program
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
         // In order to unlock large orders, a valid license has to be used.
-        CreateOptions createOptions = new(appDataFolder: parameters.System.AppDataPath, license: License.WsLicense);
+        CreateOptions createOptions = new(appDataFolder: parameters.System.AppDataPath, license: parameters.System.License);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
