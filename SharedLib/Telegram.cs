@@ -116,7 +116,7 @@ public class Telegram : IAsyncDisposable
     /// period. If there are currently no batched messages, the first batch messages starts a new batch and creates a timer. When the timer expires, all the batched messages
     /// are merged and sent at once.
     /// </summary>
-    /// <param name="message">Message to send. Note that the message is expected to be a HTML-encoded message.</param>
+    /// <param name="message">Message to send. Note that the message is expected to be an HTML-encoded message.</param>
     /// <param name="batchTimeSpan">Time period of the batch. This is only relevant for the first batched message.</param>
     /// <param name="resultAction">Action to execute when the batch is sent.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
