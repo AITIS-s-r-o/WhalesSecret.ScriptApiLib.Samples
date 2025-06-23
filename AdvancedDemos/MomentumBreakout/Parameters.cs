@@ -22,7 +22,7 @@ public class Parameters
     /// <summary>Maximum length of <see cref="OrderIdPrefix"/>.</summary>
     private const int MaxOrderIdPrefixLength = 5;
 
-    /// <summary>Configuration unrelated to the bot strategy.</summary>
+    /// <summary>Configuration of trading bots unrelated to the bot strategy.</summary>
     public SystemConfig System { get; }
 
     /// <summary>Exchange market to run the bot at.</summary>
@@ -129,7 +129,7 @@ public class Parameters
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="system">Configuration unrelated to the bot strategy.</param>
+    /// <param name="system">Configuration of trading bots unrelated to the bot strategy.</param>
     /// <param name="exchangeMarket">Exchange market to DCA at.</param>
     /// <param name="symbolPair">Symbol pair to DCA.</param>
     /// <param name="shortEmaLookback">Number of candles for short-period EMA.</param>

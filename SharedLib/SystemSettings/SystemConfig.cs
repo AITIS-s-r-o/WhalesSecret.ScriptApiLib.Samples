@@ -1,13 +1,12 @@
 using System;
 using System.Globalization;
-using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 
 /// <summary>
-/// Configuration unrelated to the bot strategy. This configuration includes license, API keys, Telegram connections, etc.
+/// Configuration of trading bots unrelated to the bot strategy. This configuration includes license, API keys, Telegram connections, etc.
 /// </summary>
 public class SystemConfig
 {

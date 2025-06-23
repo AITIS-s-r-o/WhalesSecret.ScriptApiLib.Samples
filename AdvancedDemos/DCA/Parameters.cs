@@ -17,7 +17,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA;
 /// </summary>
 public class Parameters
 {
-    /// <summary>Configuration unrelated to the bot strategy.</summary>
+    /// <summary>Configuration of trading bots unrelated to the bot strategy.</summary>
     public SystemConfig System { get; }
 
     /// <summary>Exchange market to DCA at.</summary>
@@ -44,7 +44,7 @@ public class Parameters
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="system">Configuration unrelated to the bot strategy.</param>
+    /// <param name="system">Configuration of trading bots unrelated to the bot strategy.</param>
     /// <param name="exchangeMarket">Exchange market to DCA at.</param>
     /// <param name="symbolPair">Symbol pair to DCA.</param>
     /// <param name="period">Time period in between the orders.</param>
