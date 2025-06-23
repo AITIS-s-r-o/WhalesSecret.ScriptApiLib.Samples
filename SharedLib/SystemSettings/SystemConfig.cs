@@ -6,7 +6,7 @@ using WhalesSecret.TradeScriptLib.Logging;
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 
 /// <summary>
-/// Configuration of trading bots unrelated to the bot strategy. This configuration includes license, API keys, Telegram connections, etc.
+/// Configuration of trading bots unrelated to the bot strategy. This configuration includes license, API keys, Telegram configuration, etc.
 /// </summary>
 public class SystemConfig
 {

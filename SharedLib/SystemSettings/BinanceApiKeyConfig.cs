@@ -41,8 +41,7 @@ public class BinanceApiKeyConfig
         {
             if (rsaKey is not null)
             {
-                throw new InvalidArgumentException($"'{nameof(hmacKey)}' is specified, so '{nameof(rsaKey)}' must be null.",
-                    parameterName: nameof(rsaKey));
+                throw new InvalidArgumentException($"'{nameof(hmacKey)}' is specified, so '{nameof(rsaKey)}' must be null.", parameterName: nameof(rsaKey));
             }
 
             if (hmacKey.Length == 0)
@@ -57,8 +56,7 @@ public class BinanceApiKeyConfig
         {
             if (hmacKey is not null)
             {
-                throw new InvalidArgumentException($"'{nameof(rsaKey)}' is specified, so '{nameof(hmacKey)}' must be null.",
-                    parameterName: nameof(hmacKey));
+                throw new InvalidArgumentException($"'{nameof(rsaKey)}' is specified, so '{nameof(hmacKey)}' must be null.", parameterName: nameof(hmacKey));
             }
 
             if (rsaKey.Length == 0)
@@ -78,7 +76,7 @@ public class BinanceApiKeyConfig
     /// <summary>
     /// Gets exchange API credentials for Binance exchange using HMAC or RSA algorithm.
     /// </summary>
-    /// <returns>Exchange API credentials for Binance exchange using HMAC or RSA algorithm.</returns>
+    /// <returns>New instance of exchange API credentials for Binance exchange using HMAC or RSA algorithm.</returns>
     public IApiIdentity GetApiIdentity()
     {
         IApiIdentity apiIdentity;

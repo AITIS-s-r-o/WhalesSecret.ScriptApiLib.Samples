@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -49,7 +48,7 @@ public class KucoinApiKeyConfig
     /// <summary>
     /// Gets exchange API credentials for KuCoin exchange.
     /// </summary>
-    /// <returns>Exchange API credentials for KuCoin exchange.</returns>
+    /// <returns>New instance of exchange API credentials for KuCoin exchange.</returns>
     public IApiIdentity GetApiIdentity()
     {
         byte[] secretBytes = Encoding.UTF8.GetBytes(this.Secret);
