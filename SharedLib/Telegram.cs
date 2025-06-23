@@ -208,6 +208,7 @@ public class Telegram : IAsyncDisposable
         {
             if (this.batchTimer is not null)
             {
+                this.batchTimer.Stop();
                 this.batchTimer.Dispose();
                 this.batchTimer = null;
             }
