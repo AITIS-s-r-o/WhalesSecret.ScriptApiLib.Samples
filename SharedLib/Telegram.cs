@@ -71,7 +71,7 @@ public class Telegram : IAsyncDisposable
     /// <summary>
     /// Sends a message to the Telegram group.
     /// </summary>
-    /// <param name="message">Message to send. Note that the message is expected to be a HTML-encoded message.</param>
+    /// <param name="message">Message to send. Note that the message is expected to be an HTML-encoded message.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
     public async Task<string?> SendMessageAsync(string message, CancellationToken cancellationToken)
@@ -117,7 +117,7 @@ public class Telegram : IAsyncDisposable
     /// </summary>
     /// <param name="message">Message to send. Note that the message is expected to be an HTML-encoded message.</param>
     /// <param name="batchTimeSpan">Time period of the batch. This is only relevant for the first batched message.</param>
-    /// <param name="resultAction">Action to execute when the batch is sent.</param>
+    /// <param name="resultAction">Action to execute when the batch is sent. This is only relevant for the first batched message.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     public void SendBatchedMessage(string message, TimeSpan batchTimeSpan, Action<string?> resultAction, CancellationToken cancellationToken)
     {
