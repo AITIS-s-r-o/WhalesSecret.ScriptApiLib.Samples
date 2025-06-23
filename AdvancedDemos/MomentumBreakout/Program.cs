@@ -171,8 +171,11 @@ internal class Program
     ///   "System": {
     ///     "License": "INSERT YOUR WHALES SECRET LICENSE HERE OR USE null TO USE FREE MODE",
     ///     "AppDataPath": "Data",
-    ///     "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES",
-    ///     "ApiKeys: {
+    ///     "Telegram": {
+    ///       "GroupId": "INSERT YOUR TELEGRAM GROUP ID HERE",
+    ///       "ApiToken": "INSERT YOUR BOT'S Telegram API token"
+    ///     },
+    ///     "ApiKeys": {
     ///       "Binance": {
     ///         "HmacKey": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
     ///         "HmacSecret": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
@@ -184,7 +187,7 @@ internal class Program
     ///         "Secret": "INSERT YOUR Kucoin API secret HERE",
     ///         "Passphrase": "INSERT YOUR Kucoin API passphrase HERE"
     ///       }
-    ///     }"
+    ///     }
     ///   },
     ///   "ExchangeMarket": "BinanceSpot",
     ///   "SymbolPair": "BTC/EUR",
@@ -433,8 +436,8 @@ internal class Program
 
         scriptApi.SetCredentials(apiIdentity);
 
-        if (parameters.System.TelegramGroupId is not null)
-            telegram = new(groupId: parameters.System.TelegramGroupId, apiToken: Credentials.TelegramApiToken);
+        if (parameters.System.Telegram is not null)
+            telegram = new(groupId: parameters.System.Telegram.GroupId, apiToken: parameters.System.Telegram.ApiToken);
 
         try
         {
