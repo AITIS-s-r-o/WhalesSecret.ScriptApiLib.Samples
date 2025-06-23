@@ -152,7 +152,7 @@ public class Telegram : IAsyncDisposable
                             this.batchTimer = null;
                         }
 
-                        batchedMessage = string.Join("<br>", this.currentBatch);
+                        batchedMessage = string.Join("\r\n\r\n", this.currentBatch);
                         this.currentBatch.Clear();
                     }
 
