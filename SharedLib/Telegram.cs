@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Web;
-using WhalesSecret.TradeScriptLib.Logging;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
@@ -27,12 +28,23 @@ public class Telegram : IAsyncDisposable
     /// <summary><c>true</c> if <see cref="httpClient"/> was created by this instance, <c>false</c> otherwise.</summary>
     private readonly bool disposeHttpClient;
 
+    /// <summary>Lock object to be used when accessing <see cref="currentBatch"/> and <see cref="batchTimer"/>.</summary>
+    private readonly Lock batchLock;
+
+    /// <summary>List of messages in the current batch.</summary>
+    /// <remarks>All access has to be protected by <see cref="batchLock"/>.</remarks>
+    private readonly List<string> currentBatch;
+
     /// <summary>Lock object to be used when accessing <see cref="disposedValue"/>.</summary>
     private readonly Lock disposedValueLock;
 
     /// <summary>Set to <c>true</c> if the object was disposed already, <c>false</c> otherwise. Used by the dispose pattern.</summary>
     /// <remarks>All access has to be protected by <see cref="disposedValueLock"/>.</remarks>
     private bool disposedValue;
+
+    /// <summary>Timer for the current batch, or <c>null</c> if there is no batch at the moment.</summary>
+    /// <remarks>All access has to be protected by <see cref="batchLock"/>.</remarks>
+    private System.Timers.Timer? batchTimer;
 
     /// <summary>
     /// Creates a new instance of the object.
@@ -42,6 +54,7 @@ public class Telegram : IAsyncDisposable
     /// <param name="httpClient">HTTP client to use to send messages to Telegram, or <c>null</c> to create a new instance.</param>
     public Telegram(string groupId, string apiToken, HttpClient? httpClient = null)
     {
+        this.batchLock = new();
         this.disposedValueLock = new();
         this.groupId = HttpUtility.UrlEncode(groupId);
         this.apiToken = apiToken;
@@ -52,12 +65,14 @@ public class Telegram : IAsyncDisposable
             this.disposeHttpClient = true;
         }
         else this.httpClient = httpClient;
+
+        this.currentBatch = new();
     }
 
     /// <summary>
     /// Sends a message to the Telegram group.
     /// </summary>
-    /// <param name="message">Message to send. Note that the message is expected to be a HTML-encoded message.</param>
+    /// <param name="message">Message to send. Note that the message is expected to be an HTML-encoded message.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
     /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
     public async Task<string?> SendMessageAsync(string message, CancellationToken cancellationToken)
@@ -97,6 +112,60 @@ public class Telegram : IAsyncDisposable
     }
 
     /// <summary>
+    /// Sends a batched message to the Telegram group. A batched message is a message that is not sent immediately, but rather it is batched with other messages within certain time
+    /// period. If there are currently no batched messages, the first batch messages starts a new batch and creates a timer. When the timer expires, all the batched messages
+    /// are merged and sent at once.
+    /// </summary>
+    /// <param name="message">Message to send. Note that the message is expected to be an HTML-encoded message.</param>
+    /// <param name="batchTimeSpan">Time period of the batch. This is only relevant for the first batched message.</param>
+    /// <param name="resultAction">Action to execute when the batch is sent. This is only relevant for the first batched message.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    public void SendBatchedMessage(string message, TimeSpan batchTimeSpan, Action<string?> resultAction, CancellationToken cancellationToken)
+    {
+        lock (this.batchLock)
+        {
+            this.currentBatch.Add(message);
+
+            if (this.currentBatch.Count == 1)
+            {
+                if (this.batchTimer is not null)
+                {
+                    this.batchTimer.Stop();
+                    this.batchTimer.Dispose();
+                }
+
+                this.batchTimer = new()
+                {
+                    AutoReset = false,
+                    Interval = batchTimeSpan.TotalMilliseconds,
+                    Enabled = false,
+                };
+
+                this.batchTimer.Elapsed += async (object? sender, ElapsedEventArgs e) =>
+                {
+                    string batchedMessage;
+                    lock (this.batchLock)
+                    {
+                        if (this.batchTimer is not null)
+                        {
+                            this.batchTimer.Dispose();
+                            this.batchTimer = null;
+                        }
+
+                        batchedMessage = string.Join("<br>", this.currentBatch);
+                        this.currentBatch.Clear();
+                    }
+
+                    string? result = await this.SendMessageAsync(batchedMessage, cancellationToken).ConfigureAwait(false);
+                    resultAction(result);
+                };
+
+                this.batchTimer.Start();
+            }
+        }
+    }
+
+    /// <summary>
     /// Split string into chunks of a maximum length.
     /// </summary>
     /// <param name="input">Input string to split.</param>
@@ -133,6 +202,16 @@ public class Telegram : IAsyncDisposable
                 return default;
 
             this.disposedValue = true;
+        }
+
+        lock (this.batchLock)
+        {
+            if (this.batchTimer is not null)
+            {
+                this.batchTimer.Stop();
+                this.batchTimer.Dispose();
+                this.batchTimer = null;
+            }
         }
 
         if (this.disposeHttpClient)
