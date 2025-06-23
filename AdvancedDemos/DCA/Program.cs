@@ -75,7 +75,7 @@ internal class Program
     ///   },
     ///   "ExchangeMarket": "BinanceSpot",
     ///   "SymbolPair": "BTC/EUR",
-    ///   "Period": "00:00:10",
+    ///   "Period": "01:00:00",
     ///   "QuoteSize": 10.0,
     ///   "OrderSide": "Buy",
     ///   "BudgetRequest": {
@@ -86,7 +86,7 @@ internal class Program
     ///       "BTC": 0.001
     ///     }
     ///   },
-    ///   "ReportPeriod": "00:00:30"
+    ///   "ReportPeriod": "1.00:00:00"
     /// }
     /// </code>
     /// </para>
