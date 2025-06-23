@@ -90,7 +90,7 @@ public class BinanceApiKeyConfig
         else if ((this.RsaKey is not null) && (this.RsaSecret is not null))
         {
             byte[] secretBytes = Convert.FromBase64String(this.RsaSecret);
-            apiIdentity = BinanceApiIdentity.CreateHmac(name: "BinanceRsaCredentials", key: this.RsaKey, secretBytes);
+            apiIdentity = BinanceApiIdentity.CreateRsa(name: "BinanceRsaCredentials", key: this.RsaKey, secretBytes);
         }
         else throw new SanityCheckException("Neither HMAC nor RSA credentials are available.");
 
