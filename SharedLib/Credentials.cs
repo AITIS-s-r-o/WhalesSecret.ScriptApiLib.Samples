@@ -5,7 +5,7 @@ using WhalesSecret.TradeScriptLib.Entities;
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
 /// <summary>
-/// Container of exchange API and other credentials for samples that need to establish a private exchange connection or send authenticated messages.
+/// Container of exchange API and other credentials for basic samples that need to establish a private exchange connection or send authenticated messages.
 /// </summary>
 /// <remarks>In order for those samples to work, you have to set valid credentials below. You only need to change credentials that you are going to use.</remarks>
 public static class Credentials

@@ -41,6 +41,9 @@ internal class Program
     /// <summary>Class logger.</summary>
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
 
+    /// <summary>Telegram API instance, or <c>null</c> if not initialized yet.</summary>
+    private static Telegram? telegram;
+
     /// <summary>
     /// Application that trades a Direct Cost Averaging (DCA) strategy.
     /// </summary>
@@ -49,7 +52,24 @@ internal class Program
     /// <para>Example input file:
     /// <code>
     /// {
-    ///   "AppDataPath": "Data",
+    ///   "System": {
+    ///     "License": "INSERT YOUR WHALES SECRET LICENSE HERE OR USE null TO USE FREE MODE",
+    ///     "AppDataPath": "Data",
+    ///     "TelegramGroupId": "INSERT YOUR TELEGRAM GROUP ID OR USE null TO DISABLE TELEGRAM MESSAGES",
+    ///     "ApiKeys: {
+    ///       "Binance": {
+    ///         "HmacKey": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+    ///         "HmacSecret": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+    ///         "RsaKey": "INSERT YOUR Binance RSA API key HERE OR USE null TO USE HMAC key",
+    ///         "RsaSecret": "INSERT YOUR Binance RSA API secret OR USE null TO USE HMAC key"
+    ///       },
+    ///       "Kucoin": {
+    ///         "Key": "INSERT YOUR Kucoin API key HERE",
+    ///         "Secret": "INSERT YOUR Kucoin API secret HERE",
+    ///         "Passphrase": "INSERT YOUR Kucoin API passphrase HERE"
+    ///       }
+    ///     }"
+    ///   },
     ///   "ExchangeMarket": "BinanceSpot",
     ///   "SymbolPair": "BTC/EUR",
     ///   "Period": "00:00:10",
@@ -99,12 +119,13 @@ internal class Program
         PrintInfo("Press Ctrl+C to terminate the program.");
         PrintInfo();
 
-        PrintInfo($"Starting DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {parameters.SymbolPair.BaseSymbol} every {parameters.Period}. Reports will be generated every {parameters.ReportPeriod}.");
-        PrintInfo($"Budget request: {parameters.BudgetRequest}");
-        PrintInfo();
-
         using CancellationTokenSource shutdownCancellationTokenSource = new();
         CancellationToken shutdownToken = shutdownCancellationTokenSource.Token;
+
+        await PrintInfoTelegramAsync($"Starting DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {
+            parameters.SymbolPair.BaseSymbol} every {parameters.Period}. Reports will be generated every {parameters.ReportPeriod}.", shutdownToken).ConfigureAwait(false);
+        await PrintInfoTelegramAsync($"Budget request: {parameters.BudgetRequest}", shutdownToken).ConfigureAwait(false);
+        PrintInfo();
 
         // Install Ctrl+C / SIGINT handler.
         ConsoleCancelEventHandler controlCancelHandler = (object? sender, ConsoleCancelEventArgs e) =>
@@ -133,7 +154,7 @@ internal class Program
                 if (shutdownToken.IsCancellationRequested)
                 {
                     PrintInfo();
-                    PrintInfo("Shutdown detected.");
+                    await PrintInfoTelegramAsync("Shutdown detected.", shutdownToken).ConfigureAwait(false);
                     handled = true;
                 }
             }
@@ -172,6 +193,24 @@ internal class Program
     }
 
     /// <summary>
+    /// Prints information message to the console and to the log and sends the message to Telegram. Message timestamp is added when printing to the console.
+    /// </summary>
+    /// <param name="message">Message to print.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PrintInfoTelegramAsync(string message, CancellationToken cancellationToken)
+    {
+        PrintInfo(message);
+
+        if ((telegram is not null) && !string.IsNullOrEmpty(message))
+        {
+            string? error = await telegram.SendMessageAsync(message, cancellationToken).ConfigureAwait(false);
+            if (error is not null)
+                clog.Error($"Sending message to Telegram failed. {error}");
+        }
+    }
+
+    /// <summary>
     /// Starts the DCA trading bot.
     /// </summary>
     /// <param name="parameters">Program parameters.</param>
@@ -194,91 +233,102 @@ internal class Program
         clog.Debug($"* {nameof(parameters)}='{parameters}'");
 
         // In order to unlock large orders, a valid license has to be used.
-        CreateOptions createOptions = new(appDataFolder: parameters.AppDataPath, license: License.WsLicense);
+        CreateOptions createOptions = new(appDataFolder: parameters.System.AppDataPath, license: License.WsLicense);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
         IApiIdentity apiIdentity = parameters.ExchangeMarket switch
         {
-            ExchangeMarket.BinanceSpot => Credentials.GetBinanceHmacApiIdentity(),
-            ExchangeMarket.KucoinSpot => Credentials.GetKucoinApiIdentity(),
+            ExchangeMarket.BinanceSpot => parameters.System.ApiKeys.GetBinanceApiIdentity(),
+            ExchangeMarket.KucoinSpot => parameters.System.ApiKeys.GetKucoinApiIdentity(),
             _ => throw new SanityCheckException($"Unsupported exchange market {parameters.ExchangeMarket} provided."),
         };
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
         scriptApi.SetCredentials(apiIdentity);
 
-        PrintInfo($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.");
+        if (parameters.System.TelegramGroupId is not null)
+            telegram = new(groupId: parameters.System.TelegramGroupId, apiToken: Credentials.TelegramApiToken);
 
-        ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
-            budgetRequest: parameters.BudgetRequest);
-        ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
-
-        PrintInfo($"Connection to {parameters.ExchangeMarket} has been established successfully.");
-
-        OrderRequestBuilder<MarketOrderRequest> builder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
-        _ = builder
-            .SetSymbolPair(parameters.SymbolPair)
-            .SetSide(OrderSide.Buy)
-            .SetSizeInBaseSymbol(sizeInBaseSymbol: false)
-            .SetSize(parameters.QuoteSize);
-
-        int orderCounter = 0;
-
-        DateTime nextOrder = DateTime.MinValue;
-        DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
-
-        string reportFilePath = Path.Combine(parameters.AppDataPath, ReportFileName);
-
-        while (true)
+        try
         {
-            DateTime time = DateTime.UtcNow;
-            if (time >= nextOrder)
+            await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.", cancellationToken).ConfigureAwait(false);
+
+            ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
+                budgetRequest: parameters.BudgetRequest);
+            ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
+
+            await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.", cancellationToken).ConfigureAwait(false);
+
+            OrderRequestBuilder<MarketOrderRequest> builder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
+            _ = builder
+                .SetSymbolPair(parameters.SymbolPair)
+                .SetSide(OrderSide.Buy)
+                .SetSizeInBaseSymbol(sizeInBaseSymbol: false)
+                .SetSize(parameters.QuoteSize);
+
+            int orderCounter = 0;
+
+            DateTime nextOrder = DateTime.MinValue;
+            DateTime nextReport = DateTime.UtcNow.Add(parameters.ReportPeriod);
+
+            string reportFilePath = Path.Combine(parameters.System.AppDataPath, ReportFileName);
+
+            while (true)
             {
-                orderCounter++;
-
-                MarketOrderRequest orderRequest = builder
-                    .SetClientOrderId($"dca_{orderCounter:00000000}{ITradingStrategyBudget.ClientOrderIdSuffix}")
-                    .Build();
-
-                await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
-
-                nextOrder = time.Add(parameters.Period);
-                PrintInfo($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.");
-            }
-
-            time = DateTime.UtcNow;
-            if (time >= nextReport)
-            {
-                PrintInfo($"Generating budget report ...");
-                await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
-
-                nextReport = time.Add(parameters.ReportPeriod);
-                PrintInfo($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.");
-            }
-
-            time = DateTime.UtcNow;
-            TimeSpan delayTillOrder = nextOrder - time;
-            TimeSpan delayTillReport = nextReport - time;
-            TimeSpan delay = delayTillOrder < delayTillReport ? delayTillOrder : delayTillReport;
-
-            if (delay > TimeSpan.Zero)
-            {
-                if (delay == delayTillOrder) PrintInfo($"Waiting {delay} before placing the next order.");
-                else PrintInfo($"Waiting {delay} before generating the next budget report.");
-
-                try
+                DateTime time = DateTime.UtcNow;
+                if (time >= nextOrder)
                 {
-                    await Task.Delay(parameters.Period, cancellationToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    clog.Debug("Cancelation detected.");
+                    orderCounter++;
 
-                    clog.Debug("$");
-                    throw;
+                    MarketOrderRequest orderRequest = builder
+                        .SetClientOrderId($"dca_{orderCounter:00000000}{ITradingStrategyBudget.ClientOrderIdSuffix}")
+                        .Build();
+
+                    await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
+
+                    nextOrder = time.Add(parameters.Period);
+                    await PrintInfoTelegramAsync($"Next order should be placed at {nextOrder:yyyy-MM-dd HH:mm:ss} UTC.", cancellationToken).ConfigureAwait(false);
+                }
+
+                time = DateTime.UtcNow;
+                if (time >= nextReport)
+                {
+                    await PrintInfoTelegramAsync($"Generating budget report ...", cancellationToken).ConfigureAwait(false);
+                    await GenerateReportAsync(reportFilePath, tradeClient, cancellationToken).ConfigureAwait(false);
+
+                    nextReport = time.Add(parameters.ReportPeriod);
+                    await PrintInfoTelegramAsync($"Next budget report should be generated at {nextReport:yyyy-MM-dd HH:mm:ss} UTC.", cancellationToken).ConfigureAwait(false);
+                }
+
+                time = DateTime.UtcNow;
+                TimeSpan delayTillOrder = nextOrder - time;
+                TimeSpan delayTillReport = nextReport - time;
+                TimeSpan delay = delayTillOrder < delayTillReport ? delayTillOrder : delayTillReport;
+
+                if (delay > TimeSpan.Zero)
+                {
+                    if (delay == delayTillOrder) await PrintInfoTelegramAsync($"Waiting {delay} before placing the next order.", cancellationToken).ConfigureAwait(false);
+                    else await PrintInfoTelegramAsync($"Waiting {delay} before generating the next budget report.", cancellationToken).ConfigureAwait(false);
+
+                    try
+                    {
+                        await Task.Delay(parameters.Period, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        clog.Debug("Cancelation detected.");
+
+                        clog.Debug("$");
+                        throw;
+                    }
                 }
             }
+        }
+        finally
+        {
+            if (telegram is not null)
+                await telegram.DisposeAsync().ConfigureAwait(false);
         }
     }
 
@@ -304,7 +354,7 @@ internal class Program
             ILiveMarketOrder order = await tradeClient.CreateOrderAsync(orderRequest, cancellationToken).ConfigureAwait(false);
             IReadOnlyList<FillData> fillData = await order.WaitForFillAsync(cancellationToken).ConfigureAwait(false);
 
-            PrintInfo($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).");
+            await PrintInfoTelegramAsync($"Order client ID '{order.ClientOrderId}' has been filled with {fillData.Count} trade(s).", cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -332,7 +382,7 @@ internal class Program
 
         BudgetReport budgetReport = await tradeClient.GenerateBudgetReportAsync(cancellationToken).ConfigureAwait(false);
         string reportLog = Reports.BudgetReportToString(budgetReport);
-        PrintInfo(reportLog);
+        await PrintInfoTelegramAsync(reportLog, cancellationToken).ConfigureAwait(false);
 
         await ReportToFileAsync(reportFilePath, budgetReport).ConfigureAwait(false);
 
@@ -374,24 +424,20 @@ internal class Program
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnConnectedDelegateAsync"/>
-    private static Task OnConnectedAsync(ITradeApiClient tradeApiClient)
+    private static async Task OnConnectedAsync(ITradeApiClient tradeApiClient)
     {
         // Just log the event.
         PrintInfo();
-        PrintInfo("Connection to the exchange has been re-established successfully.");
+        await PrintInfoTelegramAsync("Connection to the exchange has been re-established successfully.", CancellationToken.None).ConfigureAwait(false);
         PrintInfo();
-
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc cref="ConnectionOptions.OnDisconnectedDelegateAsync"/>
-    private static Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
+    private static async Task OnDisconnectedAsync(ITradeApiClient tradeApiClient)
     {
         // Just log the event.
         PrintInfo();
-        PrintInfo("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!");
+        await PrintInfoTelegramAsync("CONNETION TO THE EXCHANGE HAS BEEN INTERRUPTED!!", CancellationToken.None).ConfigureAwait(false);
         PrintInfo();
-
-        return Task.CompletedTask;
     }
 }
