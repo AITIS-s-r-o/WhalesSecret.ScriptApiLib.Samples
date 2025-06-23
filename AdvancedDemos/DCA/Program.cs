@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Exchanges;
@@ -255,6 +256,7 @@ internal class Program
 
         try
         {
+            await PrintIntroAsync(parameters, cancellationToken).ConfigureAwait(false);
             await PrintInfoTelegramAsync($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.", cancellationToken).ConfigureAwait(false);
 
             ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
@@ -366,6 +368,37 @@ internal class Program
 
             throw new OperationFailedException($"Placing order request '{orderRequest}' on the exchange failed.", e);
         }
+
+        clog.Debug("$");
+    }
+
+    /// <summary>
+    /// Prints bot's settings to the log, console, and to the Telegram.
+    /// </summary>
+    /// <param name="parameters">Bot's parameters.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    private static async Task PrintIntroAsync(Parameters parameters, CancellationToken cancellationToken)
+    {
+        clog.Debug($"* {nameof(parameters)}='{parameters}'");
+
+        await PrintInfoTelegramAsync($$"""
+            Bot started with parameters:
+            <pre>
+            {{parameters}}
+            </pre>
+            """, cancellationToken).ConfigureAwait(false);
+
+        StringBuilder stringBuilder = new();
+        _ = stringBuilder
+            .AppendLine("Current budget:")
+            .AppendLine();
+
+        foreach ((string assetName, decimal amount) in parameters.BudgetRequest.InitialBudget)
+            _ = stringBuilder.AppendLine(CultureInfo.InvariantCulture, $" {assetName}: {amount}");
+
+        string initialBudget = stringBuilder.ToString();
+        await PrintInfoTelegramAsync($"Initial budget: {initialBudget}", cancellationToken).ConfigureAwait(false);
 
         clog.Debug("$");
     }
