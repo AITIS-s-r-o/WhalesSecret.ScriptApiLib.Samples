@@ -203,7 +203,7 @@ internal class Program
     ///   "VolatilityAvgSize": 0.5,
     ///   "MaxTradesPerDay": 10,
     ///   "MaxOpenPositions": 1,
-    ///   "CandleWidth": "Minutes5",
+    ///   "CandleWidth": "Minutes30",
     ///   "StopLossCount": 2,
     ///   "TakeProfitCount": 2,
     ///   "FirstStopLossAtr": 1.5,
@@ -212,7 +212,7 @@ internal class Program
     ///   "NextTakeProfitAtrIncrement": 1.0,
     ///   "PositionSize": 0.02,
     ///   "TradeCooldownPeriod": 3,
-    ///   "OrderIdPrefix": "MB5m",
+    ///   "OrderIdPrefix": "MB30m",
     ///   "BudgetRequest": {
     ///     "StrategyName": "MomentumBreakout",
     ///     "PrimaryAsset": "EUR",
