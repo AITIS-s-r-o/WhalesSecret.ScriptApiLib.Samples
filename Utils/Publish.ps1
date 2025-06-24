@@ -134,6 +134,29 @@ foreach ($project in $projectMap.GetEnumerator()) {
                     Write-Host "  Failed to copy input.json to ${destinationJsonPath}: $_" -ForegroundColor Red
                 }
             }
+
+            # Create a zip file named <customExeName>.<runtime>.zip in the Distribution folder.
+            $zipFileName = "${customExeName}.${runtime}.zip"
+            $zipFilePath = Join-Path -Path $distributionFolder -ChildPath $zipFileName
+            try {
+                Compress-Archive -Path "$outputFolder\*" -DestinationPath $zipFilePath -Force
+                Write-Host "  Created zip file: $zipFilePath" -ForegroundColor Green
+
+                # Calculate SHA256 hash of the zip file.
+                try {
+                    $hash = Get-FileHash -Path $zipFilePath -Algorithm SHA256
+                    $hashLine = "$($hash.Hash)  $zipFileName"
+                    $hashFilePath = Join-Path -Path $distributionFolder -ChildPath "hashes.txt"
+                    Add-Content -Path $hashFilePath -Value $hashLine
+                    Write-Host "  Recorded SHA256 hash for $zipFileName in $hashFilePath" -ForegroundColor Green
+                }
+                catch {
+                    Write-Host "  Failed to calculate or record SHA256 hash for ${zipFilePath}: $_" -ForegroundColor Red
+                }
+            }
+            catch {
+                Write-Host "  Failed to create zip file ${zipFilePath}: $_" -ForegroundColor Red
+            }
         }
         else {
             Write-Host "  Failed to publish $projectName for $runtime" -ForegroundColor Red
