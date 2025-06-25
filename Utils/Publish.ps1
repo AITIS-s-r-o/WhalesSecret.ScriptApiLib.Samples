@@ -13,7 +13,7 @@ $projectMap = @{
 }
 
 # Runtimes to target.
-$runtimes = @("win-x86", "win-x64", "linux-x64", "osx-x64")
+$runtimes = @("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")
 
 # Create Distribution folder if it doesn't exist.
 if (-not (Test-Path -Path $distributionFolder)) {
