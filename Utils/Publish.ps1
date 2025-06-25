@@ -39,6 +39,18 @@ function Get-DefaultExecutableName {
     }
 }
 
+# Delete all contents of the Distribution folder if it exists.
+if (Test-Path -Path $distributionFolder) {
+    try {
+        Remove-Item -Path "$distributionFolder\*" -Recurse -Force
+        Write-Host "Cleared contents of Distribution folder at: $distributionFolder" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "Failed to clear contents of Distribution folder: $_" -ForegroundColor Red
+        exit 1
+    }
+}
+
 # Publish each project for each runtime.
 foreach ($project in $projectMap.GetEnumerator()) {
     $projectPath = Join-Path -Path $advancedDemosFolder -ChildPath $project.Key
