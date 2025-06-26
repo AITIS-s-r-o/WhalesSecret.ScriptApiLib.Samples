@@ -1,0 +1,57 @@
+{
+  "System": {
+    "License": "INSERT YOUR WHALES SECRET LICENSE HERE OR USE null TO USE FREE MODE",
+    "AppDataPath": "Data",
+    "Telegram": {
+      "GroupId": "INSERT YOUR TELEGRAM GROUP ID HERE",
+      "ApiToken": "INSERT YOUR BOT'S Telegram API token"
+    },
+    "ApiKeys": {
+      "Binance": {
+        "HmacKey": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+        "HmacSecret": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+        "RsaKey": "INSERT YOUR Binance RSA API key HERE OR USE null TO USE HMAC key",
+        "RsaSecret": "INSERT YOUR Binance RSA API secret OR USE null TO USE HMAC key"
+      },
+      "Kucoin": {
+        "Key": "INSERT YOUR Kucoin API key HERE",
+        "Secret": "INSERT YOUR Kucoin API secret HERE",
+        "Passphrase": "INSERT YOUR Kucoin API passphrase HERE"
+      }
+    }
+  },
+  "ExchangeMarket": "BinanceSpot",
+  "SymbolPair": "BTC/EUR",
+  "ShortEmaLookback": 20,
+  "LongEmaLookback": 50,
+  "RsiLookback": 14,
+  "AtrLookback": 14,
+  "BreakoutLookback": 3,
+  "BreakoutAtrSize": 0.5,
+  "VolumeLookback": 10,
+  "VolumeAvgSize": 1.5,
+  "VolatilityLookback": 20,
+  "VolatilityAvgSize": 0.5,
+  "MaxTradesPerDay": 10,
+  "MaxOpenPositions": 1,
+  "CandleWidth": "Minutes30",
+  "StopLossCount": 2,
+  "TakeProfitCount": 2,
+  "FirstStopLossAtr": 1.5,
+  "NextStopLossAtrIncrement": 0.5,
+  "FirstTakeProfitAtr": 2.0,
+  "NextTakeProfitAtrIncrement": 1.0,
+  "PositionSize": 0.02,
+  "TradeCooldownPeriod": 3,
+  "OrderIdPrefix": "MB30m",
+  "BudgetRequest": {
+    "StrategyName": "MomentumBreakout",
+    "PrimaryAsset": "EUR",
+    "InitialBudget": {
+      "EUR": 1000,
+      "BTC": 0.01
+    }
+  },
+  "ReportPeriod": "12:00:00",
+  "UseTakeProfitUsingLimitOrders": true
+}
