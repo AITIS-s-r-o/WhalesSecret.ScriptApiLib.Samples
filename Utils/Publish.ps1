@@ -12,7 +12,8 @@
 param
 (
     # Parameter to select runtimes for which to publish the bots.
-    [ValidateSet("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")][string]$runtime = $null
+    [ValidateSet("all", "win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")]
+    [string]$runtime = "all"
 )
 
 Set-StrictMode -Version 3
@@ -34,7 +35,7 @@ $projectMap = @{
 }
 
 # Runtimes to target.
-if ($runtime -eq $null) {
+if ($runtime -eq "all") {
     $runtimes = @("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")
 } else {
     $runtimes = @($runtime)
