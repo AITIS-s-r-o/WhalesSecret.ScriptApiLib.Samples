@@ -93,7 +93,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
 
     # Get the default executable name from the .csproj file.
     $defaultExeName = Get-DefaultExecutableName -csprojPath $projectPath
-    Write-Host "# Publishing project '$projectKey' (Default: '$defaultExeName', Custom: '$customExeName')" -ForegroundColor Green
+    Write-Host "# Publishing project '$projectKey' (Default: '$defaultExeName', Custom: '$customExeName')" -ForegroundColor Cyan
 
     # Check if input.json exists for the project.
     if (-not (Test-Path -Path $inputJsonPath)) {
