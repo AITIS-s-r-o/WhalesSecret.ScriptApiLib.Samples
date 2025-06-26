@@ -120,11 +120,11 @@ foreach ($project in $projectMap.GetEnumerator()) {
         # Run dotnet publish.
         $publishCommand = "dotnet publish `"$projectPath`" -c Release -r $runtime --self-contained true /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true -o `"$outputFolder`""
         
-        Write-Host "## [$customExeName][$runtime] Executing command '$publishCommand'."
+        Write-Host "# [$customExeName][$runtime] Executing command '$publishCommand'."
         Invoke-Expression $publishCommand
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "## [$customExeName][$runtime] Successfully published '$projectName' to '$outputFolder'."
+            Write-Host "# [$customExeName][$runtime] Successfully published '$projectName' to '$outputFolder'."
             
             # Determine the extension based on the runtime.
             $exeExtension = if ($runtime -like "win*") { ".exe" } else { "" }
@@ -137,7 +137,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
             if (Test-Path -Path $defaultExePath) {
                 try {
                     Rename-Item -Path $defaultExePath -NewName "$customExeName$exeExtension" -Force
-                    Write-Host "## [$customExeName][$runtime] Renamed executable to '$customExePath'."
+                    Write-Host "# [$customExeName][$runtime] Renamed executable to '$customExePath'."
                 }
                 catch {
                     Write-Error "[$customExeName][$runtime] Failed to rename '$defaultExePath' to '$customExePath' : $_"
@@ -154,7 +154,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
             foreach ($file in $filesToDelete) {
                 try {
                     Remove-Item -Path $file.FullName -Force
-                    Write-Host "## [$customExeName][$runtime] Deleted file '$($file.FullName)'."
+                    Write-Host "# [$customExeName][$runtime] Deleted file '$($file.FullName)'."
                 }
                 catch {
                     Write-Error "[$customExeName][$runtime] Failed to delete '$($file.FullName)': $_"
@@ -166,7 +166,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
                 $destinationJsonPath = Join-Path -Path $outputFolder -ChildPath "input.json"
                 try {
                     Copy-Item -Path $inputJsonPath -Destination $destinationJsonPath -Force
-                    Write-Host "## [$customExeName][$runtime] Copied input.json to '$destinationJsonPath'."
+                    Write-Host "# [$customExeName][$runtime] Copied input.json to '$destinationJsonPath'."
                 }
                 catch {
                     Write-Error "[$customExeName][$runtime] Failed to copy input.json to '${destinationJsonPath}': $_"
@@ -178,7 +178,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
             $zipFilePath = Join-Path -Path $distributionFolder -ChildPath $zipFileName
             try {
                 Compress-Archive -Path "$outputFolder\*" -DestinationPath $zipFilePath -Force
-                Write-Host "## [$customExeName][$runtime] Created zip file '$zipFilePath'."
+                Write-Host "# [$customExeName][$runtime] Created zip file '$zipFilePath'."
 
                 # Calculate SHA256 hash of the zip file.
                 try {
@@ -186,7 +186,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
                     $hashLine = "$($hash.Hash)  $zipFileName"
                     $hashFilePath = Join-Path -Path $distributionFolder -ChildPath "hashes.txt"
                     Add-Content -Path $hashFilePath -Value $hashLine
-                    Write-Host "## [$customExeName][$runtime] Recorded SHA256 hash for '$zipFileName' in '$hashFilePath'."
+                    Write-Host "# [$customExeName][$runtime] Recorded SHA256 hash for '$zipFileName' in '$hashFilePath'."
                 }
                 catch {
                     Write-Error "[$customExeName][$runtime] Failed to calculate or record SHA256 hash for '${zipFilePath}': $_"
