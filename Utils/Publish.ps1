@@ -68,17 +68,18 @@ function Get-DefaultExecutableName {
 if (Test-Path -Path $distributionFolder) {
     try {
         Remove-Item -Path "$distributionFolder\*" -Recurse -Force
-        Write-Host "Cleared contents of Distribution folder at '$distributionFolder'." -ForegroundColor Green
+        Write-Host "# Cleared contents of Distribution folder at '$distributionFolder'."
     }
     catch {
-        Write-Host "Failed to clear contents of Distribution folder '$_'." -ForegroundColor Red
+        Write-Error "Failed to clear contents of Distribution folder '$_'."
         exit 1
     }
 }
 
 # Publish each project for each runtime.
 foreach ($project in $projectMap.GetEnumerator()) {
-    $projectPath = Join-Path -Path $advancedDemosFolder -ChildPath $project.Key
+    $projectKey = $project.Key
+    $projectPath = Join-Path -Path $advancedDemosFolder -ChildPath $projectKey
     $customExeName = $project.Value
 
     if (-not (Test-Path -Path $projectPath)) {
@@ -102,15 +103,15 @@ foreach ($project in $projectMap.GetEnumerator()) {
 
     # Get the default executable name from the .csproj file.
     $defaultExeName = Get-DefaultExecutableName -csprojPath $projectPath
-    Write-Host "# Publishing project: $project.Key (Default: '$defaultExeName', Custom: '$customExeName')"
+    Write-Host "# Publishing project '$projectKey' (Default: '$defaultExeName', Custom: '$customExeName')"
 
     foreach ($runtime in $runtimes) {
         Write-Host ""
-        Write-Host "# Publishing for runtime '$runtime'."
+        Write-Host "# Publishing '$projectKey' for runtime '$runtime'."
         Write-Host ""
 
         # Define output folder for this project and runtime.
-        $projectName = [System.IO.Path]::GetFileNameWithoutExtension($project.Key)
+        $projectName = [System.IO.Path]::GetFileNameWithoutExtension($projectKey)
         $outputFolder = Join-Path -Path $distributionFolder -ChildPath "$customExeName/$runtime"
         
         # Create output folder if it doesn't exist.
