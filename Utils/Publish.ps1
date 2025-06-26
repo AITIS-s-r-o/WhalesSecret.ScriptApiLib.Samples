@@ -1,3 +1,20 @@
+##
+# Publish.ps1
+#
+# The script publishes all bots in the AdvancedDemos folder to the 'Distribution' folder for supported runtimes.
+#
+# Examples:
+#   .\Publish.ps1                        # to publish all bots in the AdvancedDemos folder.
+#   .\Publish.ps1 -runtime linux-x64     # to publish all bots in the AdvancedDemos folder for only the linux-x64 runtime.
+##
+
+[CmdletBinding()]
+param
+(
+    # Parameter to select runtimes for which to publish the bots.
+    [ValidateSet("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")][string]$runtime = $null
+)
+
 Set-StrictMode -Version 3
 # Stop the script when a first error is encountered.
 $ErrorActionPreference = "Stop"
@@ -17,7 +34,11 @@ $projectMap = @{
 }
 
 # Runtimes to target.
-$runtimes = @("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")
+if ($runtime -eq $null) {
+    $runtimes = @("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")
+} else {
+    $runtimes = @($runtime)
+}
 
 # Create Distribution folder if it doesn't exist.
 if (-not (Test-Path -Path $distributionFolder)) {
