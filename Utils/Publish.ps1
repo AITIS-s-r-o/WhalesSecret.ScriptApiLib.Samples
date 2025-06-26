@@ -18,7 +18,7 @@ $runtimes = @("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")
 # Create Distribution folder if it doesn't exist.
 if (-not (Test-Path -Path $distributionFolder)) {
     New-Item -ItemType Directory -Path $distributionFolder | Out-Null
-    Write-Host "Created Distribution folder at: $distributionFolder"
+    Write-Host "# Created Distribution folder at: $distributionFolder"
 }
 
 # Function to get the default executable name from the .csproj file.
@@ -57,7 +57,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
     $customExeName = $project.Value
 
     if (-not (Test-Path -Path $projectPath)) {
-        Write-Host "Project not found: $projectPath" -ForegroundColor Red
+        Write-Error " Project not found: $projectPath"
         continue
     }
 
@@ -67,20 +67,20 @@ foreach ($project in $projectMap.GetEnumerator()) {
 
     # Check if input.json exists for the project.
     if (-not (Test-Path -Path $inputJsonPath)) {
-        Write-Host "Warning: input.json not found for project at $inputJsonPath. Skipping copy for this project." -ForegroundColor Yellow
+        Write-Warning "input.json not found for project at $inputJsonPath. Skipping copy for this project."
         $skipJsonCopy = $true
     }
     else {
         $skipJsonCopy = $false
-        Write-Host "Found input.json for project at: $inputJsonPath"
+        Write-Host "# Found input.json for project at: $inputJsonPath"
     }
 
     # Get the default executable name from the .csproj file.
     $defaultExeName = Get-DefaultExecutableName -csprojPath $projectPath
-    Write-Host "Publishing project: $project.Key (Default: $defaultExeName, Custom: $customExeName)"
+    Write-Host "# Publishing project: $project.Key (Default: $defaultExeName, Custom: $customExeName)"
 
     foreach ($runtime in $runtimes) {
-        Write-Host "  Publishing for runtime: $runtime"
+        Write-Host "# Publishing for runtime: $runtime"
 
         # Define output folder for this project and runtime.
         $projectName = [System.IO.Path]::GetFileNameWithoutExtension($project.Key)
@@ -94,11 +94,11 @@ foreach ($project in $projectMap.GetEnumerator()) {
         # Run dotnet publish.
         $publishCommand = "dotnet publish `"$projectPath`" -c Release -r $runtime --self-contained true /p:PublishSingleFile=true /p:EnableCompressionInSingleFile=true -o `"$outputFolder`""
         
-        Write-Host "  Executing: $publishCommand"
+        Write-Host "# Executing: $publishCommand"
         Invoke-Expression $publishCommand
 
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "  Successfully published $projectName for $runtime to $outputFolder" -ForegroundColor Green
+            Write-Host "# Successfully published $projectName for $runtime to $outputFolder" -ForegroundColor Green
             
             # Determine the extension based on the runtime.
             $exeExtension = if ($runtime -like "win*") { ".exe" } else { "" }
@@ -111,15 +111,15 @@ foreach ($project in $projectMap.GetEnumerator()) {
             if (Test-Path -Path $defaultExePath) {
                 try {
                     Rename-Item -Path $defaultExePath -NewName "$customExeName$exeExtension" -Force
-                    Write-Host "  Renamed executable to: $customExePath" -ForegroundColor Green
+                    Write-Host "# Renamed executable to: $customExePath" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "  Failed to rename $defaultExePath to $customExePath : $_" -ForegroundColor Red
+                    Write-Error " Failed to rename $defaultExePath to $customExePath : $_"
                     continue
                 }
             }
             else {
-                Write-Host "  Warning: Default executable $defaultExePath not found!" -ForegroundColor Yellow
+                Write-Warning "Default executable $defaultExePath not found!"
                 continue
             }
 
@@ -128,10 +128,10 @@ foreach ($project in $projectMap.GetEnumerator()) {
             foreach ($file in $filesToDelete) {
                 try {
                     Remove-Item -Path $file.FullName -Force
-                    Write-Host "  Deleted: $($file.FullName)" -ForegroundColor Green
+                    Write-Host "# Deleted: $($file.FullName)" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "  Failed to delete $($file.FullName): $_" -ForegroundColor Red
+                    Write-Error "Failed to delete $($file.FullName): $_"
                 }
             }
 
@@ -140,10 +140,10 @@ foreach ($project in $projectMap.GetEnumerator()) {
                 $destinationJsonPath = Join-Path -Path $outputFolder -ChildPath "input.json"
                 try {
                     Copy-Item -Path $inputJsonPath -Destination $destinationJsonPath -Force
-                    Write-Host "  Copied input.json to: $destinationJsonPath" -ForegroundColor Green
+                    Write-Host "# Copied input.json to: $destinationJsonPath" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "  Failed to copy input.json to ${destinationJsonPath}: $_" -ForegroundColor Red
+                    Write-Error "Failed to copy input.json to ${destinationJsonPath}: $_"
                 }
             }
 
@@ -152,7 +152,7 @@ foreach ($project in $projectMap.GetEnumerator()) {
             $zipFilePath = Join-Path -Path $distributionFolder -ChildPath $zipFileName
             try {
                 Compress-Archive -Path "$outputFolder\*" -DestinationPath $zipFilePath -Force
-                Write-Host "  Created zip file: $zipFilePath" -ForegroundColor Green
+                Write-Host "# Created zip file: $zipFilePath" -ForegroundColor Green
 
                 # Calculate SHA256 hash of the zip file.
                 try {
@@ -160,20 +160,20 @@ foreach ($project in $projectMap.GetEnumerator()) {
                     $hashLine = "$($hash.Hash)  $zipFileName"
                     $hashFilePath = Join-Path -Path $distributionFolder -ChildPath "hashes.txt"
                     Add-Content -Path $hashFilePath -Value $hashLine
-                    Write-Host "  Recorded SHA256 hash for $zipFileName in $hashFilePath" -ForegroundColor Green
+                    Write-Host "# Recorded SHA256 hash for $zipFileName in $hashFilePath" -ForegroundColor Green
                 }
                 catch {
-                    Write-Host "  Failed to calculate or record SHA256 hash for ${zipFilePath}: $_" -ForegroundColor Red
+                    Write-Error "Failed to calculate or record SHA256 hash for ${zipFilePath}: $_"
                 }
             }
             catch {
-                Write-Host "  Failed to create zip file ${zipFilePath}: $_" -ForegroundColor Red
+                Write-Error "Failed to create zip file ${zipFilePath}: $_"
             }
         }
         else {
-            Write-Host "  Failed to publish $projectName for $runtime" -ForegroundColor Red
+            Write-Error "Failed to publish $projectName for $runtime"
         }
     }
 }
 
-Write-Host "Publishing, renaming, cleanup, and file copying completed!" -ForegroundColor Cyan
+Write-Host "# Publishing, renaming, cleanup, and file copying completed!" -ForegroundColor Cyan
