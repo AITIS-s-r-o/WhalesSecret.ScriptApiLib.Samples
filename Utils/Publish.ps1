@@ -19,6 +19,11 @@ Set-StrictMode -Version 3
 # Stop the script when a first error is encountered.
 $ErrorActionPreference = "Stop"
 
+Set-StrictMode -Version 3
+
+# Stop the script when a first error is encountered.
+$ErrorActionPreference = "Stop"
+
 # Define the root folder (parent of Utils folder).
 $rootFolder = Split-Path -Path $PSScriptRoot -Parent
 
