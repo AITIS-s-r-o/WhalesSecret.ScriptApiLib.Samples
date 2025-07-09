@@ -64,7 +64,7 @@ WhalesSecret.ScriptApiLib.Samples Subscriptions/Ticker.Basic BinanceSpot
 ## Advanced Demos
 
 In the `AdvancedDemos` folder you can find more complex samples, eaching having its own project:
-- **DCA** - Direct Cost Averaging trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected quote asset. The bot also create reports about its performance and writes the report history it into a CSV file.
+- **DCA** - Dollar Cost Averaging trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected quote asset. The bot also create reports about its performance and writes the report history it into a CSV file.
 - **MomentumBreakout** - More complex trading bot that implements Momentum Breakout trading strategy. This bot monitors short-period and long-period Exponential Moving Averages (EMAs) and looks for momentum breakouts. Each trade must be confirmed by Relative Strength Index (RSI) indicator to avoid buying in overbought conditions and selling in oversold conditions. Further, we require certain minimal volume to confirm strength of the breakout. The bot also uses Average True Range (ATR) to measure volatility and set dynamic stop-loss and take-profit levels. For full description of the algorithm please see description of [its Program class](AdvancedDemos/MomentumBreakout/Program.cs).
 
 ## Credentials

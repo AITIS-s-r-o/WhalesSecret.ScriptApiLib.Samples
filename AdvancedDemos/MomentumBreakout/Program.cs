@@ -161,7 +161,7 @@ internal class Program
     private static Parameters? parameters;
 
     /// <summary>
-    /// Application that trades a Direct Cost Averaging (DCA) strategy.
+    /// Application that trades a Momentum Breakout strategy.
     /// </summary>
     /// <param name="args">Command-line arguments.
     /// <para>The program must be started with 1 argument - the input parameters JSON file path.</para>

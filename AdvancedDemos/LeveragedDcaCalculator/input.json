@@ -1,0 +1,12 @@
+{
+  "AppDataPath": "Data",
+  "ExchangeMarket": "BinanceSpot",
+  "SymbolPair": "BTC/EUR",
+  "StartTimeUtc": "2024-01-01 00:00:00",
+  "EndTimeUtc": "2025-01-01 00:00:00",
+  "Period": "1.00:00:00",
+  "QuoteSize": 10.0,
+  "OrderSide": "Buy",
+  "TradeFeePercent": 0.1,
+  "Leverage": 2.0
+}

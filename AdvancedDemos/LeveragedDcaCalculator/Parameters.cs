@@ -62,6 +62,8 @@ public class Parameters
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">
     /// <item><paramref name="appDataPath"/> is <c>null</c> or empty, or</item>
+    /// <item><paramref name="startTimeUtc"/> is in the future, or</item>
+    /// <item><paramref name="endTimeUtc"/> is in the future or it is not greater than <paramref name="startTimeUtc"/>, or</item>
     /// <item><paramref name="period"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
     /// <item><paramref name="quoteSize"/> is not a positive number, or</item>
     /// <item><paramref name="leverage"/> is smaller than <c>1.0</c>.</item>
@@ -73,6 +75,15 @@ public class Parameters
     {
         if (string.IsNullOrEmpty(appDataPath))
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null or empty.", parameterName: nameof(appDataPath));
+
+        if (startTimeUtc > DateTime.UtcNow)
+            throw new InvalidArgumentException($"'{nameof(startTimeUtc)}' must not be in the future.", parameterName: nameof(startTimeUtc));
+
+        if (endTimeUtc > DateTime.UtcNow)
+            throw new InvalidArgumentException($"'{nameof(endTimeUtc)}' must not be in the future.", parameterName: nameof(endTimeUtc));
+
+        if (startTimeUtc >= endTimeUtc)
+            throw new InvalidArgumentException($"'{nameof(endTimeUtc)}' must be greater than {nameof(startTimeUtc)}.", parameterName: nameof(endTimeUtc));
 
         if (period <= TimeSpan.Zero)
             throw new InvalidArgumentException($"'{nameof(period)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(period));

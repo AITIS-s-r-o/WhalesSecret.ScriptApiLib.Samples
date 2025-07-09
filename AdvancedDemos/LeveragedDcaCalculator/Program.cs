@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.Entities;
+using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
 
 namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.LeveragedDcaCalculator;
 
 /// <summary>
-/// Leveraged DCA (Direct Cost Averaging) Calculator is an application to calculate profits of Leveraged DCA (L-DCA) strategy.
+/// Leveraged DCA (Dollar Cost Averaging) Calculator is an application to calculate profits of Leveraged DCA (L-DCA) strategy.
 /// <para>
 /// On the input, you provide the exchange market, symbol pair, time-frame, period, order size, order side, trading fee, and leverage, and the application calculates the profit of
 /// the L-DCA strategy using the historical data from the exchange.
@@ -23,7 +24,7 @@ internal class Program
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
 
     /// <summary>
-    /// Application that calculates a Leveraged Direct Cost Averaging (L-DCA) strategy.
+    /// Application that calculates a Leveraged Dollar Cost Averaging (L-DCA) strategy.
     /// </summary>
     /// <param name="args">Command-line arguments.
     /// <para>The program must be started with 1 argument - the input parameters JSON file path.</para>
@@ -168,11 +169,17 @@ internal class Program
         CreateOptions createOptions = new(appDataFolder: parameters.AppDataPath);
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
-        PrintInfo($"Connect to {parameters.ExchangeMarket} exchange with full-trading access.");
+        PrintInfo($"Connect to {parameters.ExchangeMarket} exchange with market-data access.");
 
         ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.MarketData);
-        ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
+        await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
 
         PrintInfo($"Connection to {parameters.ExchangeMarket} has been established successfully.");
+
+        PrintInfo($"Downloading historical data for '{parameters.SymbolPair}' between {parameters.StartTimeUtc:yyyy-MM-dd HH:mm:ss} and {
+            parameters.EndTimeUtc:yyyy-MM-dd HH:mm:ss}...");
+
+        CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(parameters.SymbolPair, CandleWidth.Minute1, startTime: parameters.StartTimeUtc,
+            endTime: parameters.EndTimeUtc, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }
