@@ -304,8 +304,8 @@ internal class Program
                         symbolPair.QuoteSymbol}. Current balance is {quoteSymbolBalance} {symbolPair.QuoteSymbol} and total initial margin is {totalInitialMargin}.",
                         addTimestamp: false);
 
-                    LeveragedOrder leveragedOrder = new(entryPrice: price, initialMargin: initialMargin, positionBaseValue: actualOrderBaseSize,
-                        positionQuoteValue: actualOrderQuoteSize, liquidationPrice: liquidationPrice, openTimeUtc: candle.Timestamp);
+                    LeveragedOrder leveragedOrder = new(entryPrice: price, initialMargin: initialMargin, positionBaseAmount: actualOrderBaseSize,
+                        positionQuoteAmount: actualOrderQuoteSize, liquidationPrice: liquidationPrice, openTimeUtc: candle.Timestamp);
 
                     leveragedOrders.Add(leveragedOrder);
 
@@ -351,8 +351,9 @@ internal class Program
             // To calculate the profit of leveraged orders, we simulate closing the orders.
             foreach (LeveragedOrder leveragedOrder in leveragedOrders)
             {
-                decimal sellQuoteAmount = finalPrice * leveragedOrder.PositionBaseAmount / parameters.Leverage;
-                quoteSymbolBalance += sellQuoteAmount;
+                decimal positionValue = leveragedOrder.PositionBaseAmount * finalPrice;
+                decimal positionProfit = positionValue - leveragedOrder.PositionQuoteAmount;
+                quoteSymbolBalance += leveragedOrder.InitialMargin + positionProfit;
             }
 
             PrintInfo();

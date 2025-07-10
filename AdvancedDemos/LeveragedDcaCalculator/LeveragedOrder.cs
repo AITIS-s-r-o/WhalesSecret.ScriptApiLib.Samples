@@ -31,16 +31,16 @@ public class LeveragedOrder
     /// </summary>
     /// <param name="entryPrice">Price when the order was opened.</param>
     /// <param name="initialMargin">Initial margin of the order in the quote symbol.</param>
-    /// <param name="positionBaseValue">Size of the order in base symbol after applying the leverage.</param>
-    /// <param name="positionQuoteValue">Size of the order in quote symbol after applying the leverage.</param>
+    /// <param name="positionBaseAmount">Size of the order in base symbol after applying the leverage.</param>
+    /// <param name="positionQuoteAmount">Size of the order in quote symbol after applying the leverage.</param>
     /// <param name="liquidationPrice">Price at which the order is liquidated.</param>
     /// <param name="openTimeUtc">UTC time when the position was opened.</param>
-    public LeveragedOrder(decimal entryPrice, decimal initialMargin, decimal positionBaseValue, decimal positionQuoteValue, decimal liquidationPrice, DateTime openTimeUtc)
+    public LeveragedOrder(decimal entryPrice, decimal initialMargin, decimal positionBaseAmount, decimal positionQuoteAmount, decimal liquidationPrice, DateTime openTimeUtc)
     {
         this.EntryPrice = entryPrice;
         this.InitialMargin = initialMargin;
-        this.PositionBaseAmount = positionBaseValue;
-        this.PositionQuoteAmount = positionQuoteValue;
+        this.PositionBaseAmount = positionBaseAmount;
+        this.PositionQuoteAmount = positionQuoteAmount;
         this.LiquidationPrice = liquidationPrice;
         this.OpenTimeUtc = openTimeUtc;
     }
