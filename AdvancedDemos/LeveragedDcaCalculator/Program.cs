@@ -222,6 +222,27 @@ internal class Program
         foreach (Candle candle in candles)
         {
             DateTime time = candle.Timestamp;
+
+            if (useLeverage)
+            {
+                decimal lowPrice = candle.LowPrice;
+
+                List<LeveragedOrder> ordersToRemove = new();
+                foreach (LeveragedOrder existingLeveragedOrder in leveragedOrders)
+                {
+                    if (existingLeveragedOrder.LiquidationPrice >= lowPrice)
+                    {
+                        PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. Low price reached {lowPrice} {
+                            symbolPair.BaseSymbol}/{symbolPair.QuoteSymbol}.", addTimestamp: false);
+
+                        ordersToRemove.Add(existingLeveragedOrder);
+                    }
+                }
+
+                foreach (LeveragedOrder orderToRemove in ordersToRemove)
+                    _ = leveragedOrders.Remove(orderToRemove);
+            }
+
             if (nextOrderTime <= time)
             {
                 // Simulate an order with the price in the middle of the candle.
@@ -258,21 +279,6 @@ internal class Program
                 }
                 else
                 {
-                    List<LeveragedOrder> ordersToRemove = new();
-                    foreach (LeveragedOrder existingLeveragedOrder in leveragedOrders)
-                    {
-                        if (existingLeveragedOrder.LiquidationPrice >= price)
-                        {
-                            PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. Current price is {price} {
-                                symbolPair.BaseSymbol}/{symbolPair.QuoteSymbol}.", addTimestamp: false);
-
-                            ordersToRemove.Add(existingLeveragedOrder);
-                        }
-                    }
-
-                    foreach (LeveragedOrder orderToRemove in ordersToRemove)
-                        _ = leveragedOrders.Remove(orderToRemove);
-
                     // Leveraged order.
                     decimal intendedOrderQuoteSize = parameters.QuoteSize * parameters.Leverage;
                     decimal intendedOrderBaseSize = intendedOrderQuoteSize / price;
