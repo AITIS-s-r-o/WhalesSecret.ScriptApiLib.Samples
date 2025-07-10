@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,8 +7,10 @@ using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
+using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 using WhalesSecret.TradeScriptLib.Logging;
+using WhalesSecret.TradeScriptLib.Utils.Orders;
 
 namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.LeveragedDcaCalculator;
 
@@ -132,18 +135,24 @@ internal class Program
     }
 
     /// <summary>
-    /// Prints information level message to the console and to the log. Message timestamp is added when printing to the console.
+    /// Prints information level message to the console and to the log. Message timestamp is added when printing to the console unless <paramref name="addTimestamp"/> is set to
+    /// <c>false</c>.
     /// </summary>
     /// <param name="msg">Message to print.</param>
-    private static void PrintInfo(string msg = "")
+    /// <param name="addTimestamp"><c>true</c> to add message timestamp when printing to the console, <c>false</c> otherwise.</param>
+    private static void PrintInfo(string msg = "", bool addTimestamp = true)
     {
         clog.Info(msg);
 
         if (msg.Length > 0)
         {
-            DateTime dateTime = DateTime.UtcNow;
-            string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-            Console.WriteLine($"{dateTimeStr}: {msg}");
+            if (addTimestamp)
+            {
+                DateTime dateTime = DateTime.UtcNow;
+                string dateTimeStr = dateTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                Console.WriteLine($"{dateTimeStr}: {msg}");
+            }
+            else Console.WriteLine(msg);
         }
         else Console.WriteLine();
     }
@@ -176,10 +185,131 @@ internal class Program
 
         PrintInfo($"Connection to {parameters.ExchangeMarket} has been established successfully.");
 
-        PrintInfo($"Downloading historical data for '{parameters.SymbolPair}' between {parameters.StartTimeUtc:yyyy-MM-dd HH:mm:ss} and {
-            parameters.EndTimeUtc:yyyy-MM-dd HH:mm:ss}...");
+        DateTime startTime = parameters.StartTimeUtc;
+        DateTime endTime = parameters.EndTimeUtc;
+        SymbolPair symbolPair = parameters.SymbolPair;
+        List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
-        CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(parameters.SymbolPair, CandleWidth.Minute1, startTime: parameters.StartTimeUtc,
-            endTime: parameters.EndTimeUtc, cancellationToken: cancellationToken).ConfigureAwait(false);
+        decimal feesPaid = 0m;
+        string feeSymbol = parameters.OrderSide == OrderSide.Buy ? symbolPair.BaseSymbol : symbolPair.QuoteSymbol;
+
+        decimal baseSymbolBalance = 0m;
+        decimal quoteSymbolBalance = 0m;
+
+        decimal tradeFee = parameters.TradeFeePercent / 100m;
+
+        // Use the request builder for rounding calculations.
+        OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
+
+        _ = orderRequestBuilder
+            .SetSymbolPair(parameters.SymbolPair)
+            .SetSide(parameters.OrderSide);
+
+        DateTime nextOrderTime = DateTime.MinValue;
+        foreach (Candle candle in candles)
+        {
+            DateTime time = candle.Timestamp;
+            if (nextOrderTime <= time)
+            {
+                // Simulate an order with the price in the middle of the candle.
+                decimal price = (candle.OpenPrice + candle.ClosePrice) / 2;
+
+                decimal intendedOrderQuoteSize = parameters.QuoteSize;
+                decimal intendedOrderBaseSize = intendedOrderQuoteSize / price;
+
+                MarketOrderRequest marketOrderRequest = orderRequestBuilder
+                    .SetSizeInBaseSymbol(sizeInBaseSymbol: true)
+                    .SetSize(intendedOrderBaseSize)
+                    .Build();
+
+                decimal actualOrderBaseSize = marketOrderRequest.Size;
+                decimal actualOrderQuoteSize = actualOrderBaseSize * price;
+
+                decimal feeAmount = parameters.OrderSide == OrderSide.Buy ? tradeFee * actualOrderBaseSize : tradeFee * actualOrderQuoteSize;
+                feesPaid += feeAmount;
+
+                baseSymbolBalance += parameters.OrderSide == OrderSide.Buy ? actualOrderBaseSize - feeAmount : -actualOrderBaseSize;
+                quoteSymbolBalance += parameters.OrderSide == OrderSide.Buy ? -actualOrderQuoteSize : actualOrderQuoteSize - feeAmount;
+
+                PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(parameters.OrderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {
+                    symbolPair.BaseSymbol} @ {price} {symbolPair.BaseSymbol}/{symbolPair.QuoteSymbol} for total of {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, fee was {
+                    feeAmount} {feeSymbol}. Current balance is {baseSymbolBalance} {symbolPair.BaseSymbol} and {quoteSymbolBalance} {symbolPair.QuoteSymbol}.",
+                    addTimestamp: false);
+
+                nextOrderTime = time.Add(parameters.Period);
+            }
+        }
+
+        decimal finalPrice = candles[^1].ClosePrice;
+
+        PrintInfo();
+        PrintInfo($"Final balance is {baseSymbolBalance} {symbolPair.BaseSymbol} and {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
+        PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
+
+        if (parameters.OrderSide == OrderSide.Buy)
+        {
+            decimal baseSymbolValue = baseSymbolBalance * finalPrice;
+            decimal totalValue = baseSymbolValue + quoteSymbolBalance;
+            PrintInfo($"Total value: {baseSymbolValue} {symbolPair.QuoteSymbol} + {quoteSymbolBalance} {symbolPair.QuoteSymbol} = {totalValue} {symbolPair.QuoteSymbol}");
+
+            decimal profitPercent = 100m * totalValue / -quoteSymbolBalance;
+            PrintInfo($"Profit: {profitPercent:0.000}%");
+        }
+        else
+        {
+            decimal quoteSymbolValue = quoteSymbolBalance / finalPrice;
+            decimal totalValue = baseSymbolBalance + quoteSymbolValue;
+            PrintInfo($"Total value: {quoteSymbolValue} {symbolPair.BaseSymbol} + {baseSymbolBalance} {symbolPair.BaseSymbol} = {totalValue} {symbolPair.BaseSymbol}");
+
+            decimal profitPercent = 100m * totalValue / -baseSymbolBalance;
+            PrintInfo($"Profit: {profitPercent:0.000}%");
+        }
+
+        clog.Debug("$");
+    }
+
+    /// <summary>
+    /// Downloads 1-minute candles for the given symbol pair from the exchange between the specified start and end times.
+    /// </summary>
+    /// <param name="tradeClient">Connected trade API client.</param>
+    /// <param name="symbolPair">Symbol pair to download.</param>
+    /// <param name="startTime">UTC timestamp (inclusive) of the start of the interval for which to download candles.</param>
+    /// <param name="endTime">UTC timestamp (exclusive) of the end of the interval for which to download candles.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>List of 1-minute candles that cover the requested period.</returns>
+    /// <remarks>The method downloads the candles in chunks of 14 days to be able to report progress regularly.</remarks>
+    private static async Task<List<Candle>> DownloadCandlesAsync(ITradeApiClient tradeClient, SymbolPair symbolPair, DateTime startTime, DateTime endTime,
+        CancellationToken cancellationToken)
+    {
+        clog.Debug($"* {nameof(startTime)}={startTime},{nameof(endTime)}={endTime},");
+
+        TimeSpan timeSpan = endTime - startTime;
+        List<Candle> result = new(capacity: (int)timeSpan.TotalMinutes + 1);
+
+        DateTime queryStartTime = startTime;
+        DateTime queryEndTime = queryStartTime.AddDays(14);
+
+        if (queryEndTime > endTime)
+            queryEndTime = endTime;
+
+        while (queryStartTime < endTime)
+        {
+            PrintInfo($"Downloading historical data for '{symbolPair}' between {queryStartTime:yyyy-MM-dd HH:mm:ss} and {queryEndTime:yyyy-MM-dd HH:mm:ss}.");
+
+            CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(symbolPair, CandleWidth.Minute1, startTime: queryStartTime, endTime: queryEndTime,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            foreach (Candle candle in candlestickData.Candles)
+                result.Add(candle);
+
+            queryStartTime = queryEndTime;
+            queryEndTime += TimeSpan.FromDays(14);
+
+            if (queryEndTime > endTime)
+                queryEndTime = endTime;
+        }
+
+        clog.Debug($"|$|={result.Count}");
+        return result;
     }
 }
