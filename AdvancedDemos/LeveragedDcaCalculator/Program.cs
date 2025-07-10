@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.Entities;
@@ -191,7 +193,6 @@ internal class Program
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
         decimal feesPaid = 0m;
-        string feeSymbol = parameters.OrderSide == OrderSide.Buy ? symbolPair.BaseSymbol : symbolPair.QuoteSymbol;
 
         decimal baseSymbolBalance = 0m;
         decimal quoteSymbolBalance = 0m;
@@ -205,7 +206,19 @@ internal class Program
             .SetSymbolPair(parameters.SymbolPair)
             .SetSide(parameters.OrderSide);
 
+        bool useLeverage = parameters.Leverage > 1.0m;
+        string feeSymbol = useLeverage
+            ? symbolPair.QuoteSymbol
+            : parameters.OrderSide == OrderSide.Buy ? symbolPair.BaseSymbol : symbolPair.QuoteSymbol;
+
         DateTime nextOrderTime = DateTime.MinValue;
+        decimal totalInitialMargin = 0m;
+
+        decimal totalBaseAmount = 0m;
+        decimal totalQuoteAmount = 0m;
+
+        List<LeveragedOrder> leveragedOrders = new(capacity: candles.Count);
+
         foreach (Candle candle in candles)
         {
             DateTime time = candle.Timestamp;
@@ -214,54 +227,143 @@ internal class Program
                 // Simulate an order with the price in the middle of the candle.
                 decimal price = (candle.OpenPrice + candle.ClosePrice) / 2;
 
-                decimal intendedOrderQuoteSize = parameters.QuoteSize;
-                decimal intendedOrderBaseSize = intendedOrderQuoteSize / price;
+                if (!useLeverage)
+                {
+                    // Order without leverage. Standard DCA on spot market.
+                    decimal intendedOrderQuoteSize = parameters.QuoteSize;
+                    decimal intendedOrderBaseSize = intendedOrderQuoteSize / price;
 
-                MarketOrderRequest marketOrderRequest = orderRequestBuilder
-                    .SetSizeInBaseSymbol(sizeInBaseSymbol: true)
-                    .SetSize(intendedOrderBaseSize)
-                    .Build();
+                    MarketOrderRequest marketOrderRequest = orderRequestBuilder
+                        .SetSizeInBaseSymbol(sizeInBaseSymbol: true)
+                        .SetSize(intendedOrderBaseSize)
+                        .Build();
 
-                decimal actualOrderBaseSize = marketOrderRequest.Size;
-                decimal actualOrderQuoteSize = actualOrderBaseSize * price;
+                    decimal actualOrderBaseSize = marketOrderRequest.Size;
+                    decimal actualOrderQuoteSize = actualOrderBaseSize * price;
 
-                decimal feeAmount = parameters.OrderSide == OrderSide.Buy ? tradeFee * actualOrderBaseSize : tradeFee * actualOrderQuoteSize;
-                feesPaid += feeAmount;
+                    totalBaseAmount += actualOrderBaseSize;
+                    totalQuoteAmount += actualOrderQuoteSize;
 
-                baseSymbolBalance += parameters.OrderSide == OrderSide.Buy ? actualOrderBaseSize - feeAmount : -actualOrderBaseSize;
-                quoteSymbolBalance += parameters.OrderSide == OrderSide.Buy ? -actualOrderQuoteSize : actualOrderQuoteSize - feeAmount;
+                    decimal feeAmount = parameters.OrderSide == OrderSide.Buy ? tradeFee * actualOrderBaseSize : tradeFee * actualOrderQuoteSize;
+                    feesPaid += feeAmount;
 
-                PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(parameters.OrderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {
-                    symbolPair.BaseSymbol} @ {price} {symbolPair.BaseSymbol}/{symbolPair.QuoteSymbol} for total of {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, fee was {
-                    feeAmount} {feeSymbol}. Current balance is {baseSymbolBalance} {symbolPair.BaseSymbol} and {quoteSymbolBalance} {symbolPair.QuoteSymbol}.",
-                    addTimestamp: false);
+                    baseSymbolBalance += parameters.OrderSide == OrderSide.Buy ? actualOrderBaseSize - feeAmount : -actualOrderBaseSize;
+                    quoteSymbolBalance += parameters.OrderSide == OrderSide.Buy ? -actualOrderQuoteSize : actualOrderQuoteSize - feeAmount;
 
-                nextOrderTime = time.Add(parameters.Period);
+                    PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(parameters.OrderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {
+                        symbolPair.BaseSymbol} @ {price} {symbolPair.QuoteSymbol} for total of {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, fee was {feeAmount} {
+                        feeSymbol}. Current balance is {baseSymbolBalance} {symbolPair.BaseSymbol} and {quoteSymbolBalance} {symbolPair.QuoteSymbol}.", addTimestamp: false);
+
+                    nextOrderTime = time.Add(parameters.Period);
+                }
+                else
+                {
+                    List<LeveragedOrder> ordersToRemove = new();
+                    foreach (LeveragedOrder existingLeveragedOrder in leveragedOrders)
+                    {
+                        if (existingLeveragedOrder.LiquidationPrice >= price)
+                        {
+                            PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. Current price is {price} {
+                                symbolPair.BaseSymbol}/{symbolPair.QuoteSymbol}.", addTimestamp: false);
+
+                            ordersToRemove.Add(existingLeveragedOrder);
+                        }
+                    }
+
+                    foreach (LeveragedOrder orderToRemove in ordersToRemove)
+                        _ = leveragedOrders.Remove(orderToRemove);
+
+                    // Leveraged order.
+                    decimal intendedOrderQuoteSize = parameters.QuoteSize * parameters.Leverage;
+                    decimal intendedOrderBaseSize = intendedOrderQuoteSize / price;
+
+                    MarketOrderRequest marketOrderRequest = orderRequestBuilder
+                        .SetSizeInBaseSymbol(sizeInBaseSymbol: true)
+                        .SetSize(intendedOrderBaseSize)
+                        .Build();
+
+                    decimal actualOrderBaseSize = marketOrderRequest.Size;
+                    decimal actualOrderQuoteSize = actualOrderBaseSize * price;
+
+                    totalBaseAmount += actualOrderBaseSize;
+                    totalQuoteAmount += actualOrderQuoteSize;
+
+                    decimal initialMargin = actualOrderQuoteSize / parameters.Leverage;
+                    totalInitialMargin += initialMargin;
+
+                    decimal liquidationPrice = price * (1m - (1m / parameters.Leverage));
+
+                    decimal feeAmount = tradeFee * actualOrderQuoteSize;
+                    feesPaid += feeAmount;
+
+                    quoteSymbolBalance += parameters.OrderSide == OrderSide.Buy ? -initialMargin - feeAmount : initialMargin - feeAmount;
+
+                    PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(parameters.OrderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {
+                        symbolPair.BaseSymbol} @ {price} {symbolPair.QuoteSymbol}. The position size is {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, initial margin is {
+                        initialMargin} {symbolPair.QuoteSymbol}, fee was {feeAmount} {feeSymbol} and liquidation price is {liquidationPrice} {
+                        symbolPair.QuoteSymbol}. Current balance is {quoteSymbolBalance} {symbolPair.QuoteSymbol} and total initial margin is {totalInitialMargin}.",
+                        addTimestamp: false);
+
+                    LeveragedOrder leveragedOrder = new(entryPrice: price, initialMargin: initialMargin, positionBaseValue: actualOrderBaseSize,
+                        positionQuoteValue: actualOrderQuoteSize, liquidationPrice: liquidationPrice, openTimeUtc: candle.Timestamp);
+
+                    leveragedOrders.Add(leveragedOrder);
+
+                    nextOrderTime = time.Add(parameters.Period);
+                }
             }
         }
 
         decimal finalPrice = candles[^1].ClosePrice;
-
         PrintInfo();
-        PrintInfo($"Final balance is {baseSymbolBalance} {symbolPair.BaseSymbol} and {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
-        PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
+        PrintInfo($"Final price: {finalPrice} {symbolPair.QuoteSymbol}");
 
-        if (parameters.OrderSide == OrderSide.Buy)
+        if (!useLeverage)
         {
-            decimal baseSymbolValue = baseSymbolBalance * finalPrice;
-            decimal totalValue = baseSymbolValue + quoteSymbolBalance;
-            PrintInfo($"Total value: {baseSymbolValue} {symbolPair.QuoteSymbol} + {quoteSymbolBalance} {symbolPair.QuoteSymbol} = {totalValue} {symbolPair.QuoteSymbol}");
+            PrintInfo();
+            PrintInfo($"Final balance: {baseSymbolBalance} {symbolPair.BaseSymbol}, {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
+            PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
 
-            decimal profitPercent = 100m * totalValue / -quoteSymbolBalance;
-            PrintInfo($"Profit: {profitPercent:0.000}%");
+            decimal averageOrderPrice = totalQuoteAmount / totalBaseAmount;
+            PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
+
+            if (parameters.OrderSide == OrderSide.Buy)
+            {
+                decimal baseSymbolValue = baseSymbolBalance * finalPrice;
+                decimal totalValue = baseSymbolValue + quoteSymbolBalance;
+                PrintInfo($"Total value: {baseSymbolValue} {symbolPair.QuoteSymbol} + {quoteSymbolBalance} {symbolPair.QuoteSymbol} = {totalValue} {symbolPair.QuoteSymbol}");
+
+                decimal profitPercent = 100m * totalValue / -quoteSymbolBalance;
+                PrintInfo($"Profit: {profitPercent:0.000}%");
+            }
+            else
+            {
+                decimal quoteSymbolValue = quoteSymbolBalance / finalPrice;
+                decimal totalValue = baseSymbolBalance + quoteSymbolValue;
+                PrintInfo($"Total value: {quoteSymbolValue} {symbolPair.BaseSymbol} + {baseSymbolBalance} {symbolPair.BaseSymbol} = {totalValue} {symbolPair.BaseSymbol}");
+
+                decimal profitPercent = 100m * totalValue / -baseSymbolBalance;
+                PrintInfo($"Profit: {profitPercent:0.000}%");
+            }
         }
         else
         {
-            decimal quoteSymbolValue = quoteSymbolBalance / finalPrice;
-            decimal totalValue = baseSymbolBalance + quoteSymbolValue;
-            PrintInfo($"Total value: {quoteSymbolValue} {symbolPair.BaseSymbol} + {baseSymbolBalance} {symbolPair.BaseSymbol} = {totalValue} {symbolPair.BaseSymbol}");
+            // To calculate the profit of leveraged orders, we simulate closing the orders.
+            foreach (LeveragedOrder leveragedOrder in leveragedOrders)
+            {
+                decimal sellQuoteAmount = finalPrice * leveragedOrder.PositionBaseAmount / parameters.Leverage;
+                quoteSymbolBalance += sellQuoteAmount;
+            }
 
-            decimal profitPercent = 100m * totalValue / -baseSymbolBalance;
+            PrintInfo();
+            PrintInfo($"Final balance: {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
+            PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
+            PrintInfo($"Total funds needed: {totalInitialMargin} {symbolPair.QuoteSymbol}");
+
+            decimal averageOrderPrice = totalQuoteAmount / totalBaseAmount;
+            PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
+
+            decimal profitPercent = 100m * quoteSymbolBalance / totalInitialMargin;
             PrintInfo($"Profit: {profitPercent:0.000}%");
         }
 

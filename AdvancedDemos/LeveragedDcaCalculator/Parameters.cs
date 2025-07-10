@@ -91,7 +91,7 @@ public class Parameters
         if (quoteSize <= 0)
             throw new InvalidArgumentException($"'{nameof(quoteSize)}' must be a positive number.", parameterName: nameof(quoteSize));
 
-        if (leverage <= 1.0m)
+        if (leverage < 1.0m)
             throw new InvalidArgumentException($"'{nameof(leverage)}' must not be smaller than 1.0.", parameterName: nameof(leverage));
 
         this.AppDataPath = appDataPath;
