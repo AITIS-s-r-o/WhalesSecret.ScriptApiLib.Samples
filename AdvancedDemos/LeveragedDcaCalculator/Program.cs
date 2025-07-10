@@ -370,7 +370,7 @@ internal class Program
             decimal averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
 
-            decimal profitPercent = 100m * ((quoteSymbolBalance + totalInitialMargin) / totalInitialMargin);
+            decimal profitPercent = 100m * (quoteSymbolBalance / (quoteSymbolBalance + totalInitialMargin));
             PrintInfo($"Profit: {profitPercent:0.000}%");
         }
 
