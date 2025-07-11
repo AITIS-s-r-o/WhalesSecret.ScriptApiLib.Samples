@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib.Converters;
+using WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
@@ -16,8 +17,8 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA;
 /// </summary>
 public class Parameters
 {
-    /// <summary>Path to the application data folder.</summary>
-    public string AppDataPath { get; }
+    /// <summary>Configuration of trading bots unrelated to the bot strategy.</summary>
+    public SystemConfig System { get; }
 
     /// <summary>Exchange market to DCA at.</summary>
     public ExchangeMarket ExchangeMarket { get; }
@@ -43,7 +44,7 @@ public class Parameters
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="appDataPath">Path to the application data folder.</param>
+    /// <param name="system">Configuration of trading bots unrelated to the bot strategy.</param>
     /// <param name="exchangeMarket">Exchange market to DCA at.</param>
     /// <param name="symbolPair">Symbol pair to DCA.</param>
     /// <param name="period">Time period in between the orders.</param>
@@ -51,14 +52,48 @@ public class Parameters
     /// <param name="orderSide">Order side.</param>
     /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
     /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
+    /// <exception cref="InvalidArgumentException">Thrown if:
+    /// <list type="bullet">
+    /// <item><paramref name="period"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
+    /// <item><paramref name="quoteSize"/> is not a positive number, or</item>
+    /// <item><paramref name="budgetRequest"/> has zero initial budget the base symbol of <paramref name="symbolPair"/> and <paramref name="orderSide"/> is
+    /// <see cref="OrderSide.Sell"/>; or it has zero initial budget for the quote symbol of <paramref name="symbolPair"/> and <paramref name="orderSide"/> is
+    /// <see cref="OrderSide.Buy"/>.</item>
+    /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
+    /// </list>
+    /// </exception>
     [JsonConstructor]
-    public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize, OrderSide orderSide,
+    public Parameters(SystemConfig system, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize, OrderSide orderSide,
         BudgetRequest budgetRequest, TimeSpan reportPeriod)
     {
-        if (appDataPath is null)
-            throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null.", parameterName: nameof(appDataPath));
+        if (period <= TimeSpan.Zero)
+            throw new InvalidArgumentException($"'{nameof(period)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(period));
 
-        this.AppDataPath = appDataPath;
+        if (quoteSize <= 0)
+            throw new InvalidArgumentException($"'{nameof(quoteSize)}' must be a positive number.", parameterName: nameof(quoteSize));
+
+        if (orderSide == OrderSide.Sell)
+        {
+            if (!budgetRequest.InitialBudget.TryGetValue(symbolPair.BaseSymbol, out decimal baseAllocation) || (baseAllocation <= 0))
+            {
+                throw new InvalidArgumentException($"Initial budget for '{symbolPair.BaseSymbol}' in '{nameof(budgetRequest)}' be a positive number.",
+                    parameterName: nameof(budgetRequest));
+            }
+        }
+
+        if (orderSide == OrderSide.Buy)
+        {
+            if (!budgetRequest.InitialBudget.TryGetValue(symbolPair.QuoteSymbol, out decimal quoteAllocation) || (quoteAllocation <= 0))
+            {
+                throw new InvalidArgumentException($"Initial budget for '{symbolPair.QuoteSymbol}' in '{nameof(budgetRequest)}' be a positive number.",
+                    parameterName: nameof(budgetRequest));
+            }
+        }
+
+        if (reportPeriod <= TimeSpan.Zero)
+            throw new InvalidArgumentException($"'{nameof(reportPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(reportPeriod));
+
+        this.System = system;
         this.ExchangeMarket = exchangeMarket;
         this.SymbolPair = symbolPair;
         this.Period = period;
@@ -129,7 +164,7 @@ public class Parameters
         (
             CultureInfo.InvariantCulture,
             "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}=`{13}`,{14}={15}]",
-            nameof(this.AppDataPath), this.AppDataPath,
+            nameof(this.System), this.System,
             nameof(this.ExchangeMarket), this.ExchangeMarket,
             nameof(this.SymbolPair), this.SymbolPair,
             nameof(this.Period), this.Period,
