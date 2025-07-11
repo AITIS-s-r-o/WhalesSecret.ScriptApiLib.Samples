@@ -217,7 +217,7 @@ internal class Program
         decimal totalBaseAmount = 0m;
         decimal totalQuoteAmount = 0m;
 
-        List<LeveragedOrder> leveragedOrders = new(capacity: candles.Count);
+        List<LeveragedOrderInfo> leveragedOrders = new(capacity: candles.Count);
 
         foreach (Candle candle in candles)
         {
@@ -227,8 +227,8 @@ internal class Program
             {
                 decimal lowPrice = candle.LowPrice;
 
-                List<LeveragedOrder> ordersToRemove = new();
-                foreach (LeveragedOrder existingLeveragedOrder in leveragedOrders)
+                List<LeveragedOrderInfo> ordersToRemove = new();
+                foreach (LeveragedOrderInfo existingLeveragedOrder in leveragedOrders)
                 {
                     if (existingLeveragedOrder.LiquidationPrice >= lowPrice)
                     {
@@ -239,7 +239,7 @@ internal class Program
                     }
                 }
 
-                foreach (LeveragedOrder orderToRemove in ordersToRemove)
+                foreach (LeveragedOrderInfo orderToRemove in ordersToRemove)
                     _ = leveragedOrders.Remove(orderToRemove);
             }
 
@@ -310,7 +310,7 @@ internal class Program
                         symbolPair.QuoteSymbol}. Current balance is {quoteSymbolBalance} {symbolPair.QuoteSymbol} and total initial margin is {totalInitialMargin}.",
                         addTimestamp: false);
 
-                    LeveragedOrder leveragedOrder = new(entryPrice: price, initialMargin: initialMargin, positionBaseAmount: actualOrderBaseSize,
+                    LeveragedOrderInfo leveragedOrder = new(entryPrice: price, initialMargin: initialMargin, positionBaseAmount: actualOrderBaseSize,
                         positionQuoteAmount: actualOrderQuoteSize, liquidationPrice: liquidationPrice, openTimeUtc: candle.Timestamp);
 
                     leveragedOrders.Add(leveragedOrder);
@@ -355,7 +355,7 @@ internal class Program
         else
         {
             // To calculate the profit of leveraged orders, we simulate closing the orders.
-            foreach (LeveragedOrder leveragedOrder in leveragedOrders)
+            foreach (LeveragedOrderInfo leveragedOrder in leveragedOrders)
             {
                 decimal positionValue = leveragedOrder.PositionBaseAmount * finalPrice;
                 decimal positionProfit = positionValue - leveragedOrder.PositionQuoteAmount;

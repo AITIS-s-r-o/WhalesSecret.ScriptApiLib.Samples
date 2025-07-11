@@ -6,7 +6,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.LeveragedDcaCalculator
 /// <summary>
 /// Details of an order that was placed with leverage.
 /// </summary>
-public class LeveragedOrder
+public class LeveragedOrderInfo
 {
     /// <summary>Price when the order was opened.</summary>
     public decimal EntryPrice { get; }
@@ -35,7 +35,7 @@ public class LeveragedOrder
     /// <param name="positionQuoteAmount">Size of the order in quote symbol after applying the leverage.</param>
     /// <param name="liquidationPrice">Price at which the order is liquidated.</param>
     /// <param name="openTimeUtc">UTC time when the position was opened.</param>
-    public LeveragedOrder(decimal entryPrice, decimal initialMargin, decimal positionBaseAmount, decimal positionQuoteAmount, decimal liquidationPrice, DateTime openTimeUtc)
+    public LeveragedOrderInfo(decimal entryPrice, decimal initialMargin, decimal positionBaseAmount, decimal positionQuoteAmount, decimal liquidationPrice, DateTime openTimeUtc)
     {
         this.EntryPrice = entryPrice;
         this.InitialMargin = initialMargin;
