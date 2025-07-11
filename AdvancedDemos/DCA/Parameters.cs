@@ -20,7 +20,7 @@ public class Parameters
     /// <summary>Configuration of trading bots unrelated to the bot strategy.</summary>
     public SystemConfig System { get; }
 
-    /// <summary>Exchange market to DCA at.</summary>
+    /// <summary>Exchange market to execute dollar-cost average (DCA) strategy at.</summary>
     public ExchangeMarket ExchangeMarket { get; }
 
     /// <summary>Symbol pair to DCA.</summary>

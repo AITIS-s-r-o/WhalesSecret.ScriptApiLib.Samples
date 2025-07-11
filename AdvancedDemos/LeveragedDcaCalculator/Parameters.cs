@@ -18,7 +18,7 @@ public class Parameters
     /// <summary>Path to the application data folder.</summary>
     public string AppDataPath { get; }
 
-    /// <summary>Exchange market to DCA at.</summary>
+    /// <summary>Exchange market to execute dollar-cost average (DCA) strategy at.</summary>
     public ExchangeMarket ExchangeMarket { get; }
 
     /// <summary>Symbol pair to DCA.</summary>
