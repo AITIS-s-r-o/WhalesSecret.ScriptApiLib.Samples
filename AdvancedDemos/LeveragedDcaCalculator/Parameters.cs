@@ -4,27 +4,31 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using WhalesSecret.ScriptApiLib.Samples.SharedLib.Converters;
-using WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
-using WhalesSecret.TradeScriptLib.API.TradingV1.Budget;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.Orders;
 using WhalesSecret.TradeScriptLib.Exceptions;
 
-namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA;
+namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.LeveragedDcaCalculator;
 
 /// <summary>
 /// Description of program parameters.
 /// </summary>
 public class Parameters
 {
-    /// <summary>Configuration of trading bots unrelated to the bot strategy.</summary>
-    public SystemConfig System { get; }
+    /// <summary>Path to the application data folder.</summary>
+    public string AppDataPath { get; }
 
     /// <summary>Exchange market to execute dollar-cost average (DCA) strategy at.</summary>
     public ExchangeMarket ExchangeMarket { get; }
 
     /// <summary>Symbol pair to DCA.</summary>
     public SymbolPair SymbolPair { get; }
+
+    /// <summary>Inclusive UTC time of the start of the time-frame.</summary>
+    public DateTime StartTimeUtc { get; }
+
+    /// <summary>Exclusive UTC time of the end of the time-frame.</summary>
+    public DateTime EndTimeUtc { get; }
 
     /// <summary>Time period in between the orders.</summary>
     public TimeSpan Period { get; }
@@ -35,72 +39,71 @@ public class Parameters
     /// <summary>Order side.</summary>
     public OrderSide OrderSide { get; }
 
-    /// <summary>Description of budget parameters for the trading strategy.</summary>
-    public BudgetRequest BudgetRequest { get; }
+    /// <summary>Trading fee in percent.</summary>
+    public decimal TradeFeePercent { get; }
 
-    /// <summary>Time period to generate the first report and between generating reports.</summary>
-    public TimeSpan ReportPeriod { get; }
+    /// <summary>Leverage of the trades. It must be a decimal number greater than or equal to <c>1.0</c>. Set to <c>1.0</c> to calculate normal DCA without leverage.</summary>
+    public decimal Leverage { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="system">Configuration of trading bots unrelated to the bot strategy.</param>
+    /// <param name="appDataPath">Path to the application data folder.</param>
     /// <param name="exchangeMarket">Exchange market to DCA at.</param>
     /// <param name="symbolPair">Symbol pair to DCA.</param>
+    /// <param name="startTimeUtc">Inclusive UTC time of the start of the time-frame.</param>
+    /// <param name="endTimeUtc">Exclusive UTC time of the end of the time-frame.</param>
     /// <param name="period">Time period in between the orders.</param>
     /// <param name="quoteSize">Order size in quote symbol.</param>
     /// <param name="orderSide">Order side.</param>
-    /// <param name="budgetRequest">Description of budget parameters for the trading strategy.</param>
-    /// <param name="reportPeriod">Time period to generate the first report and between generating reports.</param>
+    /// <param name="tradeFeePercent">Trading fee in percent.</param>
+    /// <param name="leverage">Leverage of the trades. It must be a decimal number greater than or equal to <c>1.0</c>. Set to <c>1.0</c> to calculate normal DCA without leverage.
+    /// </param>
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">
+    /// <item><paramref name="appDataPath"/> is <c>null</c> or empty, or</item>
+    /// <item><paramref name="startTimeUtc"/> is in the future, or</item>
+    /// <item><paramref name="endTimeUtc"/> is in the future or it is not greater than <paramref name="startTimeUtc"/>, or</item>
     /// <item><paramref name="period"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
     /// <item><paramref name="quoteSize"/> is not a positive number, or</item>
-    /// <item><paramref name="budgetRequest"/> has zero initial budget the base symbol of <paramref name="symbolPair"/> and <paramref name="orderSide"/> is
-    /// <see cref="OrderSide.Sell"/>; or it has zero initial budget for the quote symbol of <paramref name="symbolPair"/> and <paramref name="orderSide"/> is
-    /// <see cref="OrderSide.Buy"/>.</item>
-    /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
+    /// <item><paramref name="leverage"/> is smaller than <c>1.0</c>.</item>
     /// </list>
     /// </exception>
     [JsonConstructor]
-    public Parameters(SystemConfig system, ExchangeMarket exchangeMarket, SymbolPair symbolPair, TimeSpan period, decimal quoteSize, OrderSide orderSide,
-        BudgetRequest budgetRequest, TimeSpan reportPeriod)
+    public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, DateTime startTimeUtc, DateTime endTimeUtc, TimeSpan period, decimal quoteSize,
+        OrderSide orderSide, decimal tradeFeePercent, decimal leverage)
     {
+        if (string.IsNullOrEmpty(appDataPath))
+            throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null or empty.", parameterName: nameof(appDataPath));
+
+        if (startTimeUtc > DateTime.UtcNow)
+            throw new InvalidArgumentException($"'{nameof(startTimeUtc)}' must not be in the future.", parameterName: nameof(startTimeUtc));
+
+        if (endTimeUtc > DateTime.UtcNow)
+            throw new InvalidArgumentException($"'{nameof(endTimeUtc)}' must not be in the future.", parameterName: nameof(endTimeUtc));
+
+        if (startTimeUtc >= endTimeUtc)
+            throw new InvalidArgumentException($"'{nameof(endTimeUtc)}' must be greater than {nameof(startTimeUtc)}.", parameterName: nameof(endTimeUtc));
+
         if (period <= TimeSpan.Zero)
             throw new InvalidArgumentException($"'{nameof(period)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(period));
 
         if (quoteSize <= 0)
             throw new InvalidArgumentException($"'{nameof(quoteSize)}' must be a positive number.", parameterName: nameof(quoteSize));
 
-        if (orderSide == OrderSide.Sell)
-        {
-            if (!budgetRequest.InitialBudget.TryGetValue(symbolPair.BaseSymbol, out decimal baseAllocation) || (baseAllocation <= 0))
-            {
-                throw new InvalidArgumentException($"Initial budget for '{symbolPair.BaseSymbol}' in '{nameof(budgetRequest)}' be a positive number.",
-                    parameterName: nameof(budgetRequest));
-            }
-        }
+        if (leverage < 1.0m)
+            throw new InvalidArgumentException($"'{nameof(leverage)}' must not be smaller than 1.0.", parameterName: nameof(leverage));
 
-        if (orderSide == OrderSide.Buy)
-        {
-            if (!budgetRequest.InitialBudget.TryGetValue(symbolPair.QuoteSymbol, out decimal quoteAllocation) || (quoteAllocation <= 0))
-            {
-                throw new InvalidArgumentException($"Initial budget for '{symbolPair.QuoteSymbol}' in '{nameof(budgetRequest)}' be a positive number.",
-                    parameterName: nameof(budgetRequest));
-            }
-        }
-
-        if (reportPeriod <= TimeSpan.Zero)
-            throw new InvalidArgumentException($"'{nameof(reportPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(reportPeriod));
-
-        this.System = system;
+        this.AppDataPath = appDataPath;
         this.ExchangeMarket = exchangeMarket;
         this.SymbolPair = symbolPair;
+        this.StartTimeUtc = startTimeUtc;
+        this.EndTimeUtc = endTimeUtc;
         this.Period = period;
         this.QuoteSize = quoteSize;
         this.OrderSide = orderSide;
-        this.BudgetRequest = budgetRequest;
-        this.ReportPeriod = reportPeriod;
+        this.TradeFeePercent = tradeFeePercent;
+        this.Leverage = leverage;
     }
 
     /// <summary>
@@ -123,9 +126,9 @@ public class Parameters
             Converters =
             {
                 new SymbolPairConverter(),
-                new BudgetRequestConverter(),
                 new ExchangeMarketConverter(),
                 new OrderSideConverter(),
+                new DateTimeConverter(),
             },
         };
 
@@ -163,15 +166,17 @@ public class Parameters
         return string.Format
         (
             CultureInfo.InvariantCulture,
-            "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}=`{13}`,{14}={15}]",
-            nameof(this.System), this.System,
+            "[{0}=`{1}`,{2}={3},{4}=`{5}`,{6}={7},{8}={9},{10}={11},{12}={13},{14}={15},{16}={17},{18}={19}]",
+            nameof(this.AppDataPath), this.AppDataPath,
             nameof(this.ExchangeMarket), this.ExchangeMarket,
             nameof(this.SymbolPair), this.SymbolPair,
+            nameof(this.StartTimeUtc), this.StartTimeUtc,
+            nameof(this.EndTimeUtc), this.EndTimeUtc,
             nameof(this.Period), this.Period,
             nameof(this.QuoteSize), this.QuoteSize,
             nameof(this.OrderSide), this.OrderSide,
-            nameof(this.BudgetRequest), this.BudgetRequest,
-            nameof(this.ReportPeriod), this.ReportPeriod
+            nameof(this.TradeFeePercent), this.TradeFeePercent,
+            nameof(this.Leverage), this.Leverage
         );
     }
 }
