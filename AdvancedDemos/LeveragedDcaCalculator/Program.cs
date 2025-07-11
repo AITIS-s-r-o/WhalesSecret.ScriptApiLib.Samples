@@ -190,23 +190,30 @@ internal class Program
         SymbolPair symbolPair = parameters.SymbolPair;
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
-        decimal feesPaid = 0m;
-
-        decimal baseSymbolBalance = 0m;
-        decimal quoteSymbolBalance = 0m;
-
         decimal tradeFee = parameters.TradeFeePercent / 100m;
 
         // Use the request builder for rounding calculations.
         OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
 
-        await LDcaInternalAsync(candles, orderRequestBuilder, tradeFee, parameters.SymbolPair, parameters.OrderSide, quoteSize: parameters.QuoteSize, parameters.Period,
-            leverage: parameters.Leverage).ConfigureAwait(false);
+        _ = LDcaInternal(candles, orderRequestBuilder, tradeFee, parameters.SymbolPair, parameters.OrderSide, quoteSize: parameters.QuoteSize, parameters.Period,
+            leverage: parameters.Leverage);
 
         clog.Debug("$");
     }
 
-    internal static async Task LDcaInternalAsync(List<Candle> candles, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, decimal tradeFee, SymbolPair symbolPair,
+    /// <summary>
+    /// Calculates the Leveraged Dollar Cost Averaging (L-DCA) strategy using the provided candles and parameters.
+    /// </summary>
+    /// <param name="candles">1-minute candles covering the requested time-frame.</param>
+    /// <param name="orderRequestBuilder">Request builder that is used for rounding of order sizes and prices.</param>
+    /// <param name="tradeFee">Trade fee.</param>
+    /// <param name="symbolPair">Symbol pair being traded.</param>
+    /// <param name="orderSide">Side of the orders.</param>
+    /// <param name="quoteSize">Size of the orders in the quote symbol.</param>
+    /// <param name="period">Time period in between the orders.</param>
+    /// <param name="leverage">Leverage of the trades.</param>
+    /// <returns>Result of the calculation.</returns>
+    internal static LdcaResult LDcaInternal(List<Candle> candles, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, decimal tradeFee, SymbolPair symbolPair,
         OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage)
     {
         decimal feesPaid = 0m;
@@ -336,32 +343,39 @@ internal class Program
         PrintInfo();
         PrintInfo($"Final price: {finalPrice} {symbolPair.QuoteSymbol}");
 
+        decimal averageOrderPrice, profitPercent, totalInvestedAmount;
+        decimal? totalValue = null;
+
         if (!useLeverage)
         {
             PrintInfo();
             PrintInfo($"Final balance: {baseSymbolBalance} {symbolPair.BaseSymbol}, {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
             PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
 
-            decimal averageOrderPrice = totalQuoteAmount / totalBaseAmount;
+            averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
 
             if (orderSide == OrderSide.Buy)
             {
                 decimal baseSymbolValue = baseSymbolBalance * finalPrice;
-                decimal totalValue = baseSymbolValue + quoteSymbolBalance;
+                totalValue = baseSymbolValue + quoteSymbolBalance;
                 PrintInfo($"Total value: {baseSymbolValue} {symbolPair.QuoteSymbol} + {quoteSymbolBalance} {symbolPair.QuoteSymbol} = {totalValue} {symbolPair.QuoteSymbol}");
 
-                decimal profitPercent = 100m * totalValue / -quoteSymbolBalance;
+                profitPercent = 100m * totalValue.Value / -quoteSymbolBalance;
                 PrintInfo($"Profit: {profitPercent:0.000}%");
+
+                totalInvestedAmount = -quoteSymbolBalance;
             }
             else
             {
                 decimal quoteSymbolValue = quoteSymbolBalance / finalPrice;
-                decimal totalValue = baseSymbolBalance + quoteSymbolValue;
+                totalValue = baseSymbolBalance + quoteSymbolValue;
                 PrintInfo($"Total value: {quoteSymbolValue} {symbolPair.BaseSymbol} + {baseSymbolBalance} {symbolPair.BaseSymbol} = {totalValue} {symbolPair.BaseSymbol}");
 
-                decimal profitPercent = 100m * totalValue / -baseSymbolBalance;
+                profitPercent = 100m * totalValue.Value / -baseSymbolBalance;
                 PrintInfo($"Profit: {profitPercent:0.000}%");
+
+                totalInvestedAmount = -baseSymbolBalance;
             }
         }
         else
@@ -379,14 +393,19 @@ internal class Program
             PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
             PrintInfo($"Total funds needed: {totalInitialMargin} {symbolPair.QuoteSymbol}");
 
-            decimal averageOrderPrice = totalQuoteAmount / totalBaseAmount;
+            averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
 
-            decimal profitPercent = 100m * (quoteSymbolBalance / (quoteSymbolBalance + totalInitialMargin));
+            profitPercent = 100m * (quoteSymbolBalance / (quoteSymbolBalance + totalInitialMargin));
             PrintInfo($"Profit: {profitPercent:0.000}%");
+
+            totalInvestedAmount = totalInitialMargin;
         }
 
-        clog.Debug("$");
+        LdcaResult result = new(finalPrice: finalPrice, finalBaseBalance: baseSymbolBalance, finalQuoteBalance: quoteSymbolBalance, feesPaid: feesPaid, feeSymbol: feeSymbol,
+            averageOrderPrice: averageOrderPrice, totalValue: totalValue, totalInvestedAmount: totalInvestedAmount, profitPercent: profitPercent);
+        clog.Debug($"$='{result}'");
+        return result;
     }
 
     /// <summary>
