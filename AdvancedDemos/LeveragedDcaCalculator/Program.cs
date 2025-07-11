@@ -190,6 +190,11 @@ internal class Program
         SymbolPair symbolPair = parameters.SymbolPair;
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
+        decimal feesPaid = 0m;
+
+        decimal baseSymbolBalance = 0m;
+        decimal quoteSymbolBalance = 0m;
+
         decimal tradeFee = parameters.TradeFeePercent / 100m;
 
         // Use the request builder for rounding calculations.
@@ -380,6 +385,8 @@ internal class Program
             decimal profitPercent = 100m * (quoteSymbolBalance / (quoteSymbolBalance + totalInitialMargin));
             PrintInfo($"Profit: {profitPercent:0.000}%");
         }
+
+        clog.Debug("$");
     }
 
     /// <summary>
