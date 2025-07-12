@@ -26,8 +26,8 @@ public class LdcaResult
     /// <summary>Average order price in the quote symbol.</summary>
     public decimal AverageOrderPrice { get; }
 
-    /// <summary>Total end balance expressed in the quote symbol if leverage was not used, or <c>null</c> if leverage was used.</summary>
-    public decimal? TotalValue { get; }
+    /// <summary>Total end balance expressed in the quote symbol. If leverage was used, this is the total value of the leveraged amount.</summary>
+    public decimal TotalValue { get; }
 
     /// <summary>Sum of all funds needed to execute the orders.</summary>
     /// <remarks>
@@ -47,10 +47,10 @@ public class LdcaResult
     /// <param name="feesPaid">Sum of the paid fees.</param>
     /// <param name="feeSymbol">Symbol of the fees.</param>
     /// <param name="averageOrderPrice">Average order price in the quote symbol.</param>
-    /// <param name="totalValue">Total end balance expressed in the quote symbol if leverage was not used, or <c>null</c> if leverage was used.</param>
+    /// <param name="totalValue">Total end balance expressed in the quote symbol. If leverage was used, this is the total value of the leveraged amount.</param>
     /// <param name="totalInvestedAmount">Sum of all funds needed to execute the orders.</param>
     /// <param name="profitPercent">Profit relative to the <see cref="TotalInvestedAmount"/>. Negative value means loss.</param>
-    public LdcaResult(decimal finalPrice, decimal finalBaseBalance, decimal finalQuoteBalance, decimal feesPaid, string feeSymbol, decimal averageOrderPrice, decimal? totalValue,
+    public LdcaResult(decimal finalPrice, decimal finalBaseBalance, decimal finalQuoteBalance, decimal feesPaid, string feeSymbol, decimal averageOrderPrice, decimal totalValue,
         decimal totalInvestedAmount, decimal profitPercent)
     {
         this.FinalPrice = finalPrice;
@@ -63,7 +63,6 @@ public class LdcaResult
         this.TotalInvestedAmount = totalInvestedAmount;
         this.ProfitPercent = profitPercent;
     }
-
 
     /// <inheritdoc/>
     public override string ToString()

@@ -245,14 +245,26 @@ internal class Program
             if (useLeverage)
             {
                 decimal lowPrice = candle.LowPrice;
+                decimal highPrice = candle.HighPrice;
 
                 List<LeveragedOrderInfo> ordersToRemove = new();
                 foreach (LeveragedOrderInfo existingLeveragedOrder in leveragedOrders)
                 {
-                    if (existingLeveragedOrder.LiquidationPrice >= lowPrice)
+                    bool isLiquidated = ((orderSide == OrderSide.Buy) && (existingLeveragedOrder.LiquidationPrice >= lowPrice))
+                        || ((orderSide == OrderSide.Sell) && (existingLeveragedOrder.LiquidationPrice <= highPrice));
+
+                    if (isLiquidated)
                     {
-                        PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. Low price reached {lowPrice} {
-                            symbolPair.BaseSymbol}/{symbolPair.QuoteSymbol}.", addTimestamp: false);
+                        if (orderSide == OrderSide.Buy)
+                        {
+                            PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. Low price reached {lowPrice} {
+                                symbolPair.QuoteSymbol}.", addTimestamp: false);
+                        }
+                        else
+                        {
+                            PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. High price reached {highPrice} {
+                                symbolPair.QuoteSymbol}.", addTimestamp: false);
+                        }
 
                         ordersToRemove.Add(existingLeveragedOrder);
                     }
@@ -316,12 +328,12 @@ internal class Program
                     decimal initialMargin = actualOrderQuoteSize / leverage;
                     totalInitialMargin += initialMargin;
 
-                    decimal liquidationPrice = price * (1m - (1m / leverage));
+                    decimal liquidationPrice = orderSide == OrderSide.Buy ? price * (1m - (1m / leverage)) : price * (1m + (1m / leverage));
 
                     decimal feeAmount = tradeFee * actualOrderQuoteSize;
                     feesPaid += feeAmount;
 
-                    quoteSymbolBalance += orderSide == OrderSide.Buy ? -initialMargin - feeAmount : initialMargin - feeAmount;
+                    quoteSymbolBalance += -initialMargin - feeAmount;
 
                     PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(orderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {symbolPair.BaseSymbol} @ {
                         price} {symbolPair.QuoteSymbol}. The position size is {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, initial margin is {initialMargin} {
@@ -343,8 +355,7 @@ internal class Program
         PrintInfo();
         PrintInfo($"Final price: {finalPrice} {symbolPair.QuoteSymbol}");
 
-        decimal averageOrderPrice, profitPercent, totalInvestedAmount;
-        decimal? totalValue = null;
+        decimal averageOrderPrice, profitPercent, totalInvestedAmount, totalValue;
 
         if (!useLeverage)
         {
@@ -361,7 +372,7 @@ internal class Program
                 totalValue = baseSymbolValue + quoteSymbolBalance;
                 PrintInfo($"Total value: {baseSymbolValue} {symbolPair.QuoteSymbol} + {quoteSymbolBalance} {symbolPair.QuoteSymbol} = {totalValue} {symbolPair.QuoteSymbol}");
 
-                profitPercent = 100m * totalValue.Value / -quoteSymbolBalance;
+                profitPercent = 100m * totalValue / -quoteSymbolBalance;
                 PrintInfo($"Profit: {profitPercent:0.000}%");
 
                 totalInvestedAmount = -quoteSymbolBalance;
@@ -372,7 +383,7 @@ internal class Program
                 totalValue = baseSymbolBalance + quoteSymbolValue;
                 PrintInfo($"Total value: {quoteSymbolValue} {symbolPair.BaseSymbol} + {baseSymbolBalance} {symbolPair.BaseSymbol} = {totalValue} {symbolPair.BaseSymbol}");
 
-                profitPercent = 100m * totalValue.Value / -baseSymbolBalance;
+                profitPercent = 100m * totalValue / -baseSymbolBalance;
                 PrintInfo($"Profit: {profitPercent:0.000}%");
 
                 totalInvestedAmount = -baseSymbolBalance;
@@ -381,10 +392,13 @@ internal class Program
         else
         {
             // To calculate the profit of leveraged orders, we simulate closing the orders.
+            totalValue = 0m;
             foreach (LeveragedOrderInfo leveragedOrder in leveragedOrders)
             {
                 decimal positionValue = leveragedOrder.PositionBaseAmount * finalPrice;
-                decimal positionProfit = positionValue - leveragedOrder.PositionQuoteAmount;
+                totalValue += positionValue;
+
+                decimal positionProfit = orderSide == OrderSide.Buy ? positionValue - leveragedOrder.PositionQuoteAmount : leveragedOrder.PositionQuoteAmount - positionValue;
                 quoteSymbolBalance += leveragedOrder.InitialMargin + positionProfit;
             }
 
@@ -396,7 +410,7 @@ internal class Program
             averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
 
-            profitPercent = 100m * (quoteSymbolBalance / (quoteSymbolBalance + totalInitialMargin));
+            profitPercent = 100m * ((quoteSymbolBalance - totalInitialMargin) / totalInitialMargin);
             PrintInfo($"Profit: {profitPercent:0.000}%");
 
             totalInvestedAmount = totalInitialMargin;
