@@ -72,7 +72,8 @@ public class Parameters
     /// <param name="tradeFeePercent">Trading fee in percent.</param>
     /// <param name="leverage">Leverage of the trades. It must be a decimal number greater than or equal to <c>1.0</c>. Set to <c>1.0</c> to calculate normal DCA without leverage.
     /// </param>
-    /// <param name="rolloverFeePercent">Rollover fee in percent, or <c>0</c> if no rollover fee should be calculated or if <see cref="Leverage"/> is equal to <c>1.0</c>.</param>
+    /// <param name="rolloverFeePercent">Rollover fee in percent, or <c>0</c> if no rollover fee should be calculated or if <paramref name="leverage"/> is equal to <c>1.0</c>.
+    /// </param>
     /// <param name="rolloverPeriod">Frequency with which the rollover fee is charged.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">

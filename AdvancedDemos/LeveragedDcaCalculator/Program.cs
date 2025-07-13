@@ -191,12 +191,13 @@ internal class Program
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
         decimal tradeFee = parameters.TradeFeePercent / 100m;
+        decimal rolloverFee = parameters.RolloverFeePercent / 100m;
 
         // Use the request builder for rounding calculations.
         OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
 
         _ = LDcaInternal(candles, orderRequestBuilder, tradeFee, parameters.SymbolPair, parameters.OrderSide, quoteSize: parameters.QuoteSize, parameters.Period,
-            leverage: parameters.Leverage);
+            leverage: parameters.Leverage, rolloverFee: rolloverFee, rolloverPeriod: parameters.RolloverPeriod);
 
         clog.Debug("$");
     }
@@ -212,11 +213,14 @@ internal class Program
     /// <param name="quoteSize">Size of the orders in the quote symbol.</param>
     /// <param name="period">Time period in between the orders.</param>
     /// <param name="leverage">Leverage of the trades.</param>
+    /// <param name="rolloverFee">Rollover fee, or <c>0</c> if no rollover fee should be calculated or if <paramref name="leverage"/> is equal to <c>1.0</c>.</param>
+    /// <param name="rolloverPeriod">Frequency with which the rollover fee is charged.</param>
     /// <returns>Result of the calculation.</returns>
     internal static LdcaResult LDcaInternal(List<Candle> candles, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, decimal tradeFee, SymbolPair symbolPair,
-        OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage)
+        OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage, decimal rolloverFee, TimeSpan rolloverPeriod)
     {
-        decimal feesPaid = 0m;
+        decimal tradeFeesPaid = 0m;
+        decimal rolloverFeesPaid = 0m;
 
         decimal baseSymbolBalance = 0m;
         decimal quoteSymbolBalance = 0m;
@@ -238,6 +242,7 @@ internal class Program
 
         List<LeveragedOrderInfo> leveragedOrders = new(capacity: candles.Count);
 
+        DateTime prevCandleTime = DateTime.MinValue;
         foreach (Candle candle in candles)
         {
             DateTime time = candle.Timestamp;
@@ -250,6 +255,25 @@ internal class Program
                 List<LeveragedOrderInfo> ordersToRemove = new();
                 foreach (LeveragedOrderInfo existingLeveragedOrder in leveragedOrders)
                 {
+                    // If there is a rollover fee.
+                    if (rolloverFee != 0)
+                    {
+                        // If the rollover fee has not been paid yet, the first payment is due one rollover period after the open time of the order. Otherwise, it is due one rollover
+                        // period after the last payment.
+                        DateTime nextRolloverPaymentTime = existingLeveragedOrder.LastRolloverFeePaidTimeUtc is null
+                            ? existingLeveragedOrder.OpenTimeUtc.Add(rolloverPeriod)
+                            : existingLeveragedOrder.LastRolloverFeePaidTimeUtc.Value.Add(rolloverPeriod);
+
+                        // If we are processing a candle that just reached the next rollover fee payment time, we pay the fee.
+                        if ((prevCandleTime < nextRolloverPaymentTime) && (nextRolloverPaymentTime <= time))
+                        {
+                            existingLeveragedOrder.LastRolloverFeePaidTimeUtc = nextRolloverPaymentTime;
+                            decimal rolloverFeeToPay = existingLeveragedOrder.PositionQuoteAmount * rolloverFee;
+                            rolloverFeesPaid += rolloverFeeToPay;
+                            quoteSymbolBalance -= rolloverFeeToPay;
+                        }
+                    }
+
                     bool isLiquidated = ((orderSide == OrderSide.Buy) && (existingLeveragedOrder.LiquidationPrice >= lowPrice))
                         || ((orderSide == OrderSide.Sell) && (existingLeveragedOrder.LiquidationPrice <= highPrice));
 
@@ -267,6 +291,7 @@ internal class Program
                         }
 
                         ordersToRemove.Add(existingLeveragedOrder);
+                        continue;
                     }
                 }
 
@@ -297,7 +322,7 @@ internal class Program
                     totalQuoteAmount += actualOrderQuoteSize;
 
                     decimal feeAmount = orderSide == OrderSide.Buy ? tradeFee * actualOrderBaseSize : tradeFee * actualOrderQuoteSize;
-                    feesPaid += feeAmount;
+                    tradeFeesPaid += feeAmount;
 
                     baseSymbolBalance += orderSide == OrderSide.Buy ? actualOrderBaseSize - feeAmount : -actualOrderBaseSize;
                     quoteSymbolBalance += orderSide == OrderSide.Buy ? -actualOrderQuoteSize : actualOrderQuoteSize - feeAmount;
@@ -331,7 +356,7 @@ internal class Program
                     decimal liquidationPrice = orderSide == OrderSide.Buy ? price * (1m - (1m / leverage)) : price * (1m + (1m / leverage));
 
                     decimal feeAmount = tradeFee * actualOrderQuoteSize;
-                    feesPaid += feeAmount;
+                    tradeFeesPaid += feeAmount;
 
                     quoteSymbolBalance += -initialMargin - feeAmount;
 
@@ -349,6 +374,8 @@ internal class Program
                     nextOrderTime = time.Add(period);
                 }
             }
+
+            prevCandleTime = time;
         }
 
         decimal finalPrice = candles[^1].ClosePrice;
@@ -361,7 +388,7 @@ internal class Program
         {
             PrintInfo();
             PrintInfo($"Final balance: {baseSymbolBalance} {symbolPair.BaseSymbol}, {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
-            PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
+            PrintInfo($"Total fees paid: {tradeFeesPaid} {feeSymbol}.");
 
             averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
@@ -404,7 +431,8 @@ internal class Program
 
             PrintInfo();
             PrintInfo($"Final balance: {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
-            PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
+            PrintInfo($"Total trading fees paid: {tradeFeesPaid} {feeSymbol}.");
+            PrintInfo($"Total rollover fees paid: {rolloverFeesPaid} {feeSymbol}.");
             PrintInfo($"Total funds needed: {totalInitialMargin} {symbolPair.QuoteSymbol}");
 
             averageOrderPrice = totalQuoteAmount / totalBaseAmount;
@@ -416,8 +444,10 @@ internal class Program
             totalInvestedAmount = totalInitialMargin;
         }
 
-        LdcaResult result = new(finalPrice: finalPrice, finalBaseBalance: baseSymbolBalance, finalQuoteBalance: quoteSymbolBalance, feesPaid: feesPaid, feeSymbol: feeSymbol,
-            averageOrderPrice: averageOrderPrice, totalValue: totalValue, totalInvestedAmount: totalInvestedAmount, profitPercent: profitPercent);
+        LdcaResult result = new(finalPrice: finalPrice, finalBaseBalance: baseSymbolBalance, finalQuoteBalance: quoteSymbolBalance, tradeFeesPaid: tradeFeesPaid,
+            feeSymbol: feeSymbol, averageOrderPrice: averageOrderPrice, totalValue: totalValue, totalInvestedAmount: totalInvestedAmount, profitPercent: profitPercent,
+            rolloverFeesPaid: rolloverFeesPaid);
+
         clog.Debug($"$='{result}'");
         return result;
     }

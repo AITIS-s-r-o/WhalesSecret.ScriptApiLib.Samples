@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.LeveragedDcaCalculator;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Entities.MarketData;
@@ -12,7 +11,8 @@ using Xunit;
 namespace WhalesSecret.ScriptApiLib.Samples.Tests.AdvancedDemos.LeveragedDcaCalculatorUnitTests;
 
 /// <summary>
-/// Tests for <see cref="Program.LDcaInternal(List{Candle}, OrderRequestBuilder{MarketOrderRequest}, decimal, SymbolPair, OrderSide, decimal, TimeSpan, decimal)"/> method.
+/// Tests for <see cref="Program.LDcaInternal(
+/// List{Candle}, OrderRequestBuilder{MarketOrderRequest}, decimal, SymbolPair, OrderSide, decimal, TimeSpan, decimal, decimal, TimeSpan)"/> method.
 /// </summary>
 public class LDcaCalculationTests
 {
@@ -82,18 +82,19 @@ public class LDcaCalculationTests
             new(startTimeUtc.AddMinutes(17), openPrice: 100.94m, highPrice: 101.60m, lowPrice: 100.00m, closePrice: 100.28m, baseVolume: 10.65m, quoteVolume: 1069.64m),
         };
 
-        LdcaResult result = Program.LDcaInternal(candles, this.orderRequestBuilder, tradeFee, symbolPair, orderSide, quoteSize, period, leverage: 1.0m);
+        LdcaResult result = Program.LDcaInternal(candles, this.orderRequestBuilder, tradeFee, symbolPair, orderSide, quoteSize, period, leverage: 1.0m, rolloverFee: 0m,
+            rolloverPeriod: TimeSpan.Zero);
 
         Assert.Equal(100.28m, result.FinalPrice);
 
         if (orderSide == OrderSide.Buy)
         {
             decimal amountBought = 0.99771m + 0.99448m + 0.999m + 0.98314m;
-            Assert.Equal(amountBought - result.FeesPaid, result.FinalBaseBalance);
+            Assert.Equal(amountBought - result.TradeFeesPaid, result.FinalBaseBalance);
 
             decimal totalPaid = 100.0004733m + 99.9999364m + 99.9999m + 100.0000851m;
             Assert.Equal(-totalPaid, result.FinalQuoteBalance);
-            Assert.Equal(amountBought * tradeFee, result.FeesPaid);
+            Assert.Equal(amountBought * tradeFee, result.TradeFeesPaid);
             Assert.Equal("BTC", result.FeeSymbol);
 
             decimal averageOrderPrice = totalPaid / amountBought;
@@ -105,8 +106,7 @@ public class LDcaCalculationTests
             Assert.Equal(totalPaid, result.TotalInvestedAmount);
 
             decimal profitPercent = totalValue / totalPaid * 100m;
-            decimal epsilon = 0.0000001m;
-            Assert.InRange(actual: result.ProfitPercent, low: profitPercent - epsilon, high: profitPercent + epsilon);
+            Assert.Equal(profitPercent, result.ProfitPercent, precision: 8);
         }
         else
         {
@@ -114,21 +114,20 @@ public class LDcaCalculationTests
             Assert.Equal(-amountSold, result.FinalBaseBalance);
 
             decimal totalEarned = 100.0004733m + 99.9999364m + 99.9999m + 100.0000851m;
-            Assert.Equal(totalEarned - result.FeesPaid, result.FinalQuoteBalance);
-            Assert.Equal(totalEarned * tradeFee, result.FeesPaid);
+            Assert.Equal(totalEarned - result.TradeFeesPaid, result.FinalQuoteBalance);
+            Assert.Equal(totalEarned * tradeFee, result.TradeFeesPaid);
             Assert.Equal("USDT", result.FeeSymbol);
 
             decimal averageOrderPrice = totalEarned / amountSold;
             Assert.Equal(averageOrderPrice, result.AverageOrderPrice);
 
-            decimal totalValue = result.FinalBaseBalance + ((totalEarned - result.FeesPaid) / result.FinalPrice);
+            decimal totalValue = result.FinalBaseBalance + ((totalEarned - result.TradeFeesPaid) / result.FinalPrice);
             Assert.Equal(totalValue, result.TotalValue);
 
             Assert.Equal(-result.FinalBaseBalance, result.TotalInvestedAmount);
 
             decimal profitPercent = totalValue / amountSold * 100m;
-            decimal epsilon = 0.0000001m;
-            Assert.InRange(actual: result.ProfitPercent, low: profitPercent - epsilon, high: profitPercent + epsilon);
+            Assert.Equal(profitPercent, result.ProfitPercent, precision: 8);
         }
     }
 
@@ -136,7 +135,10 @@ public class LDcaCalculationTests
     /// Tests the calculation of orders with leverage (i.e. leverage is greater than <c>1.0</c>).
     /// </summary>
     /// <param name="orderSide">Side of the orders.</param>
-    /// <remarks>In this test we buy/sell 100 USDT worth of BTC every 5 minutes with 0.1% trade fee.</remarks>
+    /// <remarks>
+    /// In this test we buy/sell <c>100</c> USDT worth of BTC every <c>5</c> minutes with <c>0.1</c>% trade fee. We also have a rollover fee of <c>0.2</c>% charged every <c>6</c>
+    /// minutes.
+    /// </remarks>
     [Theory]
     [InlineData(OrderSide.Buy)]
     [InlineData(OrderSide.Sell)]
@@ -145,8 +147,12 @@ public class LDcaCalculationTests
         decimal leverage = 10.0m;
         decimal tradeFee = 0.001m;
         decimal quoteSize = 100.0m;
+
         TimeSpan period = TimeSpan.FromMinutes(5);
         DateTime startTimeUtc = new(year: 2025, month: 4, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, DateTimeKind.Utc);
+
+        decimal rolloverFee = 0.002m;
+        TimeSpan rolloverPeriod = TimeSpan.FromMinutes(6);
 
         List<Candle> candles = new()
         {
@@ -185,7 +191,8 @@ public class LDcaCalculationTests
             new(startTimeUtc.AddMinutes(17), openPrice: 100.94m, highPrice: 101.60m, lowPrice: 100.00m, closePrice: 100.28m, baseVolume: 10.65m, quoteVolume: 1069.64m),
         };
 
-        LdcaResult result = Program.LDcaInternal(candles, this.orderRequestBuilder, tradeFee, symbolPair, orderSide, quoteSize, period, leverage: leverage);
+        LdcaResult result = Program.LDcaInternal(candles, this.orderRequestBuilder, tradeFee, symbolPair, orderSide, quoteSize, period, leverage: leverage,
+            rolloverFee: rolloverFee, rolloverPeriod: rolloverPeriod);
 
         Assert.Equal(100.28m, result.FinalPrice);
 
@@ -214,7 +221,7 @@ public class LDcaCalculationTests
             Assert.Equal(totalValue, result.TotalValue);
 
             decimal totalQuoteAmount = position1QuoteAmount + position2QuoteAmount + position3QuoteAmount + position4QuoteAmount;
-            decimal feesPaid = totalQuoteAmount * tradeFee;
+            decimal tradeFeesPaid = totalQuoteAmount * tradeFee;
 
             // Position 1 was liquidated, we lost the full amount we paid.
             decimal position1Profit = -position1QuoteAmount / leverage;
@@ -232,10 +239,15 @@ public class LDcaCalculationTests
             decimal position4Profit = (result.FinalPrice - position4Price) * position4BaseAmount;
             Assert.Equal(-14.10804465m, position4Profit);
 
-            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - feesPaid;
+            // Rollover fees are charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
+            // minute 6 and 12. The second order is charged at minute 11. The third order is charged at minute 16.
+            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + position2QuoteAmount + position3QuoteAmount);
+            Assert.Equal(rolloverFeesPaid, result.RolloverFeesPaid);
+
+            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - rolloverFeesPaid;
 
             Assert.Equal(finalQuoteBalance, result.FinalQuoteBalance);
-            Assert.Equal(feesPaid, result.FeesPaid);
+            Assert.Equal(tradeFeesPaid, result.TradeFeesPaid);
             Assert.Equal("USDT", result.FeeSymbol);
 
             decimal totalBaseAmount = position1BaseAmount + position2BaseAmount + position3BaseAmount + position4BaseAmount;
@@ -246,8 +258,7 @@ public class LDcaCalculationTests
             Assert.Equal(totalPaid, result.TotalInvestedAmount);
 
             decimal profitPercent = (finalQuoteBalance - result.TotalInvestedAmount) / result.TotalInvestedAmount * 100m;
-            decimal epsilon = 0.0000001m;
-            Assert.InRange(actual: result.ProfitPercent, low: profitPercent - epsilon, high: profitPercent + epsilon);
+            Assert.Equal(profitPercent, result.ProfitPercent, precision: 8);
         }
         else
         {
@@ -260,7 +271,7 @@ public class LDcaCalculationTests
             Assert.Equal(totalValue, result.TotalValue);
 
             decimal totalQuoteAmount = position1QuoteAmount + position2QuoteAmount + position3QuoteAmount + position4QuoteAmount;
-            decimal feesPaid = totalQuoteAmount * tradeFee;
+            decimal tradeFeesPaid = totalQuoteAmount * tradeFee;
 
             // Position 1 was liquidated, we lost the full amount we paid.
             decimal position1Profit = -position1QuoteAmount / leverage;
@@ -278,10 +289,15 @@ public class LDcaCalculationTests
             decimal position4Profit = (position4Price - result.FinalPrice) * position4BaseAmount;
             Assert.Equal(14.10804465m, position4Profit);
 
-            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - feesPaid;
+            // Rollover fees are charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
+            // minute 6 and 12. The second order is charged at minute 11 and 17. The third order is charged at minute 16.
+            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + (position2QuoteAmount * 2) + position3QuoteAmount);
+            Assert.Equal(rolloverFeesPaid, result.RolloverFeesPaid);
+
+            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - rolloverFeesPaid;
 
             Assert.Equal(finalQuoteBalance, result.FinalQuoteBalance);
-            Assert.Equal(feesPaid, result.FeesPaid);
+            Assert.Equal(tradeFeesPaid, result.TradeFeesPaid);
             Assert.Equal("USDT", result.FeeSymbol);
 
             decimal totalBaseAmount = position1BaseAmount + position2BaseAmount + position3BaseAmount + position4BaseAmount;
@@ -292,8 +308,7 @@ public class LDcaCalculationTests
             Assert.Equal(totalPaid, result.TotalInvestedAmount);
 
             decimal profitPercent = (finalQuoteBalance - result.TotalInvestedAmount) / result.TotalInvestedAmount * 100m;
-            decimal epsilon = 0.0000001m;
-            Assert.InRange(actual: result.ProfitPercent, low: profitPercent - epsilon, high: profitPercent + epsilon);
+            Assert.Equal(profitPercent, result.ProfitPercent, precision: 8);
         }
     }
 }
