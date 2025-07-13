@@ -43,7 +43,9 @@ internal class Program
     ///   "QuoteSize": 10.0,
     ///   "OrderSide": "Buy",
     ///   "TradeFeePercent": 0.1,
-    ///   "Leverage": 2.0
+    ///   "Leverage": 2.0,
+    ///   "RolloverFeePercent": 0.2,
+    ///   "RolloverPeriod": 04:00:00
     /// }
     /// </code>
     /// </para>
