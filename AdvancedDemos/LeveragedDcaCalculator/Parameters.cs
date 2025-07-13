@@ -45,6 +45,19 @@ public class Parameters
     /// <summary>Leverage of the trades. It must be a decimal number greater than or equal to <c>1.0</c>. Set to <c>1.0</c> to calculate normal DCA without leverage.</summary>
     public decimal Leverage { get; }
 
+    /// <summary>Rollover fee in percent, or <c>0</c> if no rollover fee should be calculated or if <see cref="Leverage"/> is equal to <c>1.0</c>.</summary>
+    /// <remarks>
+    /// The rollover fee is charged every <see cref="RolloverPeriod"/> after opening the order if the order still exists. For example, if the value of
+    /// <see cref="RolloverFeePercent"/> is <c>0.1</c> and <see cref="RolloverPeriod"/> is <c>4</c> hours and if the order is created at <c>2025-01-20 00:00:00 UTC</c>, then
+    /// <c>0.1</c> % of the order quote size (after leverage) will be charged at <c>2025-01-20 04:00:00 UTC</c>, <c>2025-01-20 08:00:00 UTC</c>, and so on, until the order is
+    /// closed.
+    /// </remarks>
+    public decimal RolloverFeePercent { get; }
+
+    /// <summary>Frequency with which the rollover fee is charged.</summary>
+    /// <seealso cref="RolloverFeePercent"/>
+    public TimeSpan RolloverPeriod { get; }
+
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
@@ -59,6 +72,8 @@ public class Parameters
     /// <param name="tradeFeePercent">Trading fee in percent.</param>
     /// <param name="leverage">Leverage of the trades. It must be a decimal number greater than or equal to <c>1.0</c>. Set to <c>1.0</c> to calculate normal DCA without leverage.
     /// </param>
+    /// <param name="rolloverFeePercent">Rollover fee in percent, or <c>0</c> if no rollover fee should be calculated or if <see cref="Leverage"/> is equal to <c>1.0</c>.</param>
+    /// <param name="rolloverPeriod">Frequency with which the rollover fee is charged.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">
     /// <item><paramref name="appDataPath"/> is <c>null</c> or empty, or</item>
@@ -66,12 +81,14 @@ public class Parameters
     /// <item><paramref name="endTimeUtc"/> is in the future or it is not greater than <paramref name="startTimeUtc"/>, or</item>
     /// <item><paramref name="period"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
     /// <item><paramref name="quoteSize"/> is not a positive number, or</item>
-    /// <item><paramref name="leverage"/> is smaller than <c>1.0</c>.</item>
+    /// <item><paramref name="leverage"/> is smaller than <c>1.0</c>, or</item>
+    /// <item><paramref name="rolloverFeePercent"/> is not zero and <paramref name="leverage"/> is equal to <c>1.0</c>, or</item>
+    /// <item><paramref name="rolloverPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
     /// </list>
     /// </exception>
     [JsonConstructor]
     public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, DateTime startTimeUtc, DateTime endTimeUtc, TimeSpan period, decimal quoteSize,
-        OrderSide orderSide, decimal tradeFeePercent, decimal leverage)
+        OrderSide orderSide, decimal tradeFeePercent, decimal leverage, decimal rolloverFeePercent, TimeSpan rolloverPeriod)
     {
         if (string.IsNullOrEmpty(appDataPath))
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null or empty.", parameterName: nameof(appDataPath));
@@ -94,6 +111,12 @@ public class Parameters
         if (leverage < 1.0m)
             throw new InvalidArgumentException($"'{nameof(leverage)}' must not be smaller than 1.0.", parameterName: nameof(leverage));
 
+        if ((leverage == 1.0m) && (rolloverFeePercent != 0.0m))
+            throw new InvalidArgumentException($"'{nameof(rolloverFeePercent)}' must be 0 when '{nameof(leverage)}' is 1.0.", parameterName: nameof(rolloverFeePercent));
+
+        if (rolloverPeriod <= TimeSpan.Zero)
+            throw new InvalidArgumentException($"'{nameof(rolloverPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(rolloverPeriod));
+
         this.AppDataPath = appDataPath;
         this.ExchangeMarket = exchangeMarket;
         this.SymbolPair = symbolPair;
@@ -104,6 +127,8 @@ public class Parameters
         this.OrderSide = orderSide;
         this.TradeFeePercent = tradeFeePercent;
         this.Leverage = leverage;
+        this.RolloverFeePercent = rolloverFeePercent;
+        this.RolloverPeriod = rolloverPeriod;
     }
 
     /// <summary>
@@ -176,7 +201,9 @@ public class Parameters
             nameof(this.QuoteSize), this.QuoteSize,
             nameof(this.OrderSide), this.OrderSide,
             nameof(this.TradeFeePercent), this.TradeFeePercent,
-            nameof(this.Leverage), this.Leverage
+            nameof(this.Leverage), this.Leverage,
+            nameof(this.RolloverFeePercent), this.RolloverFeePercent,
+            nameof(this.RolloverPeriod), this.RolloverPeriod
         );
     }
 }
