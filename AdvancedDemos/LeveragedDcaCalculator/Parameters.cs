@@ -84,7 +84,7 @@ public class Parameters
     /// <item><paramref name="quoteSize"/> is not a positive number, or</item>
     /// <item><paramref name="leverage"/> is smaller than <c>1.0</c>, or</item>
     /// <item><paramref name="rolloverFeePercent"/> is not zero and <paramref name="leverage"/> is equal to <c>1.0</c>, or</item>
-    /// <item><paramref name="rolloverPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
+    /// <item><paramref name="rolloverPeriod"/> is not greater than <see cref="TimeSpan.Zero"/> when <paramref name="rolloverFeePercent"/> is not <c>0</c>.</item>
     /// </list>
     /// </exception>
     [JsonConstructor]
@@ -115,7 +115,7 @@ public class Parameters
         if ((leverage == 1.0m) && (rolloverFeePercent != 0.0m))
             throw new InvalidArgumentException($"'{nameof(rolloverFeePercent)}' must be 0 when '{nameof(leverage)}' is 1.0.", parameterName: nameof(rolloverFeePercent));
 
-        if (rolloverPeriod <= TimeSpan.Zero)
+        if ((rolloverFeePercent != 0.0m) && (rolloverPeriod <= TimeSpan.Zero))
             throw new InvalidArgumentException($"'{nameof(rolloverPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(rolloverPeriod));
 
         this.AppDataPath = appDataPath;

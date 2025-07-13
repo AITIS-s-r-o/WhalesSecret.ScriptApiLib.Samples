@@ -45,7 +45,7 @@ internal class Program
     ///   "TradeFeePercent": 0.1,
     ///   "Leverage": 2.0,
     ///   "RolloverFeePercent": 0.2,
-    ///   "RolloverPeriod": 4:00:00
+    ///   "RolloverPeriod": "04:00:00"
     /// }
     /// </code>
     /// </para>
