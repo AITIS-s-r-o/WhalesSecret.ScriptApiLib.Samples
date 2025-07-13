@@ -45,13 +45,13 @@ internal class Program
     ///   "TradeFeePercent": 0.1,
     ///   "Leverage": 2.0,
     ///   "RolloverFeePercent": 0.2,
-    ///   "RolloverPeriod": 04:00:00
+    ///   "RolloverPeriod": 4:00:00
     /// }
     /// </code>
     /// </para>
     /// <para>
     /// With this input the program will calculate how would L-DCA perform if it was executed on Binance exchange over the whole year 2024, buying <c>10</c> EUR worth of BTC every
-    /// day with <c>0.1</c>% trading fee and <c>2</c>x leverage.
+    /// day with <c>0.1</c>% trading fee and <c>2</c>x leverage. There is <c>0.2</c>% rollover fee charged every <c>4</c> hours.
     /// </para>
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
