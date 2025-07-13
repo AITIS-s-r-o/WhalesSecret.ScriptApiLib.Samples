@@ -241,7 +241,7 @@ public class LDcaCalculationTests
 
             // Rollover fees are charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
             // minute 6 and 12. The second order is charged at minute 11. The third order is charged at minute 16.
-            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + position2QuoteAmount + position3QuoteAmount);
+            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + position2QuoteAmount + position3QuoteAmount) * (1m - (1m / leverage));
             Assert.Equal(rolloverFeesPaid, result.RolloverFeesPaid);
 
             decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - rolloverFeesPaid;
@@ -291,7 +291,7 @@ public class LDcaCalculationTests
 
             // Rollover fees are charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
             // minute 6 and 12. The second order is charged at minute 11 and 17. The third order is charged at minute 16.
-            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + (position2QuoteAmount * 2) + position3QuoteAmount);
+            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + (position2QuoteAmount * 2) + position3QuoteAmount) * (1m - (1m / leverage));
             Assert.Equal(rolloverFeesPaid, result.RolloverFeesPaid);
 
             decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - rolloverFeesPaid;

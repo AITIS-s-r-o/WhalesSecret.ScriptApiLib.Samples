@@ -270,7 +270,7 @@ internal class Program
                         if ((prevCandleTime < nextRolloverPaymentTime) && (nextRolloverPaymentTime <= time))
                         {
                             existingLeveragedOrder.LastRolloverFeePaidTimeUtc = nextRolloverPaymentTime;
-                            decimal rolloverFeeToPay = existingLeveragedOrder.PositionQuoteAmount * rolloverFee;
+                            decimal rolloverFeeToPay = (existingLeveragedOrder.PositionQuoteAmount - existingLeveragedOrder.InitialMargin) * rolloverFee;
                             rolloverFeesPaid += rolloverFeeToPay;
                             quoteSymbolBalance -= rolloverFeeToPay;
                         }

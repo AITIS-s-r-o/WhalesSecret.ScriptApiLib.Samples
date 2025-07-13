@@ -51,6 +51,10 @@ public class Parameters
     /// <see cref="RolloverFeePercent"/> is <c>0.1</c> and <see cref="RolloverPeriod"/> is <c>4</c> hours and if the order is created at <c>2025-01-20 00:00:00 UTC</c>, then
     /// <c>0.1</c> % of the order quote size (after leverage) will be charged at <c>2025-01-20 04:00:00 UTC</c>, <c>2025-01-20 08:00:00 UTC</c>, and so on, until the order is
     /// closed.
+    /// <para>
+    /// This fee is calculated from the extended margin. For example, if the leverage is <c>5</c> and the initial margin is <c>1000</c> USD then the total size of the order is 5000
+    /// <c>USD</c>, from which <c>4000</c> USD is the extended margin.
+    /// </para>
     /// </remarks>
     public decimal RolloverFeePercent { get; }
 
