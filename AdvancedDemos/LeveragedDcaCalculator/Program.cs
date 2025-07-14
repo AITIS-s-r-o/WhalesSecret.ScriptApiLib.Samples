@@ -435,7 +435,7 @@ internal class Program
     private static async Task<List<Candle>> DownloadCandlesAsync(ITradeApiClient tradeClient, SymbolPair symbolPair, DateTime startTime, DateTime endTime,
         CancellationToken cancellationToken)
     {
-        clog.Debug($"* {nameof(startTime)}={startTime},{nameof(endTime)}={endTime},");
+        clog.Debug($"* {nameof(startTime)}={startTime},{nameof(endTime)}={endTime}");
 
         TimeSpan timeSpan = endTime - startTime;
         List<Candle> result = new(capacity: (int)timeSpan.TotalMinutes + 1);
