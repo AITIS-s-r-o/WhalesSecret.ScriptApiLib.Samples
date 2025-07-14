@@ -190,24 +190,45 @@ internal class Program
         SymbolPair symbolPair = parameters.SymbolPair;
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
-        decimal feesPaid = 0m;
-
-        decimal baseSymbolBalance = 0m;
-        decimal quoteSymbolBalance = 0m;
-
         decimal tradeFee = parameters.TradeFeePercent / 100m;
 
         // Use the request builder for rounding calculations.
         OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
 
-        _ = orderRequestBuilder
-            .SetSymbolPair(parameters.SymbolPair)
-            .SetSide(parameters.OrderSide);
+        _ = LDcaInternal(candles, orderRequestBuilder, tradeFee, parameters.SymbolPair, parameters.OrderSide, quoteSize: parameters.QuoteSize, parameters.Period,
+            leverage: parameters.Leverage);
 
-        bool useLeverage = parameters.Leverage > 1.0m;
+        clog.Debug("$");
+    }
+
+    /// <summary>
+    /// Calculates the Leveraged Dollar Cost Averaging (L-DCA) strategy using the provided candles and parameters.
+    /// </summary>
+    /// <param name="candles">1-minute candles covering the requested time-frame.</param>
+    /// <param name="orderRequestBuilder">Request builder that is used for rounding of order sizes and prices.</param>
+    /// <param name="tradeFee">Trade fee.</param>
+    /// <param name="symbolPair">Symbol pair being traded.</param>
+    /// <param name="orderSide">Side of the orders.</param>
+    /// <param name="quoteSize">Size of the orders in the quote symbol.</param>
+    /// <param name="period">Time period in between the orders.</param>
+    /// <param name="leverage">Leverage of the trades.</param>
+    /// <returns>Result of the calculation.</returns>
+    internal static LdcaResult LDcaInternal(List<Candle> candles, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, decimal tradeFee, SymbolPair symbolPair,
+        OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage)
+    {
+        decimal feesPaid = 0m;
+
+        decimal baseSymbolBalance = 0m;
+        decimal quoteSymbolBalance = 0m;
+
+        _ = orderRequestBuilder
+            .SetSymbolPair(symbolPair)
+            .SetSide(orderSide);
+
+        bool useLeverage = leverage > 1.0m;
         string feeSymbol = useLeverage
             ? symbolPair.QuoteSymbol
-            : parameters.OrderSide == OrderSide.Buy ? symbolPair.BaseSymbol : symbolPair.QuoteSymbol;
+            : orderSide == OrderSide.Buy ? symbolPair.BaseSymbol : symbolPair.QuoteSymbol;
 
         DateTime nextOrderTime = DateTime.MinValue;
         decimal totalInitialMargin = 0m;
@@ -224,14 +245,26 @@ internal class Program
             if (useLeverage)
             {
                 decimal lowPrice = candle.LowPrice;
+                decimal highPrice = candle.HighPrice;
 
                 List<LeveragedOrderInfo> ordersToRemove = new();
                 foreach (LeveragedOrderInfo existingLeveragedOrder in leveragedOrders)
                 {
-                    if (existingLeveragedOrder.LiquidationPrice >= lowPrice)
+                    bool isLiquidated = ((orderSide == OrderSide.Buy) && (existingLeveragedOrder.LiquidationPrice >= lowPrice))
+                        || ((orderSide == OrderSide.Sell) && (existingLeveragedOrder.LiquidationPrice <= highPrice));
+
+                    if (isLiquidated)
                     {
-                        PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. Low price reached {lowPrice} {
-                            symbolPair.BaseSymbol}/{symbolPair.QuoteSymbol}.", addTimestamp: false);
+                        if (orderSide == OrderSide.Buy)
+                        {
+                            PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. Low price reached {lowPrice} {
+                                symbolPair.QuoteSymbol}.", addTimestamp: false);
+                        }
+                        else
+                        {
+                            PrintInfo($"  x {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: Leveraged order '{existingLeveragedOrder}' has been liquidated. High price reached {highPrice} {
+                                symbolPair.QuoteSymbol}.", addTimestamp: false);
+                        }
 
                         ordersToRemove.Add(existingLeveragedOrder);
                     }
@@ -249,7 +282,7 @@ internal class Program
                 if (!useLeverage)
                 {
                     // Order without leverage. Standard DCA on spot market.
-                    decimal intendedOrderQuoteSize = parameters.QuoteSize;
+                    decimal intendedOrderQuoteSize = quoteSize;
                     decimal intendedOrderBaseSize = intendedOrderQuoteSize / price;
 
                     MarketOrderRequest marketOrderRequest = orderRequestBuilder
@@ -263,22 +296,22 @@ internal class Program
                     totalBaseAmount += actualOrderBaseSize;
                     totalQuoteAmount += actualOrderQuoteSize;
 
-                    decimal feeAmount = parameters.OrderSide == OrderSide.Buy ? tradeFee * actualOrderBaseSize : tradeFee * actualOrderQuoteSize;
+                    decimal feeAmount = orderSide == OrderSide.Buy ? tradeFee * actualOrderBaseSize : tradeFee * actualOrderQuoteSize;
                     feesPaid += feeAmount;
 
-                    baseSymbolBalance += parameters.OrderSide == OrderSide.Buy ? actualOrderBaseSize - feeAmount : -actualOrderBaseSize;
-                    quoteSymbolBalance += parameters.OrderSide == OrderSide.Buy ? -actualOrderQuoteSize : actualOrderQuoteSize - feeAmount;
+                    baseSymbolBalance += orderSide == OrderSide.Buy ? actualOrderBaseSize - feeAmount : -actualOrderBaseSize;
+                    quoteSymbolBalance += orderSide == OrderSide.Buy ? -actualOrderQuoteSize : actualOrderQuoteSize - feeAmount;
 
-                    PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(parameters.OrderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {
-                        symbolPair.BaseSymbol} @ {price} {symbolPair.QuoteSymbol} for total of {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, fee was {feeAmount} {
-                        feeSymbol}. Current balance is {baseSymbolBalance} {symbolPair.BaseSymbol} and {quoteSymbolBalance} {symbolPair.QuoteSymbol}.", addTimestamp: false);
+                    PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(orderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {symbolPair.BaseSymbol} @ {
+                        price} {symbolPair.QuoteSymbol} for total of {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, fee was {feeAmount} {feeSymbol}. Current balance is {
+                        baseSymbolBalance} {symbolPair.BaseSymbol} and {quoteSymbolBalance} {symbolPair.QuoteSymbol}.", addTimestamp: false);
 
-                    nextOrderTime = time.Add(parameters.Period);
+                    nextOrderTime = time.Add(period);
                 }
                 else
                 {
                     // Leveraged order.
-                    decimal intendedOrderQuoteSize = parameters.QuoteSize * parameters.Leverage;
+                    decimal intendedOrderQuoteSize = quoteSize * leverage;
                     decimal intendedOrderBaseSize = intendedOrderQuoteSize / price;
 
                     MarketOrderRequest marketOrderRequest = orderRequestBuilder
@@ -292,20 +325,20 @@ internal class Program
                     totalBaseAmount += actualOrderBaseSize;
                     totalQuoteAmount += actualOrderQuoteSize;
 
-                    decimal initialMargin = actualOrderQuoteSize / parameters.Leverage;
+                    decimal initialMargin = actualOrderQuoteSize / leverage;
                     totalInitialMargin += initialMargin;
 
-                    decimal liquidationPrice = price * (1m - (1m / parameters.Leverage));
+                    decimal liquidationPrice = orderSide == OrderSide.Buy ? price * (1m - (1m / leverage)) : price * (1m + (1m / leverage));
 
                     decimal feeAmount = tradeFee * actualOrderQuoteSize;
                     feesPaid += feeAmount;
 
-                    quoteSymbolBalance += parameters.OrderSide == OrderSide.Buy ? -initialMargin - feeAmount : initialMargin - feeAmount;
+                    quoteSymbolBalance += -initialMargin - feeAmount;
 
-                    PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(parameters.OrderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {
-                        symbolPair.BaseSymbol} @ {price} {symbolPair.QuoteSymbol}. The position size is {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, initial margin is {
-                        initialMargin} {symbolPair.QuoteSymbol}, fee was {feeAmount} {feeSymbol} and liquidation price is {liquidationPrice} {
-                        symbolPair.QuoteSymbol}. Current balance is {quoteSymbolBalance} {symbolPair.QuoteSymbol} and total initial margin is {totalInitialMargin}.",
+                    PrintInfo($"  * {candle.Timestamp:yyyy-MM-dd HH:mm:ss}: {(orderSide == OrderSide.Buy ? "Bought" : "Sold")} {actualOrderBaseSize} {symbolPair.BaseSymbol} @ {
+                        price} {symbolPair.QuoteSymbol}. The position size is {actualOrderQuoteSize} {symbolPair.QuoteSymbol}, initial margin is {initialMargin} {
+                        symbolPair.QuoteSymbol}, fee was {feeAmount} {feeSymbol} and liquidation price is {liquidationPrice} {symbolPair.QuoteSymbol}. Current balance is {
+                        quoteSymbolBalance} {symbolPair.QuoteSymbol} and total initial margin is {totalInitialMargin}.",
                         addTimestamp: false);
 
                     LeveragedOrderInfo leveragedOrder = new(entryPrice: price, initialMargin: initialMargin, positionBaseAmount: actualOrderBaseSize,
@@ -313,7 +346,7 @@ internal class Program
 
                     leveragedOrders.Add(leveragedOrder);
 
-                    nextOrderTime = time.Add(parameters.Period);
+                    nextOrderTime = time.Add(period);
                 }
             }
         }
@@ -322,41 +355,50 @@ internal class Program
         PrintInfo();
         PrintInfo($"Final price: {finalPrice} {symbolPair.QuoteSymbol}");
 
+        decimal averageOrderPrice, profitPercent, totalInvestedAmount, totalValue;
+
         if (!useLeverage)
         {
             PrintInfo();
             PrintInfo($"Final balance: {baseSymbolBalance} {symbolPair.BaseSymbol}, {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
             PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
 
-            decimal averageOrderPrice = totalQuoteAmount / totalBaseAmount;
+            averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
 
-            if (parameters.OrderSide == OrderSide.Buy)
+            if (orderSide == OrderSide.Buy)
             {
                 decimal baseSymbolValue = baseSymbolBalance * finalPrice;
-                decimal totalValue = baseSymbolValue + quoteSymbolBalance;
+                totalValue = baseSymbolValue + quoteSymbolBalance;
                 PrintInfo($"Total value: {baseSymbolValue} {symbolPair.QuoteSymbol} + {quoteSymbolBalance} {symbolPair.QuoteSymbol} = {totalValue} {symbolPair.QuoteSymbol}");
 
-                decimal profitPercent = 100m * totalValue / -quoteSymbolBalance;
+                profitPercent = 100m * totalValue / -quoteSymbolBalance;
                 PrintInfo($"Profit: {profitPercent:0.000}%");
+
+                totalInvestedAmount = -quoteSymbolBalance;
             }
             else
             {
                 decimal quoteSymbolValue = quoteSymbolBalance / finalPrice;
-                decimal totalValue = baseSymbolBalance + quoteSymbolValue;
+                totalValue = baseSymbolBalance + quoteSymbolValue;
                 PrintInfo($"Total value: {quoteSymbolValue} {symbolPair.BaseSymbol} + {baseSymbolBalance} {symbolPair.BaseSymbol} = {totalValue} {symbolPair.BaseSymbol}");
 
-                decimal profitPercent = 100m * totalValue / -baseSymbolBalance;
+                profitPercent = 100m * totalValue / -baseSymbolBalance;
                 PrintInfo($"Profit: {profitPercent:0.000}%");
+
+                totalInvestedAmount = -baseSymbolBalance;
             }
         }
         else
         {
             // To calculate the profit of leveraged orders, we simulate closing the orders.
+            totalValue = 0m;
             foreach (LeveragedOrderInfo leveragedOrder in leveragedOrders)
             {
                 decimal positionValue = leveragedOrder.PositionBaseAmount * finalPrice;
-                decimal positionProfit = positionValue - leveragedOrder.PositionQuoteAmount;
+                totalValue += positionValue;
+
+                decimal positionProfit = orderSide == OrderSide.Buy ? positionValue - leveragedOrder.PositionQuoteAmount : leveragedOrder.PositionQuoteAmount - positionValue;
                 quoteSymbolBalance += leveragedOrder.InitialMargin + positionProfit;
             }
 
@@ -365,14 +407,19 @@ internal class Program
             PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
             PrintInfo($"Total funds needed: {totalInitialMargin} {symbolPair.QuoteSymbol}");
 
-            decimal averageOrderPrice = totalQuoteAmount / totalBaseAmount;
+            averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
 
-            decimal profitPercent = 100m * (quoteSymbolBalance / (quoteSymbolBalance + totalInitialMargin));
+            profitPercent = 100m * ((quoteSymbolBalance - totalInitialMargin) / totalInitialMargin);
             PrintInfo($"Profit: {profitPercent:0.000}%");
+
+            totalInvestedAmount = totalInitialMargin;
         }
 
-        clog.Debug("$");
+        LdcaResult result = new(finalPrice: finalPrice, finalBaseBalance: baseSymbolBalance, finalQuoteBalance: quoteSymbolBalance, feesPaid: feesPaid, feeSymbol: feeSymbol,
+            averageOrderPrice: averageOrderPrice, totalValue: totalValue, totalInvestedAmount: totalInvestedAmount, profitPercent: profitPercent);
+        clog.Debug($"$='{result}'");
+        return result;
     }
 
     /// <summary>
@@ -388,7 +435,7 @@ internal class Program
     private static async Task<List<Candle>> DownloadCandlesAsync(ITradeApiClient tradeClient, SymbolPair symbolPair, DateTime startTime, DateTime endTime,
         CancellationToken cancellationToken)
     {
-        clog.Debug($"* {nameof(startTime)}={startTime},{nameof(endTime)}={endTime},");
+        clog.Debug($"* {nameof(startTime)}={startTime},{nameof(endTime)}={endTime}");
 
         TimeSpan timeSpan = endTime - startTime;
         List<Candle> result = new(capacity: (int)timeSpan.TotalMinutes + 1);
