@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.Entities;
@@ -257,24 +258,8 @@ internal class Program
                 List<LeveragedOrderInfo> ordersToRemove = new();
                 foreach (LeveragedOrderInfo existingLeveragedOrder in leveragedOrders)
                 {
-                    // If there is a rollover fee.
-                    if (rolloverFee != 0)
-                    {
-                        // If the rollover fee has not been paid yet, the first payment is due one rollover period after the open time of the order. Otherwise, it is due one rollover
-                        // period after the last payment.
-                        DateTime nextRolloverPaymentTime = existingLeveragedOrder.LastRolloverFeePaidTimeUtc is null
-                            ? existingLeveragedOrder.OpenTimeUtc.Add(rolloverPeriod)
-                            : existingLeveragedOrder.LastRolloverFeePaidTimeUtc.Value.Add(rolloverPeriod);
-
-                        // If we are processing a candle that just reached the next rollover fee payment time, we pay the fee.
-                        if ((prevCandleTime < nextRolloverPaymentTime) && (nextRolloverPaymentTime <= time))
-                        {
-                            existingLeveragedOrder.LastRolloverFeePaidTimeUtc = nextRolloverPaymentTime;
-                            decimal rolloverFeeToPay = (existingLeveragedOrder.PositionQuoteAmount - existingLeveragedOrder.InitialMargin) * rolloverFee;
-                            rolloverFeesPaid += rolloverFeeToPay;
-                            quoteSymbolBalance -= rolloverFeeToPay;
-                        }
-                    }
+                    HandleRolloverFee(rolloverFee: rolloverFee, rolloverPeriod, existingLeveragedOrder, prevCandleTime: prevCandleTime, candleTime: time, ref rolloverFeesPaid,
+                        ref quoteSymbolBalance);
 
                     bool isLiquidated = ((orderSide == OrderSide.Buy) && (existingLeveragedOrder.LiquidationPrice >= lowPrice))
                         || ((orderSide == OrderSide.Sell) && (existingLeveragedOrder.LiquidationPrice <= highPrice));
@@ -452,6 +437,39 @@ internal class Program
 
         clog.Debug($"$='{result}'");
         return result;
+    }
+
+    /// <summary>
+    /// Handles accounting of rollover fee.
+    /// </summary>
+    /// <param name="rolloverFee">Rollover fee.</param>
+    /// <param name="rolloverPeriod">Frequency with which the rollover fee is charged.</param>
+    /// <param name="leveragedOrderInfo">Information about leveraged order for which to handle rollover fee.</param>
+    /// <param name="prevCandleTime">Previous candle time.</param>
+    /// <param name="candleTime">Current candle time.</param>
+    /// <param name="rolloverFeesPaid">Sum of the paid rollover fees.</param>
+    /// <param name="quoteSymbolBalance">Current quote symbol balance.</param>
+    private static void HandleRolloverFee(decimal rolloverFee, TimeSpan rolloverPeriod, LeveragedOrderInfo leveragedOrderInfo, DateTime prevCandleTime, DateTime candleTime,
+        ref decimal rolloverFeesPaid, ref decimal quoteSymbolBalance)
+    {
+        // If there is no rollover fee, do nothing.
+        if (rolloverFee == 0)
+            return;
+
+        // If the rollover fee has not been paid yet, the first payment is due one rollover period after the open time of the order. Otherwise, it is due one rollover
+        // period after the last payment.
+        DateTime nextRolloverPaymentTime = leveragedOrderInfo.LastRolloverFeePaidTimeUtc is null
+        ? leveragedOrderInfo.OpenTimeUtc.Add(rolloverPeriod)
+        : leveragedOrderInfo.LastRolloverFeePaidTimeUtc.Value.Add(rolloverPeriod);
+
+        // If we are processing a candle that just reached the next rollover fee payment time, we pay the fee.
+        if ((prevCandleTime < nextRolloverPaymentTime) && (nextRolloverPaymentTime <= candleTime))
+        {
+            leveragedOrderInfo.LastRolloverFeePaidTimeUtc = nextRolloverPaymentTime;
+            decimal rolloverFeeToPay = (leveragedOrderInfo.PositionQuoteAmount - leveragedOrderInfo.InitialMargin) * rolloverFee;
+            rolloverFeesPaid += rolloverFeeToPay;
+            quoteSymbolBalance -= rolloverFeeToPay;
+        }
     }
 
     /// <summary>
