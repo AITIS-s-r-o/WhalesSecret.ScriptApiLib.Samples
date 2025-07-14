@@ -30,7 +30,7 @@ public class LdcaResult
 
     /// <summary>Sum of all funds needed to execute the orders.</summary>
     /// <remarks>
-    /// If leverage was used, this is in the quote symbol. If leverate was not used, the is in the quote symbol for buy orders and in the base symbol for sell orders.
+    /// If leverage was used, this is in the quote symbol. If leverage was not used, the is in the quote symbol for buy orders and in the base symbol for sell orders.
     /// </remarks>
     public decimal TotalInvestedAmount { get; }
 
