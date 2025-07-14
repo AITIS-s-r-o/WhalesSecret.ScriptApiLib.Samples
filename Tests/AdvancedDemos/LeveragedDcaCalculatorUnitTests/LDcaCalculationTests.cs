@@ -272,7 +272,7 @@ public class LDcaCalculationTests
             // Position 3 was liquidated, we lost the full amount we paid.
             decimal position3Profit = -position3QuoteAmount / leverage;
 
-            // Position 4 was NOT liquidated, calculate profit/loss.  This should be equal to difference between the sell price and the final price multiplied by the base amount,
+            // Position 4 was NOT liquidated, calculate profit/loss. This should be equal to difference between the sell price and the final price multiplied by the base amount,
             // i.e. this should be equal to (101.715 - 100.28) * 9.83139 = 14.10804465.
             decimal position4Profit = (position4Price - result.FinalPrice) * position4BaseAmount;
             Assert.Equal(14.10804465m, position4Profit);
