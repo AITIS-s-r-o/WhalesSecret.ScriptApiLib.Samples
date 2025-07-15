@@ -463,8 +463,8 @@ internal class Program
         // If the funding rate has not been paid yet, the first payment is due one funding rate period after the open time of the order. Otherwise, it is due one funding rate
         // period after the last payment.
         DateTime nextFundingRatePaymentTime = leveragedOrderInfo.LastFundingRatePaidTimeUtc is null
-        ? leveragedOrderInfo.OpenTimeUtc.Add(fundingRatePeriod)
-        : leveragedOrderInfo.LastFundingRatePaidTimeUtc.Value.Add(fundingRatePeriod);
+            ? leveragedOrderInfo.OpenTimeUtc.Add(fundingRatePeriod)
+            : leveragedOrderInfo.LastFundingRatePaidTimeUtc.Value.Add(fundingRatePeriod);
 
         // If we are processing a candle that just reached the next funding rate payment time, we pay the fee.
         if ((prevCandleTime < nextFundingRatePaymentTime) && (nextFundingRatePaymentTime <= candleTime))
