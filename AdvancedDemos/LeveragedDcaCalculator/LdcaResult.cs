@@ -37,8 +37,8 @@ public class LdcaResult
     /// <summary>Profit relative to the <see cref="TotalInvestedAmount"/>. Negative value means loss.</summary>
     public decimal ProfitPercent { get; }
 
-    /// <summary>Sum of the paid rollover fees.</summary>
-    public decimal RolloverFeesPaid { get; }
+    /// <summary>Sum of the paid funding rates.</summary>
+    public decimal FundingRatePaid { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
@@ -52,9 +52,9 @@ public class LdcaResult
     /// <param name="totalValue">Total end balance expressed in the quote symbol. If leverage was used, this is the total value of the leveraged amount.</param>
     /// <param name="totalInvestedAmount">Sum of all funds needed to execute the orders.</param>
     /// <param name="profitPercent">Profit relative to the <see cref="TotalInvestedAmount"/>. Negative value means loss.</param>
-    /// <param name="rolloverFeesPaid">Sum of the paid rollover fees.</param>
+    /// <param name="fundingRatePaid">Sum of the paid funding rates.</param>
     public LdcaResult(decimal finalPrice, decimal finalBaseBalance, decimal finalQuoteBalance, decimal tradeFeesPaid, string feeSymbol, decimal averageOrderPrice,
-        decimal totalValue, decimal totalInvestedAmount, decimal profitPercent, decimal rolloverFeesPaid)
+        decimal totalValue, decimal totalInvestedAmount, decimal profitPercent, decimal fundingRatePaid)
     {
         this.FinalPrice = finalPrice;
         this.FinalBaseBalance = finalBaseBalance;
@@ -65,7 +65,7 @@ public class LdcaResult
         this.TotalValue = totalValue;
         this.TotalInvestedAmount = totalInvestedAmount;
         this.ProfitPercent = profitPercent;
-        this.RolloverFeesPaid = rolloverFeesPaid;
+        this.FundingRatePaid = fundingRatePaid;
     }
 
     /// <inheritdoc/>
@@ -84,7 +84,7 @@ public class LdcaResult
             nameof(this.TotalValue), this.TotalValue,
             nameof(this.TotalInvestedAmount), this.TotalInvestedAmount,
             nameof(this.ProfitPercent), this.ProfitPercent,
-            nameof(this.RolloverFeesPaid), this.RolloverFeesPaid
+            nameof(this.FundingRatePaid), this.FundingRatePaid
         );
     }
 }

@@ -45,14 +45,14 @@ internal class Program
     ///   "OrderSide": "Buy",
     ///   "TradeFeePercent": 0.1,
     ///   "Leverage": 2.0,
-    ///   "RolloverFeePercent": 0.2,
-    ///   "RolloverPeriod": "04:00:00"
+    ///   "FundingRatePercent": 0.2,
+    ///   "FundingRatePeriod": "04:00:00"
     /// }
     /// </code>
     /// </para>
     /// <para>
     /// With this input the program will calculate how would L-DCA perform if it was executed on Binance exchange over the whole year 2024, buying <c>10</c> EUR worth of BTC every
-    /// day with <c>0.1</c>% trading fee and <c>2</c>x leverage. There is <c>0.2</c>% rollover fee charged every <c>4</c> hours.
+    /// day with <c>0.1</c>% trading fee and <c>2</c>x leverage. There is <c>0.2</c>% funding rate charged every <c>4</c> hours.
     /// </para>
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
@@ -194,13 +194,13 @@ internal class Program
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
         decimal tradeFee = parameters.TradeFeePercent / 100m;
-        decimal rolloverFee = parameters.RolloverFeePercent / 100m;
+        decimal fundingRate = parameters.FundingRateFeePercent / 100m;
 
         // Use the request builder for rounding calculations.
         OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
 
         _ = LDcaInternal(candles, orderRequestBuilder, tradeFee, parameters.SymbolPair, parameters.OrderSide, quoteSize: parameters.QuoteSize, parameters.Period,
-            leverage: parameters.Leverage, rolloverFee: rolloverFee, rolloverPeriod: parameters.RolloverPeriod);
+            leverage: parameters.Leverage, fundingRate: fundingRate, fundingRatePeriod: parameters.FundingRatePeriod);
 
         clog.Debug("$");
     }
@@ -216,14 +216,14 @@ internal class Program
     /// <param name="quoteSize">Size of the orders in the quote symbol.</param>
     /// <param name="period">Time period in between the orders.</param>
     /// <param name="leverage">Leverage of the trades.</param>
-    /// <param name="rolloverFee">Rollover fee, or <c>0</c> if no rollover fee should be calculated or if <paramref name="leverage"/> is equal to <c>1.0</c>.</param>
-    /// <param name="rolloverPeriod">Frequency with which the rollover fee is charged.</param>
+    /// <param name="fundingRate">Funding rate, or <c>0</c> if no funding rate should be calculated or if <paramref name="leverage"/> is equal to <c>1.0</c>.</param>
+    /// <param name="fundingRatePeriod">Frequency with which the funding rate is charged.</param>
     /// <returns>Result of the calculation.</returns>
     internal static LdcaResult LDcaInternal(List<Candle> candles, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, decimal tradeFee, SymbolPair symbolPair,
-        OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage, decimal rolloverFee, TimeSpan rolloverPeriod)
+        OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage, decimal fundingRate, TimeSpan fundingRatePeriod)
     {
         decimal tradeFeesPaid = 0m;
-        decimal rolloverFeesPaid = 0m;
+        decimal fundingRatePaid = 0m;
 
         decimal baseSymbolBalance = 0m;
         decimal quoteSymbolBalance = 0m;
@@ -258,7 +258,7 @@ internal class Program
                 List<LeveragedOrderInfo> ordersToRemove = new();
                 foreach (LeveragedOrderInfo existingLeveragedOrder in leveragedOrders)
                 {
-                    HandleRolloverFee(rolloverFee: rolloverFee, rolloverPeriod, existingLeveragedOrder, prevCandleTime: prevCandleTime, candleTime: time, ref rolloverFeesPaid,
+                    HandleFundingRate(fundingRate: fundingRate, fundingRatePeriod, existingLeveragedOrder, prevCandleTime: prevCandleTime, candleTime: time, ref fundingRatePaid,
                         ref quoteSymbolBalance);
 
                     bool isLiquidated = ((orderSide == OrderSide.Buy) && (existingLeveragedOrder.LiquidationPrice >= lowPrice))
@@ -419,7 +419,7 @@ internal class Program
             PrintInfo();
             PrintInfo($"Final balance: {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
             PrintInfo($"Total trading fees paid: {tradeFeesPaid} {feeSymbol}.");
-            PrintInfo($"Total rollover fees paid: {rolloverFeesPaid} {feeSymbol}.");
+            PrintInfo($"Total funding rate paid: {fundingRatePaid} {feeSymbol}.");
             PrintInfo($"Total funds needed: {totalInitialMargin} {symbolPair.QuoteSymbol}");
 
             averageOrderPrice = totalQuoteAmount / totalBaseAmount;
@@ -433,42 +433,42 @@ internal class Program
 
         LdcaResult result = new(finalPrice: finalPrice, finalBaseBalance: baseSymbolBalance, finalQuoteBalance: quoteSymbolBalance, tradeFeesPaid: tradeFeesPaid,
             feeSymbol: feeSymbol, averageOrderPrice: averageOrderPrice, totalValue: totalValue, totalInvestedAmount: totalInvestedAmount, profitPercent: profitPercent,
-            rolloverFeesPaid: rolloverFeesPaid);
+            fundingRatePaid: fundingRatePaid);
 
         clog.Debug($"$='{result}'");
         return result;
     }
 
     /// <summary>
-    /// Handles accounting of rollover fee.
+    /// Handles accounting of funding rate.
     /// </summary>
-    /// <param name="rolloverFee">Rollover fee.</param>
-    /// <param name="rolloverPeriod">Frequency with which the rollover fee is charged.</param>
-    /// <param name="leveragedOrderInfo">Information about leveraged order for which to handle rollover fee.</param>
+    /// <param name="fundingRate">Funding rate.</param>
+    /// <param name="fundingRatePeriod">Frequency with which the funding rate is charged.</param>
+    /// <param name="leveragedOrderInfo">Information about leveraged order for which to handle funding rate.</param>
     /// <param name="prevCandleTime">Previous candle time.</param>
     /// <param name="candleTime">Current candle time.</param>
-    /// <param name="rolloverFeesPaid">Sum of the paid rollover fees.</param>
+    /// <param name="fundingRatePaid">Sum of the paid funding rates.</param>
     /// <param name="quoteSymbolBalance">Current quote symbol balance.</param>
-    private static void HandleRolloverFee(decimal rolloverFee, TimeSpan rolloverPeriod, LeveragedOrderInfo leveragedOrderInfo, DateTime prevCandleTime, DateTime candleTime,
-        ref decimal rolloverFeesPaid, ref decimal quoteSymbolBalance)
+    private static void HandleFundingRate(decimal fundingRate, TimeSpan fundingRatePeriod, LeveragedOrderInfo leveragedOrderInfo, DateTime prevCandleTime, DateTime candleTime,
+        ref decimal fundingRatePaid, ref decimal quoteSymbolBalance)
     {
-        // If there is no rollover fee, do nothing.
-        if (rolloverFee == 0)
+        // If there is no funding rate, do nothing.
+        if (fundingRate == 0)
             return;
 
-        // If the rollover fee has not been paid yet, the first payment is due one rollover period after the open time of the order. Otherwise, it is due one rollover
+        // If the funding rate has not been paid yet, the first payment is due one funding rate period after the open time of the order. Otherwise, it is due one funding rate
         // period after the last payment.
-        DateTime nextRolloverPaymentTime = leveragedOrderInfo.LastRolloverFeePaidTimeUtc is null
-        ? leveragedOrderInfo.OpenTimeUtc.Add(rolloverPeriod)
-        : leveragedOrderInfo.LastRolloverFeePaidTimeUtc.Value.Add(rolloverPeriod);
+        DateTime nextFundingRatePaymentTime = leveragedOrderInfo.LastFundingRatePaidTimeUtc is null
+        ? leveragedOrderInfo.OpenTimeUtc.Add(fundingRatePeriod)
+        : leveragedOrderInfo.LastFundingRatePaidTimeUtc.Value.Add(fundingRatePeriod);
 
-        // If we are processing a candle that just reached the next rollover fee payment time, we pay the fee.
-        if ((prevCandleTime < nextRolloverPaymentTime) && (nextRolloverPaymentTime <= candleTime))
+        // If we are processing a candle that just reached the next funding rate payment time, we pay the fee.
+        if ((prevCandleTime < nextFundingRatePaymentTime) && (nextFundingRatePaymentTime <= candleTime))
         {
-            leveragedOrderInfo.LastRolloverFeePaidTimeUtc = nextRolloverPaymentTime;
-            decimal rolloverFeeToPay = (leveragedOrderInfo.PositionQuoteAmount - leveragedOrderInfo.InitialMargin) * rolloverFee;
-            rolloverFeesPaid += rolloverFeeToPay;
-            quoteSymbolBalance -= rolloverFeeToPay;
+            leveragedOrderInfo.LastFundingRatePaidTimeUtc = nextFundingRatePaymentTime;
+            decimal fundingRateToPay = (leveragedOrderInfo.PositionQuoteAmount - leveragedOrderInfo.InitialMargin) * fundingRate;
+            fundingRatePaid += fundingRateToPay;
+            quoteSymbolBalance -= fundingRateToPay;
         }
     }
 

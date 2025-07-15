@@ -82,8 +82,8 @@ public class LDcaCalculationTests
             new(startTimeUtc.AddMinutes(17), openPrice: 100.94m, highPrice: 101.60m, lowPrice: 100.00m, closePrice: 100.28m, baseVolume: 10.65m, quoteVolume: 1069.64m),
         };
 
-        LdcaResult result = Program.LDcaInternal(candles, this.orderRequestBuilder, tradeFee, symbolPair, orderSide, quoteSize, period, leverage: 1.0m, rolloverFee: 0m,
-            rolloverPeriod: TimeSpan.Zero);
+        LdcaResult result = Program.LDcaInternal(candles, this.orderRequestBuilder, tradeFee, symbolPair, orderSide, quoteSize, period, leverage: 1.0m, fundingRate: 0m,
+            fundingRatePeriod: TimeSpan.Zero);
 
         Assert.Equal(100.28m, result.FinalPrice);
 
@@ -136,7 +136,7 @@ public class LDcaCalculationTests
     /// </summary>
     /// <param name="orderSide">Side of the orders.</param>
     /// <remarks>
-    /// In this test we buy/sell <c>100</c> USDT worth of BTC every <c>5</c> minutes with <c>0.1</c>% trade fee. We also have a rollover fee of <c>0.2</c>% charged every <c>6</c>
+    /// In this test we buy/sell <c>100</c> USDT worth of BTC every <c>5</c> minutes with <c>0.1</c>% trade fee. We also have a funding rate of <c>0.2</c>% charged every <c>6</c>
     /// minutes.
     /// </remarks>
     [Theory]
@@ -151,8 +151,8 @@ public class LDcaCalculationTests
         TimeSpan period = TimeSpan.FromMinutes(5);
         DateTime startTimeUtc = new(year: 2025, month: 4, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0, DateTimeKind.Utc);
 
-        decimal rolloverFee = 0.002m;
-        TimeSpan rolloverPeriod = TimeSpan.FromMinutes(6);
+        decimal fundingRate = 0.002m;
+        TimeSpan fundingRatePeriod = TimeSpan.FromMinutes(6);
 
         List<Candle> candles = new()
         {
@@ -192,7 +192,7 @@ public class LDcaCalculationTests
         };
 
         LdcaResult result = Program.LDcaInternal(candles, this.orderRequestBuilder, tradeFee, symbolPair, orderSide, quoteSize, period, leverage: leverage,
-            rolloverFee: rolloverFee, rolloverPeriod: rolloverPeriod);
+            fundingRate: fundingRate, fundingRatePeriod: fundingRatePeriod);
 
         Assert.Equal(100.28m, result.FinalPrice);
 
@@ -239,12 +239,12 @@ public class LDcaCalculationTests
             decimal position4Profit = (result.FinalPrice - position4Price) * position4BaseAmount;
             Assert.Equal(-14.10804465m, position4Profit);
 
-            // Rollover fees are charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
+            // Funding rate is charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
             // minute 6 and 12. The second order is charged at minute 11. The third order is charged at minute 16.
-            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + position2QuoteAmount + position3QuoteAmount) * (1m - (1m / leverage));
-            Assert.Equal(rolloverFeesPaid, result.RolloverFeesPaid);
+            decimal fundingRatePaid = fundingRate * ((position1QuoteAmount * 2) + position2QuoteAmount + position3QuoteAmount) * (1m - (1m / leverage));
+            Assert.Equal(fundingRatePaid, result.FundingRatePaid);
 
-            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - rolloverFeesPaid;
+            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - fundingRatePaid;
 
             Assert.Equal(finalQuoteBalance, result.FinalQuoteBalance);
             Assert.Equal(tradeFeesPaid, result.TradeFeesPaid);
@@ -289,12 +289,12 @@ public class LDcaCalculationTests
             decimal position4Profit = (position4Price - result.FinalPrice) * position4BaseAmount;
             Assert.Equal(14.10804465m, position4Profit);
 
-            // Rollover fees are charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
+            // Funding rate is charged every 6 minutes. We have calculate the fee for every order, including the orders that have been liquidated. The first order is charged at
             // minute 6 and 12. The second order is charged at minute 11 and 17. The third order is charged at minute 16.
-            decimal rolloverFeesPaid = rolloverFee * ((position1QuoteAmount * 2) + (position2QuoteAmount * 2) + position3QuoteAmount) * (1m - (1m / leverage));
-            Assert.Equal(rolloverFeesPaid, result.RolloverFeesPaid);
+            decimal fundingRatePaid = fundingRate * ((position1QuoteAmount * 2) + (position2QuoteAmount * 2) + position3QuoteAmount) * (1m - (1m / leverage));
+            Assert.Equal(fundingRatePaid, result.FundingRatePaid);
 
-            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - rolloverFeesPaid;
+            decimal finalQuoteBalance = position1Profit + position2Profit + position3Profit + position4Profit - tradeFeesPaid - fundingRatePaid;
 
             Assert.Equal(finalQuoteBalance, result.FinalQuoteBalance);
             Assert.Equal(tradeFeesPaid, result.TradeFeesPaid);

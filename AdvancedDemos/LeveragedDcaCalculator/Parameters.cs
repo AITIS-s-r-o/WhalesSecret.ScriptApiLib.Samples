@@ -45,22 +45,21 @@ public class Parameters
     /// <summary>Leverage of the trades. It must be a decimal number greater than or equal to <c>1.0</c>. Set to <c>1.0</c> to calculate normal DCA without leverage.</summary>
     public decimal Leverage { get; }
 
-    /// <summary>Rollover fee in percent, or <c>0</c> if no rollover fee should be calculated or if <see cref="Leverage"/> is equal to <c>1.0</c>.</summary>
+    /// <summary>Funding rate in percent, or <c>0</c> if no funding rate should be calculated or if <see cref="Leverage"/> is equal to <c>1.0</c>.</summary>
     /// <remarks>
-    /// The rollover fee is charged every <see cref="RolloverPeriod"/> after opening the order if the order still exists. For example, if the value of
-    /// <see cref="RolloverFeePercent"/> is <c>0.1</c> and <see cref="RolloverPeriod"/> is <c>4</c> hours and if the order is created at <c>2025-01-20 00:00:00 UTC</c>, then
-    /// <c>0.1</c> % of the order quote size (after leverage) will be charged at <c>2025-01-20 04:00:00 UTC</c>, <c>2025-01-20 08:00:00 UTC</c>, and so on, until the order is
-    /// closed.
+    /// The funding rate is charged every <see cref="FundingRatePeriod"/> after opening the order if the order still exists. For example, if the value of
+    /// <see cref="FundingRateFeePercent"/> is <c>0.1</c> and <see cref="FundingRatePeriod"/> is <c>4</c> hours and if the order is created at <c>2025-01-20 00:00:00 UTC</c>, then
+    /// <c>0.1</c> % of the order's extended margin will be charged at <c>2025-01-20 04:00:00 UTC</c>, <c>2025-01-20 08:00:00 UTC</c>, and so on, until the order is closed.
     /// <para>
-    /// This fee is calculated from the extended margin. For example, if the leverage is <c>5</c> and the initial margin is <c>1000</c> USD then the total size of the order is 5000
-    /// <c>USD</c>, from which <c>4000</c> USD is the extended margin.
+    /// This fee is calculated from the extended margin. For example, if the leverage is <c>5</c> and the initial margin is <c>1,000</c> USD then the total size of the order is
+    /// <c>5,000</c> USD, from which <c>4,000</c> USD is the extended margin.
     /// </para>
     /// </remarks>
-    public decimal RolloverFeePercent { get; }
+    public decimal FundingRateFeePercent { get; }
 
-    /// <summary>Frequency with which the rollover fee is charged.</summary>
-    /// <seealso cref="RolloverFeePercent"/>
-    public TimeSpan RolloverPeriod { get; }
+    /// <summary>Frequency with which the funding rate is charged.</summary>
+    /// <seealso cref="FundingRateFeePercent"/>
+    public TimeSpan FundingRatePeriod { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
@@ -76,9 +75,9 @@ public class Parameters
     /// <param name="tradeFeePercent">Trading fee in percent.</param>
     /// <param name="leverage">Leverage of the trades. It must be a decimal number greater than or equal to <c>1.0</c>. Set to <c>1.0</c> to calculate normal DCA without leverage.
     /// </param>
-    /// <param name="rolloverFeePercent">Rollover fee in percent, or <c>0</c> if no rollover fee should be calculated or if <paramref name="leverage"/> is equal to <c>1.0</c>.
+    /// <param name="fundingRatePercent">Funding rate in percent, or <c>0</c> if no funding rate should be calculated or if <paramref name="leverage"/> is equal to <c>1.0</c>.
     /// </param>
-    /// <param name="rolloverPeriod">Frequency with which the rollover fee is charged.</param>
+    /// <param name="fundingRatePeriod">Frequency with which the funding rate is charged.</param>
     /// <exception cref="InvalidArgumentException">Thrown if:
     /// <list type="bullet">
     /// <item><paramref name="appDataPath"/> is <c>null</c> or empty, or</item>
@@ -87,13 +86,13 @@ public class Parameters
     /// <item><paramref name="period"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
     /// <item><paramref name="quoteSize"/> is not a positive number, or</item>
     /// <item><paramref name="leverage"/> is smaller than <c>1.0</c>, or</item>
-    /// <item><paramref name="rolloverFeePercent"/> is not zero and <paramref name="leverage"/> is equal to <c>1.0</c>, or</item>
-    /// <item><paramref name="rolloverPeriod"/> is not greater than <see cref="TimeSpan.Zero"/> when <paramref name="rolloverFeePercent"/> is not <c>0</c>.</item>
+    /// <item><paramref name="fundingRatePercent"/> is not zero and <paramref name="leverage"/> is equal to <c>1.0</c>, or</item>
+    /// <item><paramref name="fundingRatePeriod"/> is not greater than <see cref="TimeSpan.Zero"/> when <paramref name="fundingRatePercent"/> is not <c>0</c>.</item>
     /// </list>
     /// </exception>
     [JsonConstructor]
     public Parameters(string appDataPath, ExchangeMarket exchangeMarket, SymbolPair symbolPair, DateTime startTimeUtc, DateTime endTimeUtc, TimeSpan period, decimal quoteSize,
-        OrderSide orderSide, decimal tradeFeePercent, decimal leverage, decimal rolloverFeePercent, TimeSpan rolloverPeriod)
+        OrderSide orderSide, decimal tradeFeePercent, decimal leverage, decimal fundingRatePercent, TimeSpan fundingRatePeriod)
     {
         if (string.IsNullOrEmpty(appDataPath))
             throw new InvalidArgumentException($"'{nameof(appDataPath)}' must not be null or empty.", parameterName: nameof(appDataPath));
@@ -116,11 +115,11 @@ public class Parameters
         if (leverage < 1.0m)
             throw new InvalidArgumentException($"'{nameof(leverage)}' must not be smaller than 1.0.", parameterName: nameof(leverage));
 
-        if ((leverage == 1.0m) && (rolloverFeePercent != 0.0m))
-            throw new InvalidArgumentException($"'{nameof(rolloverFeePercent)}' must be 0 when '{nameof(leverage)}' is 1.0.", parameterName: nameof(rolloverFeePercent));
+        if ((leverage == 1.0m) && (fundingRatePercent != 0.0m))
+            throw new InvalidArgumentException($"'{nameof(fundingRatePercent)}' must be 0 when '{nameof(leverage)}' is 1.0.", parameterName: nameof(fundingRatePercent));
 
-        if ((rolloverFeePercent != 0.0m) && (rolloverPeriod <= TimeSpan.Zero))
-            throw new InvalidArgumentException($"'{nameof(rolloverPeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(rolloverPeriod));
+        if ((fundingRatePercent != 0.0m) && (fundingRatePeriod <= TimeSpan.Zero))
+            throw new InvalidArgumentException($"'{nameof(fundingRatePeriod)}' must be greater than {TimeSpan.Zero}.", parameterName: nameof(fundingRatePeriod));
 
         this.AppDataPath = appDataPath;
         this.ExchangeMarket = exchangeMarket;
@@ -132,8 +131,8 @@ public class Parameters
         this.OrderSide = orderSide;
         this.TradeFeePercent = tradeFeePercent;
         this.Leverage = leverage;
-        this.RolloverFeePercent = rolloverFeePercent;
-        this.RolloverPeriod = rolloverPeriod;
+        this.FundingRateFeePercent = fundingRatePercent;
+        this.FundingRatePeriod = fundingRatePeriod;
     }
 
     /// <summary>
@@ -207,8 +206,8 @@ public class Parameters
             nameof(this.OrderSide), this.OrderSide,
             nameof(this.TradeFeePercent), this.TradeFeePercent,
             nameof(this.Leverage), this.Leverage,
-            nameof(this.RolloverFeePercent), this.RolloverFeePercent,
-            nameof(this.RolloverPeriod), this.RolloverPeriod
+            nameof(this.FundingRateFeePercent), this.FundingRateFeePercent,
+            nameof(this.FundingRatePeriod), this.FundingRatePeriod
         );
     }
 }

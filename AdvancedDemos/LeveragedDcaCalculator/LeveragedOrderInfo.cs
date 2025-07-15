@@ -26,8 +26,8 @@ public class LeveragedOrderInfo
     /// <summary>UTC time when the position was opened.</summary>
     public DateTime OpenTimeUtc { get; }
 
-    /// <summary>UTC time when the rollover fee was last paid for this order, or <c>null</c> if it has not been paid yet.</summary>
-    public DateTime? LastRolloverFeePaidTimeUtc { get; set; }
+    /// <summary>UTC time when the funding rate was last paid for this order, or <c>null</c> if it has not been paid yet.</summary>
+    public DateTime? LastFundingRatePaidTimeUtc { get; set; }
 
     /// <summary>
     /// Creates a new instance of the object.
@@ -60,7 +60,7 @@ public class LeveragedOrderInfo
             nameof(this.PositionQuoteAmount), this.PositionQuoteAmount,
             nameof(this.LiquidationPrice), this.LiquidationPrice,
             nameof(this.OpenTimeUtc), this.OpenTimeUtc,
-            nameof(this.LastRolloverFeePaidTimeUtc), this.LastRolloverFeePaidTimeUtc
+            nameof(this.LastFundingRatePaidTimeUtc), this.LastFundingRatePaidTimeUtc
         );
     }
 }
