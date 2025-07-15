@@ -194,7 +194,7 @@ internal class Program
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
         decimal tradeFee = parameters.TradeFeePercent / 100m;
-        decimal fundingRate = parameters.FundingRateFeePercent / 100m;
+        decimal fundingRate = parameters.FundingRatePercent / 100m;
 
         // Use the request builder for rounding calculations.
         OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();

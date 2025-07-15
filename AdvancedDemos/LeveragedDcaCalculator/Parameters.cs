@@ -48,17 +48,17 @@ public class Parameters
     /// <summary>Funding rate in percent, or <c>0</c> if no funding rate should be calculated or if <see cref="Leverage"/> is equal to <c>1.0</c>.</summary>
     /// <remarks>
     /// The funding rate is charged every <see cref="FundingRatePeriod"/> after opening the order if the order still exists. For example, if the value of
-    /// <see cref="FundingRateFeePercent"/> is <c>0.1</c> and <see cref="FundingRatePeriod"/> is <c>4</c> hours and if the order is created at <c>2025-01-20 00:00:00 UTC</c>, then
+    /// <see cref="FundingRatePercent"/> is <c>0.1</c> and <see cref="FundingRatePeriod"/> is <c>4</c> hours and if the order is created at <c>2025-01-20 00:00:00 UTC</c>, then
     /// <c>0.1</c> % of the order's extended margin will be charged at <c>2025-01-20 04:00:00 UTC</c>, <c>2025-01-20 08:00:00 UTC</c>, and so on, until the order is closed.
     /// <para>
     /// This fee is calculated from the extended margin. For example, if the leverage is <c>5</c> and the initial margin is <c>1,000</c> USD then the total size of the order is
     /// <c>5,000</c> USD, from which <c>4,000</c> USD is the extended margin.
     /// </para>
     /// </remarks>
-    public decimal FundingRateFeePercent { get; }
+    public decimal FundingRatePercent { get; }
 
     /// <summary>Frequency with which the funding rate is charged.</summary>
-    /// <seealso cref="FundingRateFeePercent"/>
+    /// <seealso cref="FundingRatePercent"/>
     public TimeSpan FundingRatePeriod { get; }
 
     /// <summary>
@@ -131,7 +131,7 @@ public class Parameters
         this.OrderSide = orderSide;
         this.TradeFeePercent = tradeFeePercent;
         this.Leverage = leverage;
-        this.FundingRateFeePercent = fundingRatePercent;
+        this.FundingRatePercent = fundingRatePercent;
         this.FundingRatePeriod = fundingRatePeriod;
     }
 
@@ -206,7 +206,7 @@ public class Parameters
             nameof(this.OrderSide), this.OrderSide,
             nameof(this.TradeFeePercent), this.TradeFeePercent,
             nameof(this.Leverage), this.Leverage,
-            nameof(this.FundingRateFeePercent), this.FundingRateFeePercent,
+            nameof(this.FundingRatePercent), this.FundingRatePercent,
             nameof(this.FundingRatePeriod), this.FundingRatePeriod
         );
     }
