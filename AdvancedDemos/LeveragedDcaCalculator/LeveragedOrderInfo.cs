@@ -26,6 +26,9 @@ public class LeveragedOrderInfo
     /// <summary>UTC time when the position was opened.</summary>
     public DateTime OpenTimeUtc { get; }
 
+    /// <summary>UTC time when the funding rate was last paid for this order, or <c>null</c> if it has not been paid yet.</summary>
+    public DateTime? LastFundingRatePaidTimeUtc { get; set; }
+
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
@@ -50,13 +53,14 @@ public class LeveragedOrderInfo
     {
         return string.Format(
             CultureInfo.InvariantCulture,
-            "[{0}={1},{2}={3},{4}={5},{6}={7},{8}={9},{10}={11:yyyy-MM-dd HH:mm:ss}]",
+            "[{0}={1},{2}={3},{4}={5},{6}={7},{8}={9},{10}={11:yyyy-MM-dd HH:mm:ss},{12}={13:yyyy-MM-dd HH:mm:ss}]",
             nameof(this.EntryPrice), this.EntryPrice,
             nameof(this.InitialMargin), this.InitialMargin,
             nameof(this.PositionBaseAmount), this.PositionBaseAmount,
             nameof(this.PositionQuoteAmount), this.PositionQuoteAmount,
             nameof(this.LiquidationPrice), this.LiquidationPrice,
-            nameof(this.OpenTimeUtc), this.OpenTimeUtc
+            nameof(this.OpenTimeUtc), this.OpenTimeUtc,
+            nameof(this.LastFundingRatePaidTimeUtc), this.LastFundingRatePaidTimeUtc
         );
     }
 }

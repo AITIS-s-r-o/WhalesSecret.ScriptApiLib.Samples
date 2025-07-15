@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WhalesSecret.TradeScriptLib.API.TradingV1;
 using WhalesSecret.TradeScriptLib.API.TradingV1.ConnectionStrategy;
 using WhalesSecret.TradeScriptLib.Entities;
@@ -43,13 +44,15 @@ internal class Program
     ///   "QuoteSize": 10.0,
     ///   "OrderSide": "Buy",
     ///   "TradeFeePercent": 0.1,
-    ///   "Leverage": 2.0
+    ///   "Leverage": 2.0,
+    ///   "FundingRatePercent": 0.2,
+    ///   "FundingRatePeriod": "04:00:00"
     /// }
     /// </code>
     /// </para>
     /// <para>
     /// With this input the program will calculate how would L-DCA perform if it was executed on Binance exchange over the whole year 2024, buying <c>10</c> EUR worth of BTC every
-    /// day with <c>0.1</c>% trading fee and <c>2</c>x leverage.
+    /// day with <c>0.1</c>% trading fee and <c>2</c>x leverage. There is <c>0.2</c>% funding rate charged every <c>4</c> hours.
     /// </para>
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
@@ -84,6 +87,10 @@ internal class Program
 
         PrintInfo($"Starting calculation of L-DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {
             parameters.SymbolPair.BaseSymbol} every {parameters.Period} with {parameters.Leverage}x leverage and {parameters.TradeFeePercent}% trading fee.");
+
+        if (parameters.Leverage > 1.0m)
+            PrintInfo($"Funding rate is {parameters.FundingRatePercent}% charged every {parameters.FundingRatePeriod}.");
+
         PrintInfo();
 
         // Install Ctrl+C / SIGINT handler.
@@ -191,12 +198,13 @@ internal class Program
         List<Candle> candles = await DownloadCandlesAsync(tradeClient, symbolPair, startTime: startTime, endTime: endTime, cancellationToken).ConfigureAwait(false);
 
         decimal tradeFee = parameters.TradeFeePercent / 100m;
+        decimal fundingRate = parameters.FundingRatePercent / 100m;
 
         // Use the request builder for rounding calculations.
         OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder = tradeClient.CreateOrderRequestBuilder<MarketOrderRequest>();
 
         _ = LDcaInternal(candles, orderRequestBuilder, tradeFee, parameters.SymbolPair, parameters.OrderSide, quoteSize: parameters.QuoteSize, parameters.Period,
-            leverage: parameters.Leverage);
+            leverage: parameters.Leverage, fundingRate: fundingRate, fundingRatePeriod: parameters.FundingRatePeriod);
 
         clog.Debug("$");
     }
@@ -212,11 +220,14 @@ internal class Program
     /// <param name="quoteSize">Size of the orders in the quote symbol.</param>
     /// <param name="period">Time period in between the orders.</param>
     /// <param name="leverage">Leverage of the trades.</param>
+    /// <param name="fundingRate">Funding rate, or <c>0</c> if no funding rate should be calculated or if <paramref name="leverage"/> is equal to <c>1.0</c>.</param>
+    /// <param name="fundingRatePeriod">Frequency with which the funding rate is charged.</param>
     /// <returns>Result of the calculation.</returns>
     internal static LdcaResult LDcaInternal(List<Candle> candles, OrderRequestBuilder<MarketOrderRequest> orderRequestBuilder, decimal tradeFee, SymbolPair symbolPair,
-        OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage)
+        OrderSide orderSide, decimal quoteSize, TimeSpan period, decimal leverage, decimal fundingRate, TimeSpan fundingRatePeriod)
     {
-        decimal feesPaid = 0m;
+        decimal tradeFeesPaid = 0m;
+        decimal fundingRatePaid = 0m;
 
         decimal baseSymbolBalance = 0m;
         decimal quoteSymbolBalance = 0m;
@@ -238,6 +249,7 @@ internal class Program
 
         List<LeveragedOrderInfo> leveragedOrders = new(capacity: candles.Count);
 
+        DateTime prevCandleTime = DateTime.MinValue;
         foreach (Candle candle in candles)
         {
             DateTime time = candle.Timestamp;
@@ -250,6 +262,9 @@ internal class Program
                 List<LeveragedOrderInfo> ordersToRemove = new();
                 foreach (LeveragedOrderInfo existingLeveragedOrder in leveragedOrders)
                 {
+                    HandleFundingRate(fundingRate: fundingRate, fundingRatePeriod, existingLeveragedOrder, prevCandleTime: prevCandleTime, candleTime: time, ref fundingRatePaid,
+                        ref quoteSymbolBalance);
+
                     bool isLiquidated = ((orderSide == OrderSide.Buy) && (existingLeveragedOrder.LiquidationPrice >= lowPrice))
                         || ((orderSide == OrderSide.Sell) && (existingLeveragedOrder.LiquidationPrice <= highPrice));
 
@@ -267,6 +282,7 @@ internal class Program
                         }
 
                         ordersToRemove.Add(existingLeveragedOrder);
+                        continue;
                     }
                 }
 
@@ -297,7 +313,7 @@ internal class Program
                     totalQuoteAmount += actualOrderQuoteSize;
 
                     decimal feeAmount = orderSide == OrderSide.Buy ? tradeFee * actualOrderBaseSize : tradeFee * actualOrderQuoteSize;
-                    feesPaid += feeAmount;
+                    tradeFeesPaid += feeAmount;
 
                     baseSymbolBalance += orderSide == OrderSide.Buy ? actualOrderBaseSize - feeAmount : -actualOrderBaseSize;
                     quoteSymbolBalance += orderSide == OrderSide.Buy ? -actualOrderQuoteSize : actualOrderQuoteSize - feeAmount;
@@ -331,7 +347,7 @@ internal class Program
                     decimal liquidationPrice = orderSide == OrderSide.Buy ? price * (1m - (1m / leverage)) : price * (1m + (1m / leverage));
 
                     decimal feeAmount = tradeFee * actualOrderQuoteSize;
-                    feesPaid += feeAmount;
+                    tradeFeesPaid += feeAmount;
 
                     quoteSymbolBalance += -initialMargin - feeAmount;
 
@@ -349,6 +365,8 @@ internal class Program
                     nextOrderTime = time.Add(period);
                 }
             }
+
+            prevCandleTime = time;
         }
 
         decimal finalPrice = candles[^1].ClosePrice;
@@ -361,7 +379,7 @@ internal class Program
         {
             PrintInfo();
             PrintInfo($"Final balance: {baseSymbolBalance} {symbolPair.BaseSymbol}, {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
-            PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
+            PrintInfo($"Total fees paid: {tradeFeesPaid} {feeSymbol}.");
 
             averageOrderPrice = totalQuoteAmount / totalBaseAmount;
             PrintInfo($"Average order price: {averageOrderPrice} {symbolPair.QuoteSymbol}.");
@@ -404,7 +422,8 @@ internal class Program
 
             PrintInfo();
             PrintInfo($"Final balance: {quoteSymbolBalance} {symbolPair.QuoteSymbol}.");
-            PrintInfo($"Total fees paid: {feesPaid} {feeSymbol}.");
+            PrintInfo($"Total trading fees paid: {tradeFeesPaid} {feeSymbol}.");
+            PrintInfo($"Total funding rate paid: {fundingRatePaid} {feeSymbol}.");
             PrintInfo($"Total funds needed: {totalInitialMargin} {symbolPair.QuoteSymbol}");
 
             averageOrderPrice = totalQuoteAmount / totalBaseAmount;
@@ -416,10 +435,45 @@ internal class Program
             totalInvestedAmount = totalInitialMargin;
         }
 
-        LdcaResult result = new(finalPrice: finalPrice, finalBaseBalance: baseSymbolBalance, finalQuoteBalance: quoteSymbolBalance, feesPaid: feesPaid, feeSymbol: feeSymbol,
-            averageOrderPrice: averageOrderPrice, totalValue: totalValue, totalInvestedAmount: totalInvestedAmount, profitPercent: profitPercent);
+        LdcaResult result = new(finalPrice: finalPrice, finalBaseBalance: baseSymbolBalance, finalQuoteBalance: quoteSymbolBalance, tradeFeesPaid: tradeFeesPaid,
+            feeSymbol: feeSymbol, averageOrderPrice: averageOrderPrice, totalValue: totalValue, totalInvestedAmount: totalInvestedAmount, profitPercent: profitPercent,
+            fundingRatePaid: fundingRatePaid);
+
         clog.Debug($"$='{result}'");
         return result;
+    }
+
+    /// <summary>
+    /// Handles accounting of funding rate.
+    /// </summary>
+    /// <param name="fundingRate">Funding rate.</param>
+    /// <param name="fundingRatePeriod">Frequency with which the funding rate is charged.</param>
+    /// <param name="leveragedOrderInfo">Information about leveraged order for which to handle funding rate.</param>
+    /// <param name="prevCandleTime">Previous candle time.</param>
+    /// <param name="candleTime">Current candle time.</param>
+    /// <param name="fundingRatePaid">Sum of the paid funding rates.</param>
+    /// <param name="quoteSymbolBalance">Current quote symbol balance.</param>
+    private static void HandleFundingRate(decimal fundingRate, TimeSpan fundingRatePeriod, LeveragedOrderInfo leveragedOrderInfo, DateTime prevCandleTime, DateTime candleTime,
+        ref decimal fundingRatePaid, ref decimal quoteSymbolBalance)
+    {
+        // If there is no funding rate, do nothing.
+        if (fundingRate == 0)
+            return;
+
+        // If the funding rate has not been paid yet, the first payment is due one funding rate period after the open time of the order. Otherwise, it is due one funding rate
+        // period after the last payment.
+        DateTime nextFundingRatePaymentTime = leveragedOrderInfo.LastFundingRatePaidTimeUtc is null
+            ? leveragedOrderInfo.OpenTimeUtc.Add(fundingRatePeriod)
+            : leveragedOrderInfo.LastFundingRatePaidTimeUtc.Value.Add(fundingRatePeriod);
+
+        // If we are processing a candle that just reached the next funding rate payment time, we pay the fee.
+        if ((prevCandleTime < nextFundingRatePaymentTime) && (nextFundingRatePaymentTime <= candleTime))
+        {
+            leveragedOrderInfo.LastFundingRatePaidTimeUtc = nextFundingRatePaymentTime;
+            decimal fundingRateToPay = (leveragedOrderInfo.PositionQuoteAmount - leveragedOrderInfo.InitialMargin) * fundingRate;
+            fundingRatePaid += fundingRateToPay;
+            quoteSymbolBalance -= fundingRateToPay;
+        }
     }
 
     /// <summary>
