@@ -87,6 +87,10 @@ internal class Program
 
         PrintInfo($"Starting calculation of L-DCA on {parameters.ExchangeMarket}, {parameters.OrderSide}ing {parameters.QuoteSize} {parameters.SymbolPair.QuoteSymbol} worth of {
             parameters.SymbolPair.BaseSymbol} every {parameters.Period} with {parameters.Leverage}x leverage and {parameters.TradeFeePercent}% trading fee.");
+
+        if (parameters.Leverage > 1.0m)
+            PrintInfo($"Funding rate is {parameters.FundingRatePercent}% charged every {parameters.FundingRatePeriod}.");
+
         PrintInfo();
 
         // Install Ctrl+C / SIGINT handler.
