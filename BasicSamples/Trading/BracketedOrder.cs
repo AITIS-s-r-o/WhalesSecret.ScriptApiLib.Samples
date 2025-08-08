@@ -96,10 +96,10 @@ public class BracketedOrder : IScriptApiSample
         // We will place a market buy order and put 50% stop-loss to be at 50 EUR (or USDT) below the last best ask price (roughly the price we expect to buy for) and a second
         // stop-loss, 50% again, at 100 EUR below the best ask price. We also put a 30% take-profit to be at 70 EUR (or USDT) above the last best ask and 70% take-profit at
         // 130 EUR above the best ask price.
-        decimal stopLossPrice2 = helper.BestAsk - 100;
-        decimal stopLossPrice1 = helper.BestAsk - 50;
-        decimal takeProfitPrice1 = helper.BestAsk + 70;
-        decimal takeProfitPrice2 = helper.BestAsk + 130;
+        decimal stopLossPrice2 = helper.BestBid - 100;
+        decimal stopLossPrice1 = helper.BestBid - 50;
+        decimal takeProfitPrice1 = helper.BestBid + 70;
+        decimal takeProfitPrice2 = helper.BestBid + 130;
 
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[]
         {

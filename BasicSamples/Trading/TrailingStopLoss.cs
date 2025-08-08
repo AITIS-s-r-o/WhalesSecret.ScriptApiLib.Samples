@@ -73,11 +73,11 @@ public class TrailingStopLoss : IScriptApiSample
         // We will place a market buy order and put 100% trailing stop-loss to be at 1% below the last best ask price (roughly the price we expect to buy for) and a take-profit at
         // 5% above. The trailing stop-loss will maintain the set distance and will be updated as the price moves in the direction of the trade, if the price moves at least 50 USDT
         // (or EUR).
-        decimal stopLossPrice = helper.BestAsk * 0.99m;
-        decimal distance = helper.BestAsk - stopLossPrice;
+        decimal stopLossPrice = helper.BestBid * 0.99m;
+        decimal distance = helper.BestBid - stopLossPrice;
         decimal delta = 50.0m;
 
-        decimal takeProfitPrice = helper.BestAsk * 1.05m;
+        decimal takeProfitPrice = helper.BestBid * 1.05m;
 
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[]
         {
