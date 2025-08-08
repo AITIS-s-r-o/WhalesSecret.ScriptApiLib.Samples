@@ -17,41 +17,18 @@ using static WhalesSecret.TradeScriptLib.API.TradingV1.Orders.Brackets.IBrackete
 namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;
 
 /// <summary>
-/// Sample that demonstrates how to use bracketed orders.
+/// Sample that demonstrates how to use bracketed orders with a trailing stop-loss.
 /// </summary>
 /// <seealso cref="ILiveBracketedOrder"/>
+/// <seealso cref="BracketedOrder"/>
+/// <seealso cref="BracketOrderType.TrailingStopLoss"/>
 /// <remarks>
-/// Bracketed order is a synthetic order type that opens a trading position with a so called working order, and then attempts to close the position with, so called, bracket orders
-/// that either lock a profit or a loss. Bracketed order also includes a closing order request that is executed when the position is to be closed "manually", i.e. not relying on
-/// the bracket orders. The closing order is a market order with opposite side to the working order.
-/// </para>
-/// <para>
-/// Schema of a bracketed order with a buy limit working order a single take-profit bracket order and a single stop-loss bracket order is as follows:
-///
-///                                                             ┌────────────────────────┐
-///                                                             │ Sell take-profit order │
-///                                                  ┌──────►   │         $80,500        │
-///                                                  │          └────────────────────────┘
-///                                                  │                (Locks profit)
-///   ┌─────────────────┐                            │
-///   │ Buy limit order │     If filled, place       │
-///   │     $80,000     │────────────────────────────┼
-///   └─────────────────┘      bracket orders        │
-///     (Working order)                              │
-///                                                  │          ┌────────────────────────┐
-///                                                  │          │  Sell stop-loss order  │
-///                                                  └──────►   │         $79,600        │
-///                                                             └────────────────────────┘
-///                                                                    (Locks loss).
-/// </para>
-/// <para>
-/// A single bracketed order may have up to <see cref="IBracketOrdersManager.MaxBracketOrders"/> bracket orders. The number of stop-loss orders does not need to match the number of
-/// take-profit orders. Nor do their sizes in percent need to match. However, the sum of their sizes in percent on each side must not exceed <c>100%</c>. The actual size is
-/// calculated as a percentage from the filled size of the working order.
-/// </para>
+/// Trailing stop-loss bracket order is placed below buy orders, or above sell orders, in order to cap the maximum loss, just like the regular
+/// <see cref="BracketOrderType.StopLoss"/>. However, a trailing stop-loss order is adjusted automatically as the price moves in the direction of the trade, so it can be used to
+/// lock in profits while still allowing the price to move further in the direction of the trade, thus potentially increasing the profit.
 /// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
 /// </remarks>
-public class BracketedOrder : IScriptApiSample
+public class TrailingStopLoss : IScriptApiSample
 {
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
@@ -93,20 +70,19 @@ public class BracketedOrder : IScriptApiSample
             .SetSize(quoteOrderSize)
             .Build();
 
-        // We will place a market buy order and put 50% stop-loss to be at 50 EUR (or USDT) below the last best bid price (roughly the price we expect to buy for) and a second
-        // stop-loss, 50% again, at 100 EUR below the best bid price. We also put a 30% take-profit to be at 70 EUR (or USDT) above the last best bid and 70% take-profit at
-        // 130 EUR above the best bid price.
-        decimal stopLossPrice2 = helper.BestBid - 100;
-        decimal stopLossPrice1 = helper.BestBid - 50;
-        decimal takeProfitPrice1 = helper.BestBid + 70;
-        decimal takeProfitPrice2 = helper.BestBid + 130;
+        // We will place a market buy order and put 100% trailing stop-loss to be at 1% below the last best bid price (roughly the price we expect to buy for) and a take-profit at
+        // 5% above. The trailing stop-loss will maintain the set distance and will be updated as the price moves in the direction of the trade, if the price moves at least 50 USDT
+        // (or EUR).
+        decimal stopLossPrice = helper.BestBid * 0.99m;
+        decimal distance = helper.BestBid - stopLossPrice;
+        decimal delta = 50.0m;
+
+        decimal takeProfitPrice = helper.BestBid * 1.05m;
 
         BracketOrderDefinition[] bracketOrdersDefinitions = new BracketOrderDefinition[]
         {
-             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice2, sizePercent: 50m),
-             new(BracketOrderType.StopLoss, thresholdPrice: stopLossPrice1, sizePercent: 50m),
-             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice1, sizePercent: 30m),
-             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice2, sizePercent: 70m),
+             new TrailingStopLossBracketOrderDefinition(thresholdPrice: stopLossPrice, sizePercent: 100m, priceDistance: distance, replacePriceDelta: delta),
+             new(BracketOrderType.TakeProfit, thresholdPrice: takeProfitPrice, sizePercent: 100m),
         };
 
         OnBracketedOrderUpdateAsync onBracketedOrderUpdate = (IBracketedOrderUpdate update) =>
