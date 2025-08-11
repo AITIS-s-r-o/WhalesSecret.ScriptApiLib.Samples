@@ -50,6 +50,7 @@ Usage: WhalesSecret.ScriptApiLib.Samples.BasicSamples <sampleName> <exchangeMark
         Trading/TradeOrder.History - Demonstrates getting historical trades and orders records. Requires credentials.
         Trading/Budget - Demonstrates working with trading strategy budget. Requires credentials.
         Trading/BracketedOrder - Sample that demonstrates placing bracketed order. Requires credentials.
+        Trading/TralingStopLoss - Sample that demonstrates placing bracketed order with trailing stop-loss. Requires credentials. 
         Trading/Interactive - Sample that demonstrates creating orders and cancelling them in an interactive mode. Requires credentials.
 
     exchangeMarket - Exchange market to use in the sample. Supported values are BinanceSpot,KucoinSpot
