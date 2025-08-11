@@ -161,7 +161,7 @@ internal class Program
     private static Parameters? parameters;
 
     /// <summary>
-    /// Application that trades a Direct Cost Averaging (DCA) strategy.
+    /// Application that trades a Momentum Breakout strategy.
     /// </summary>
     /// <param name="args">Command-line arguments.
     /// <para>The program must be started with 1 argument - the input parameters JSON file path.</para>
@@ -881,7 +881,7 @@ internal class Program
     }
 
     /// <summary>
-    /// Checks the volatility condition. ATR has to be at least than <paramref name="volatilityAvgSize"/> times the average ATR over <paramref name="volatilityLookback"/> candles.
+    /// Checks the volatility condition. ATR has to be at least <paramref name="volatilityAvgSize"/> times the average ATR over <paramref name="volatilityLookback"/> candles.
     /// </summary>
     /// <param name="quotes">List of quotes to use to check the breakout condition.</param>
     /// <param name="volatilityLookback">Number of candles for volatility confirmation.</param>

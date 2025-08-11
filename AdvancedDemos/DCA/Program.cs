@@ -20,7 +20,7 @@ using WhalesSecret.TradeScriptLib.Utils.Orders;
 namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.DCA;
 
 /// <summary>
-/// DCA (Direct Cost Averaging) trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected
+/// DCA (Dollar Cost Averaging) trading bot. This bot periodically places market orders in order to buy (or sell) the selected base asset for the constant amount of the selected
 /// quote asset.
 /// <para>
 /// For example, if the symbol pair is <c>BTC/EUR</c>, the quote size is <c>10</c>, and the period is <c>3600</c> seconds, the bot will try to buy (or sell) 10 <c>EUR</c> worth of
@@ -46,7 +46,7 @@ internal class Program
     private static Telegram? telegram;
 
     /// <summary>
-    /// Application that trades a Direct Cost Averaging (DCA) strategy.
+    /// Application that trades a Dollar Cost Averaging (DCA) strategy.
     /// </summary>
     /// <param name="args">Command-line arguments.
     /// <para>The program must be started with 1 argument - the input parameters JSON file path.</para>
@@ -261,7 +261,7 @@ internal class Program
 
             ConnectionOptions connectionOptions = new(BlockUntilReconnectedOrTimeout.InfinityTimeoutInstance, ConnectionType.FullTrading, OnConnectedAsync, OnDisconnectedAsync,
                 budgetRequest: parameters.BudgetRequest);
-            ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
+            await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(parameters.ExchangeMarket, connectionOptions).ConfigureAwait(false);
 
             await PrintInfoTelegramAsync($"Connection to {parameters.ExchangeMarket} has been established successfully.", cancellationToken).ConfigureAwait(false);
 
