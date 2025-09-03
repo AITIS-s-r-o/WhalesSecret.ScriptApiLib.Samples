@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Web;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
@@ -93,11 +95,11 @@ public class Telegram : IAsyncDisposable
                 string responseContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
-                    error = $"Sending a HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";
+                    error = $"Sending an HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";
             }
             catch (HttpRequestException e)
             {
-                error = $"Sending a HTTP request to Telegram failed with HTTP request error {e.HttpRequestError}: {e.Message}";
+                error = $"Sending an HTTP request to Telegram failed with HTTP request error {e.HttpRequestError}: {e.Message}";
             }
             catch (Exception e)
             {
@@ -188,6 +190,52 @@ public class Telegram : IAsyncDisposable
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Sends image to the Telegram group as a photo message.
+    /// </summary>
+    /// <param name="imageBytes">Binary representation of the image to send.</param>
+    /// <param name="caption">Image caption.</param>
+    /// <param name="filename">Name of the image file.</param>
+    /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
+    /// <returns>If the function succeeds, the return value is <c>null</c>. Otherwise, the return value is an error message.</returns>
+    public async Task<string?> SendImageAsync(byte[] imageBytes, string caption, string filename, CancellationToken cancellationToken)
+    {
+        using MultipartFormDataContent content = new();
+
+        using StringContent groupIdContent = new(this.groupId);
+        content.Add(groupIdContent, "chat_id");
+
+        using StringContent parseModeContent = new("html");
+        content.Add(parseModeContent, "parse_mode");
+
+        using StringContent captionContent = new(caption);
+        content.Add(captionContent, "caption");
+
+        using ByteArrayContent imageContent = new(imageBytes);
+        content.Add(imageContent, name: "photo", fileName: filename);
+
+        string? error = null;
+        try
+        {
+            Uri uri = new($"https://api.telegram.org/bot{this.apiToken}/sendPhoto");
+            using HttpResponseMessage response = await this.httpClient.PostAsync(uri, content, cancellationToken).ConfigureAwait(false);
+            string responseContent = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            if (!response.IsSuccessStatusCode)
+                error = $"Sending an image HTTP request to Telegram failed with HTTP status code {response.StatusCode}. Response content:{Environment.NewLine}{responseContent}";
+        }
+        catch (HttpRequestException e)
+        {
+            error = $"Sending an image HTTP request to Telegram failed with HTTP request error {e.HttpRequestError}: {e.Message}";
+        }
+        catch (Exception e)
+        {
+            error = e.Message;
+        }
+
+        return error;
     }
 
     /// <summary>
