@@ -193,7 +193,7 @@ public class Telegram : IAsyncDisposable
     /// <summary>
     /// Sends image to the Telegram group as a photo message.
     /// </summary>
-    /// <param name="imageBytes">Binary representation of the image to send.</param>
+    /// <param name="imageBytes">Binary representation of the image to send. Common image formats such as .PNG or .JPG are supported.</param>
     /// <param name="caption">Image caption.</param>
     /// <param name="filename">Name of the image file.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>
