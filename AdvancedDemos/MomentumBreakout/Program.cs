@@ -400,7 +400,7 @@ internal class Program
     }
 
     /// <summary>
-    /// Starts the DCA trading bot.
+    /// Runs the momentum breakout trading bot strategy.
     /// </summary>
     /// <param name="parameters">Program parameters.</param>
     /// <param name="cancellationToken">Cancellation token that allows the caller to cancel the operation.</param>

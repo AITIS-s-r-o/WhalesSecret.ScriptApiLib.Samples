@@ -56,7 +56,7 @@ public class Parameters
     /// <list type="bullet">
     /// <item><paramref name="period"/> is not greater than <see cref="TimeSpan.Zero"/>, or</item>
     /// <item><paramref name="quoteSize"/> is not a positive number, or</item>
-    /// <item><paramref name="budgetRequest"/> has zero initial budget the base symbol of <paramref name="symbolPair"/> and <paramref name="orderSide"/> is
+    /// <item><paramref name="budgetRequest"/> has zero initial budget for the base symbol of <paramref name="symbolPair"/> and <paramref name="orderSide"/> is
     /// <see cref="OrderSide.Sell"/>; or it has zero initial budget for the quote symbol of <paramref name="symbolPair"/> and <paramref name="orderSide"/> is
     /// <see cref="OrderSide.Buy"/>.</item>
     /// <item><paramref name="reportPeriod"/> is not greater than <see cref="TimeSpan.Zero"/>.</item>
