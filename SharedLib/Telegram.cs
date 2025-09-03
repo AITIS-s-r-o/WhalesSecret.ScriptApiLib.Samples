@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Web;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 
