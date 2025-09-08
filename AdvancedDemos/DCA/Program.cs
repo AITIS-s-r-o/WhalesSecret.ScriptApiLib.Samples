@@ -241,12 +241,7 @@ internal class Program
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, cancellationToken).ConfigureAwait(false);
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
-        IApiIdentity apiIdentity = parameters.ExchangeMarket switch
-        {
-            ExchangeMarket.BinanceSpot => parameters.System.ApiKeys.GetBinanceApiIdentity(),
-            ExchangeMarket.KucoinSpot => parameters.System.ApiKeys.GetKucoinApiIdentity(),
-            _ => throw new SanityCheckException($"Unsupported exchange market {parameters.ExchangeMarket} provided."),
-        };
+        IApiIdentity apiIdentity = parameters.System.ApiKeys.GetApiIdentity(parameters.ExchangeMarket);
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
         scriptApi.SetCredentials(apiIdentity);
