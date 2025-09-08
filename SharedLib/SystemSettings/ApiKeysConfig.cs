@@ -1,7 +1,10 @@
 using System;
 using System.Globalization;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WhalesSecret.ScriptApiLib.Exchanges;
+using WhalesSecret.TradeScriptLib.Entities;
+using WhalesSecret.TradeScriptLib.Exceptions;
 
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 
@@ -52,6 +55,22 @@ public class ApiKeysConfig
             throw new InvalidOperationException("KuCoin API keys are not configured.");
 
         return this.Kucoin.GetApiIdentity();
+    }
+
+    /// <summary>
+    /// Gets exchange API credentials for the given exchange.
+    /// </summary>
+    /// <param name="exchangeMarket">Exchange market for which to get API credentials.</param>
+    /// <returns>Exchange API credentials for the given exchange.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the requested API keys are not configured.</exception>
+    public IApiIdentity GetApiIdentity(ExchangeMarket exchangeMarket)
+    {
+        return exchangeMarket switch
+        {
+            ExchangeMarket.BinanceSpot => this.GetBinanceApiIdentity(),
+            ExchangeMarket.KucoinSpot => this.GetKucoinApiIdentity(),
+            _ => throw new SanityCheckException($"Unsupported exchange market {exchangeMarket} provided."),
+        };
     }
 
     /// <inheritdoc/>
