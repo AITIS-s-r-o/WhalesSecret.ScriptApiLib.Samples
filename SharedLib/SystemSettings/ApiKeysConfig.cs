@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using System.Text.Json.Serialization;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Entities;
 using WhalesSecret.TradeScriptLib.Exceptions;
