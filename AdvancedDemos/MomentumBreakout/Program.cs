@@ -1239,7 +1239,7 @@ internal class Program
             case BracketOrderCanceled bracketOrderCanceled:
             {
                 string type = bracketOrderCanceled.BracketOrderType == BracketOrderType.StopLoss ? "Stop-loss" : "Take-profit";
-                _ = PrintInfoTelegramBatchedAsync($"{type} #{bracketOrderCanceled.Index} bracket order '{bracketOrderCanceled.ClientOrderId} was canceled.",
+                _ = PrintInfoTelegramBatchedAsync($"{type} #{bracketOrderCanceled.Index} bracket order '{bracketOrderCanceled.ClientOrderId}' was canceled.",
                     CancellationToken.None);
                 break;
             }
