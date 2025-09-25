@@ -12,7 +12,7 @@
 param
 (
     # Parameter to select runtimes for which to publish the bots.
-    [ValidateSet("all", "win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")]
+    [ValidateSet("all", "win-x86", "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64")]
     [string]$runtime = "all"
 )
 
@@ -36,7 +36,7 @@ $projectMap = @{
 
 # Runtimes to target.
 if ($runtime -eq "all") {
-    $runtimes = @("win-x86", "win-x64", "linux-x64", "osx-x64", "osx-arm64")
+    $runtimes = @("win-x86", "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64")
 } else {
     $runtimes = @($runtime)
 }
