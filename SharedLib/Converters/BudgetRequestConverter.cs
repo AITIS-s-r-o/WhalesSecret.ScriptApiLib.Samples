@@ -49,5 +49,26 @@ public class BudgetRequestConverter : JsonConverter<BudgetRequest>
 
     /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, BudgetRequest value, JsonSerializerOptions options)
-        => throw new NotSupportedException();
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName(nameof(BudgetRequest.StrategyName));
+        writer.WriteStringValue(value.StrategyName);
+
+        writer.WritePropertyName(nameof(BudgetRequest.PrimaryAsset));
+        writer.WriteStringValue(value.PrimaryAsset);
+
+        writer.WritePropertyName(nameof(BudgetRequest.InitialBudget));
+        writer.WriteStartObject();
+
+        foreach ((string currency, decimal amount) in value.InitialBudget)
+        {
+            writer.WritePropertyName(currency);
+            writer.WriteNumberValue(amount);
+        }
+
+        writer.WriteEndObject();
+
+        writer.WriteEndObject();
+    }
 }

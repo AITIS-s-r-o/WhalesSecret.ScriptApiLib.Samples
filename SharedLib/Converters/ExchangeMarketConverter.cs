@@ -31,5 +31,5 @@ public class ExchangeMarketConverter : JsonConverter<ExchangeMarket>
 
     /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, ExchangeMarket value, JsonSerializerOptions options)
-        => throw new NotSupportedException();
+        => writer.WriteStringValue(value.ToString());
 }
