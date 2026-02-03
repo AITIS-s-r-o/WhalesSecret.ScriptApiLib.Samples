@@ -1,0 +1,22 @@
+{
+  "System": {
+    "License": "INSERT YOUR WHALES SECRET LICENSE HERE OR USE null TO USE FREE MODE",
+    "AppDataPath": "Data",
+    "ApiKeys": {
+      "Binance": {
+        "HmacKey": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+        "HmacSecret": "INSERT YOUR Binance HMAC API key HERE OR USE null TO USE RSA key",
+        "RsaKey": "INSERT YOUR Binance RSA API key HERE OR USE null TO USE HMAC key",
+        "RsaSecret": "INSERT YOUR Binance RSA API secret OR USE null TO USE HMAC key"
+      },
+      "Kucoin": {
+        "Key": "INSERT YOUR Kucoin API key HERE",
+        "Secret": "INSERT YOUR Kucoin API secret HERE",
+        "Passphrase": "INSERT YOUR Kucoin API passphrase HERE"
+      }
+    }
+  },
+  "ExchangeMarket": "BinanceSpot",
+  "StartDate": "2025-01-01",
+  "EndDate": "2025-12-31"
+}
