@@ -295,8 +295,6 @@ internal class Program
                 }
 
                 decimal fee = deposit.Fee;
-                if ((exchangeMarket == ExchangeMarket.BinanceSpot) && (date == new DateOnly(year: 2025, month: 4, day: 17)) && (deposit.Amount == 20))
-                    fee = 0;
 
                 // In case of deposits, the deposit amount is after the fees. So the fee has to be added to the deposit as we will also have the fee separately in the table.
                 depositStats.TotalDiff += deposit.Amount;
