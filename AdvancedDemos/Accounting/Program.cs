@@ -20,9 +20,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.Accounting;
 
 /// <summary>
 /// Accounting demo. This program creates a CSV summary report of trading, deposits, withdrawals, and fees for the specified period on the given exchange market.
-/// <para>
-/// The summary provides end-of-month values for each month within the covered period for each of the asset that was traded, deposited, or withdrawn on the exchange.
-/// </para>
+/// <para>The summary provides end-of-month values for each month within the covered period for each of the asset that was traded, deposited, or withdrawn on the exchange.</para>
 /// </summary>
 internal class Program
 {
