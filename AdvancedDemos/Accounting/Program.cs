@@ -24,13 +24,13 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.Accounting;
 /// </summary>
 internal class Program
 {
-    /// <summary>Format of the name of the summary report file. The format has three parameters - exchange name, start date, end date.</summary>
+    /// <summary>Format of the name of the summary report file. The format has three parameters - exchange name, start date, and end date.</summary>
     private const string SummaryReportFileNameFormat = "{0}_summary_{1:yyyy-MM}_{2:yyyy-MM}.csv";
 
-    /// <summary>Format of the name of the trades report file. The format has three parameters - exchange name, start date, end date.</summary>
+    /// <summary>Format of the name of the trades report file. The format has three parameters - exchange name, start date, and end date.</summary>
     private const string TradesReportFileNameFormat = "{0}_trades_{1:yyyy-MM}_{2:yyyy-MM}.csv";
 
-    /// <summary>Format of the name of the deposits/withdrawals report file. The format has three parameters - exchange name, start date, end date.</summary>
+    /// <summary>Format of the name of the deposits/withdrawals report file. The format has three parameters - exchange name, start date, and end date.</summary>
     private const string DepositsWithdrawalsReportFileNameFormat = "{0}_deposits_withdrawals_{1:yyyy-MM}_{2:yyyy-MM}.csv";
 
     /// <summary>Class logger.</summary>
