@@ -24,8 +24,14 @@ namespace WhalesSecret.ScriptApiLib.Samples.AdvancedDemos.Accounting;
 /// </summary>
 internal class Program
 {
-    /// <summary>Format of the name of the report file. The format has three parameters - exchange name, start date, end date.</summary>
-    private const string ReportFileNameFormat = "{0}_summary_{1:yyyy-MM}_{2:yyyy-MM}.csv";
+    /// <summary>Format of the name of the summary report file. The format has three parameters - exchange name, start date, and end date.</summary>
+    private const string SummaryReportFileNameFormat = "{0}_summary_{1:yyyy-MM}_{2:yyyy-MM}.csv";
+
+    /// <summary>Format of the name of the trades report file. The format has three parameters - exchange name, start date, and end date.</summary>
+    private const string TradesReportFileNameFormat = "{0}_trades_{1:yyyy-MM}_{2:yyyy-MM}.csv";
+
+    /// <summary>Format of the name of the deposits/withdrawals report file. The format has three parameters - exchange name, start date, and end date.</summary>
+    private const string DepositsWithdrawalsReportFileNameFormat = "{0}_deposits_withdrawals_{1:yyyy-MM}_{2:yyyy-MM}.csv";
 
     /// <summary>Class logger.</summary>
     private static readonly WsLogger clog = WsLogger.GetCurrentClassLogger();
@@ -206,6 +212,12 @@ internal class Program
 
         SortedDictionary<DateOnly, Dictionary<string, AssetStats>> monthlyStats = new();
 
+        StringBuilder tradesSb = new("Time,Base Symbol,Quote Symbol,Side,Price,Base Amount,Quote Amount,Fee,Fee Symbol");
+        _ = tradesSb.AppendLine();
+
+        StringBuilder depositsWithdrawalsSb = new("Time,Type,ID,Amount,Symbol,Network,Fee,Status,Address,TxId,Extra Info");
+        _ = depositsWithdrawalsSb.AppendLine();
+
         Dictionary<string, AssetStats>? currentMonthStats = null;
         DateOnly date = startDate;
         while (date <= endDate)
@@ -249,6 +261,8 @@ internal class Program
 
             foreach (ITrade trade in trades)
             {
+                AppendTradeLine(tradesSb, trade);
+
                 if (!currentMonthStats.TryGetValue(trade.SymbolPair.BaseSymbol, out AssetStats? baseStats))
                 {
                     baseStats = new AssetStats();
@@ -286,6 +300,8 @@ internal class Program
 
             foreach (DepositInformation deposit in deposits)
             {
+                AppendDepositLine(depositsWithdrawalsSb, deposit);
+
                 if (!currentMonthStats.TryGetValue(deposit.Asset, out AssetStats? depositStats))
                 {
                     depositStats = new AssetStats();
@@ -307,6 +323,8 @@ internal class Program
 
             foreach (WithdrawalInformation withdrawal in withdrawals)
             {
+                AppendWithdrawalLine(depositsWithdrawalsSb, withdrawal);
+
                 if (!currentMonthStats.TryGetValue(withdrawal.Asset, out AssetStats? withdrawalStats))
                 {
                     withdrawalStats = new AssetStats();
@@ -322,23 +340,122 @@ internal class Program
             date = date.AddDays(1);
         }
 
-        string path = string.Format(CultureInfo.InvariantCulture, ReportFileNameFormat, exchangeMarket, startDate, endDate);
+        string path = string.Format(CultureInfo.InvariantCulture, SummaryReportFileNameFormat, exchangeMarket, startDate, endDate);
 
         PrintInfo();
-        PrintInfo($"Generating CSV report to '{path}'.");
+        PrintInfo($"Generating the summary CSV report to '{path}'.");
 
-        GenerateCsv(monthlyStats, path);
+        GenerateSummaryCsv(monthlyStats, path);
+
+        path = string.Format(CultureInfo.InvariantCulture, TradesReportFileNameFormat, exchangeMarket, startDate, endDate);
+
+        PrintInfo();
+        PrintInfo($"Generating the trades CSV report to '{path}'.");
+
+        File.WriteAllText(path, tradesSb.ToString());
+
+        path = string.Format(CultureInfo.InvariantCulture, DepositsWithdrawalsReportFileNameFormat, exchangeMarket, startDate, endDate);
+
+        PrintInfo();
+        PrintInfo($"Generating the deposits/withdrawals CSV report to '{path}'.");
+
+        File.WriteAllText(path, depositsWithdrawalsSb.ToString());
 
         PrintInfo();
         PrintInfo("All done!");
     }
 
     /// <summary>
-    /// Generates the CSV reports from the collected end-of-month stats.
+    /// Adds one line to trades report with information about the given trade.
+    /// </summary>
+    /// <param name="sb">String builder for trades report.</param>
+    /// <param name="trade">Trade to add.</param>
+    private static void AppendTradeLine(StringBuilder sb, ITrade trade)
+    {
+        _ = sb
+            .Append(CultureInfo.InvariantCulture, $"{trade.Timestamp:yyyy-MM-dd HH:mm:ss}")
+            .Append(',')
+            .Append(trade.SymbolPair.BaseSymbol)
+            .Append(',')
+            .Append(trade.SymbolPair.QuoteSymbol)
+            .Append(',')
+            .Append(trade.Side == OrderSide.Buy ? "BUY" : "SELL")
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{trade.Price}")
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{trade.BaseQuantity}")
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{trade.QuoteQuantity}")
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{trade.CommissionAmount}")
+            .Append(',')
+            .AppendLine(trade.CommissionAsset);
+    }
+
+    /// <summary>
+    /// Adds one line to deposits/withdrawals report with information about the given deposit.
+    /// </summary>
+    /// <param name="sb">String builder for deposits/withdrawals report.</param>
+    /// <param name="deposit">Deposit to add.</param>
+    private static void AppendDepositLine(StringBuilder sb, DepositInformation deposit)
+    {
+        _ = sb
+            .Append(CultureInfo.InvariantCulture, $"{deposit.RecordTime:yyyy-MM-dd HH:mm:ss}")
+            .Append(",DEPOSIT,")
+            .Append(deposit.ExchangeDepositId)
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{deposit.Amount}")
+            .Append(',')
+            .Append(deposit.Asset)
+            .Append(',')
+            .Append(deposit.Network)
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{deposit.Fee}")
+            .Append(',')
+            .Append(deposit.Status)
+            .Append(',')
+            .Append(deposit.Address)
+            .Append(',')
+            .Append(deposit.TxId)
+            .Append(',')
+            .AppendLine(deposit.ExtraInfo);
+    }
+
+    /// <summary>
+    /// Adds one line to deposits/withdrawals report with information about the given withdrawal.
+    /// </summary>
+    /// <param name="sb">String builder for deposits/withdrawals report.</param>
+    /// <param name="withdrawal">Withdrawal to add.</param>
+    private static void AppendWithdrawalLine(StringBuilder sb, WithdrawalInformation withdrawal)
+    {
+        _ = sb
+            .Append(CultureInfo.InvariantCulture, $"{withdrawal.RecordTime:yyyy-MM-dd HH:mm:ss}")
+            .Append(",WITHDRAWAL,")
+            .Append(withdrawal.ExchangeWithdrawalId)
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{withdrawal.Amount}")
+            .Append(',')
+            .Append(withdrawal.Asset)
+            .Append(',')
+            .Append(withdrawal.Network)
+            .Append(',')
+            .Append(CultureInfo.InvariantCulture, $"{withdrawal.Fee}")
+            .Append(',')
+            .Append(withdrawal.Status)
+            .Append(',')
+            .Append(withdrawal.Address)
+            .Append(',')
+            .Append(withdrawal.TxId)
+            .Append(',')
+            .AppendLine(withdrawal.ExtraInfo);
+    }
+
+    /// <summary>
+    /// Generates the summary CSV report from the collected end-of-month stats.
     /// </summary>
     /// <param name="monthlyStats">Per-asset stats for end of each month.</param>
     /// <param name="outputPath">Path to the output file.</param>
-    public static void GenerateCsv(SortedDictionary<DateOnly, Dictionary<string, AssetStats>> monthlyStats, string outputPath)
+    public static void GenerateSummaryCsv(SortedDictionary<DateOnly, Dictionary<string, AssetStats>> monthlyStats, string outputPath)
     {
         List<string> allAssets = monthlyStats
             .SelectMany(kv => kv.Value.Keys)
