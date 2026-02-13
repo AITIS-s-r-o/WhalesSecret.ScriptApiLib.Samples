@@ -69,6 +69,7 @@ In the `AdvancedDemos` folder you can find more complex samples, eaching having 
 - **MomentumBreakout** - More complex trading bot that implements Momentum Breakout trading strategy. This bot monitors short-period and long-period Exponential Moving Averages (EMAs) and looks for momentum breakouts. Each trade must be confirmed by Relative Strength Index (RSI) indicator to avoid buying in overbought conditions and selling in oversold conditions. Further, we require certain minimal volume to confirm strength of the breakout. The bot also uses Average True Range (ATR) to measure volatility and set dynamic stop-loss and take-profit levels. For full description of the algorithm please see description of [its Program class](AdvancedDemos/MomentumBreakout/Program.cs).
 - **LeveragedDcaCalculator** - Leveraged DCA (Dollar Cost Averaging) Calculator is an application to calculate profits of Leveraged DCA (L-DCA) strategy. On the input, you provide the exchange market, symbol pair, time-frame, period, order size, order side, trading fee, and leverage, and the application calculates the profit of the L-DCA strategy using the historical data from the exchange.
 - **Accounting** - Generator of summary reports for accounting and tax purposes. Creates a CSV summary reports of trading, deposits, withdrawals, and fees for the specified period on the given exchange market.
+
 ## Credentials
 
 Some samples require valid API credentials. This means you have to have an account on the exchange market you want to run sample against and you have to modify
