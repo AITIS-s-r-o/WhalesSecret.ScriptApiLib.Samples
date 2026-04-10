@@ -21,7 +21,7 @@ await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeM
 
 ## Running Basic Samples
 
-Make sure [.NET9](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) is installed on your computer. Build the samples .NET solution using the latest MSVS or any other .NET 
+Make sure [.NET10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) is installed on your computer. Build the samples .NET solution using the latest MSVS or any other .NET 
 tool of your choice. Then simply run the main executable as a console application in order to see the following usage instructions:
 
 ```
