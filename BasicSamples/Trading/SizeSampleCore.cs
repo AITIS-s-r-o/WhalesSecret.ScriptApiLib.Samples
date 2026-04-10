@@ -27,7 +27,7 @@ public static class SizeSampleCore
     /// <param name="useLargeOrder">
     /// <c>true</c> to use large order, <c>false</c> to use small order. If set to <c>true</c>, <see cref="License"/> has to changed to contain a valid license.
     /// </param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public static async Task RunSampleAsync(ExchangeMarket exchangeMarket, bool useLargeOrder)
     {
         using CancellationTokenSource timeoutCts = new(TimeSpan.FromMinutes(2));
@@ -48,6 +48,7 @@ public static class SizeSampleCore
         {
             ExchangeMarket.BinanceSpot => useLargeOrder ? 25m : 6.0m,
             ExchangeMarket.KucoinSpot => useLargeOrder ? 20m : 2.0m,
+            ExchangeMarket.KrakenSpot => useLargeOrder ? 20m : 5.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 

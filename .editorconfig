@@ -7,7 +7,7 @@
 # top-most EditorConfig file
 root = true
 
-[*.{cs,vb,csproj,cshtml,md,ps1,xaml,props,snippet,json,js,css,dic}]
+[*.{cs,vb,csproj,md,ps1,xaml,props,snippet,dic}]
 end_of_line = crlf
 indent_style = space
 charset = utf-8
@@ -26,7 +26,7 @@ spelling_exclusion_path = .\exclusion.dic
 indent_size = 2
 
 # Code files
-[*.{cs,vb,xaml,ps1,json,cshtml,js,css}]
+[*.{cs,vb,xaml,ps1,json}]
 indent_size = 4
 
 #### .NET Coding Conventions ####
@@ -3290,6 +3290,9 @@ dotnet_diagnostic.IDE0053.severity = none
 # Disable reason: We often prefer longer and easier to read form.
 dotnet_diagnostic.IDE0057.severity = none
 
+# IDE0060: Remove unused parameter
+dotnet_diagnostic.IDE0060.severity = warning
+
 # IDE0063: Using can be simplified
 # Disable reason: We want to decide about each specific case separately.
 dotnet_diagnostic.IDE0063.severity = none
@@ -3336,6 +3339,12 @@ dotnet_diagnostic.IDE0300.severity = none
 # Disable reason: We prefer not to use the new collection expression (i.e. []) at the moment to avoid big code changes and to avoid early tooling issues.
 dotnet_diagnostic.IDE0301.severity = none
 
+# IDE0303: Use collection expression for `Create()`
+# This rule flags places where a Create() method or a similar method that's designated as the collection construction method (using the CollectionBuilderAttribute attribute) is 
+# used to initialize a collection and offers to replace it with a collection expression ([...]).
+# Disable reason: We prefer not to use the new collection expression (i.e. []) at the moment to avoid big code changes and to avoid early tooling issues.
+dotnet_diagnostic.IDE0303.severity = none
+
 # IDE0305: Collection initialization can be simplified
 # Disable reason: We prefer not to use the new collection expression (i.e. []) at the moment to avoid big code changes and to avoid early tooling issues.
 dotnet_diagnostic.IDE0305.severity = none
@@ -3347,6 +3356,12 @@ dotnet_diagnostic.IDE0306.severity = none
 # IDE0350: Lambda expression can be simplified
 # Disable reason: We use lambdas with parameters on purpose.
 dotnet_diagnostic.IDE0350.severity = none
+
+# IDE0370: Remove unnecessary suppression
+# This rule identifies unnecessary nullable warning suppressions using the null-forgiving operator (!). The null-forgiving operator tells the compiler that the value is not null,
+# which suppresses warnings for nullable reference types. However, when the compiler can already determine that a value is not null, the null-forgiving operator is unnecessary and
+# can be removed.
+dotnet_diagnostic.IDE0370.severity = warning
 
 # RS0030: Do not use banned APIs
 # The symbol has been marked as banned in this project, and an alternate should be used instead.
@@ -3360,7 +3375,8 @@ dotnet_diagnostic.xUnit1030.severity = warning
 # Tasks that are created and run from another context (not within the currently running method or delegate) should not be returned or awaited on. Doing so can result in deadlocks
 # because awaiting a Task does not result in the awaiter "joining" the effort such that access to the main thread is shared. If the awaited Task requires the main thread, and the
 # caller that is awaiting it is blocking the main thread, a deadlock will result.
-dotnet_diagnostic.VSTHRD003.severity = warning
+# Disable reason: Whale's Secret Core is not a UI application.
+dotnet_diagnostic.VSTHRD003.severity = none
 
 # VSTHRD111: Use .ConfigureAwait(bool)
 # Some code bases, particularly libraries with no affinity to an app's UI thread, are advised to use .ConfigureAwait(false) for each and every await because it can avoid deadlocks 

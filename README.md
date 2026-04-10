@@ -53,7 +53,7 @@ Usage: WhalesSecret.ScriptApiLib.Samples.BasicSamples <sampleName> <exchangeMark
         Trading/TralingStopLoss - Sample that demonstrates placing bracketed order with trailing stop-loss. Requires credentials. 
         Trading/Interactive - Sample that demonstrates creating orders and cancelling them in an interactive mode. Requires credentials.
 
-    exchangeMarket - Exchange market to use in the sample. Supported values are BinanceSpot,KucoinSpot
+    exchangeMarket - Exchange market to use in the sample. Supported values are BinanceSpot,KucoinSpot,KrakenSpot
 ```
 
 Choose the sample you want and run it in console:

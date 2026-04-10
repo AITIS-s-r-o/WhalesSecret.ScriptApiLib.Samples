@@ -1,18 +1,18 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
-using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
-using WhalesSecret.TradeScriptLib.API.TradingV1;
-using WhalesSecret.TradeScriptLib.Entities;
-using WhalesSecret.TradeScriptLib.Entities.MarketData;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Skender.Stock.Indicators;
+using WhalesSecret.TradeScriptLib.API.TradingV1;
+using WhalesSecret.TradeScriptLib.API.TradingV1.MarketData;
+using WhalesSecret.TradeScriptLib.Entities;
+using WhalesSecret.TradeScriptLib.Entities.MarketData;
 
 namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Indicators;
 
 /// <summary>
-/// Sample that demonstrates the use of <see cref="https://dotnet.stockindicators.dev/indicators/Rsi/#content">Relative Strength Indicator</see> (RSI) from
+/// Sample that demonstrates the use of <see href="https://dotnet.stockindicators.dev/indicators/Rsi/#content">Relative Strength Indicator</see> (RSI) from
 /// <see href="https://dotnet.stockindicators.dev/">Skender.Stock.Indicators</see>. The sample creates a candlestick subscriptions with 1-minute BTC/USDT candles and feeds
 /// the indicator for about 5 minutes. It also obtains historical candle data for the last 24 hours.
 /// </summary>
@@ -45,7 +45,7 @@ public class Rsi : IScriptApiSample
         Console.WriteLine("Getting 24 hours of candle data");
         DateTime startTime = lastClosedCandle.Timestamp.AddHours(-24);
 
-        // End time is exclusive, so to make sure the last closed candle is included, we add 1 second. 
+        // End time is exclusive, so to make sure the last closed candle is included, we add 1 second.
         DateTime endTime = lastClosedCandle.Timestamp.AddSeconds(1);
 
         CandlestickData candlestickData = await tradeClient.GetCandlesticksAsync(symbolPair, candleWidth, startTime: startTime, endTime: endTime, timeoutCts.Token)
@@ -88,7 +88,6 @@ public class Rsi : IScriptApiSample
     /// Prints information about current RSI on the console output.
     /// </summary>
     /// <param name="quotes">List of quotes to calculate RSI from.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     private void ReportRsi(IEnumerable<Quote> quotes)
     {
         IEnumerable<RsiResult> results = quotes.GetRsi();
@@ -98,7 +97,7 @@ public class Rsi : IScriptApiSample
         {
             < 30 => " (oversold!)",
             > 70 => " (overbought!)",
-            _ => string.Empty
+            _ => string.Empty,
         };
 
         Console.WriteLine($"Current RSI: {lastRsi.Date} -> {lastRsi.Rsi}{interpretation}");

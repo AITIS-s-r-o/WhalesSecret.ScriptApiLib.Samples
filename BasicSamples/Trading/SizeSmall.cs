@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using WhalesSecret.ScriptApiLib.Samples.SharedLib;
 using WhalesSecret.TradeScriptLib.Entities;
 
 namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;

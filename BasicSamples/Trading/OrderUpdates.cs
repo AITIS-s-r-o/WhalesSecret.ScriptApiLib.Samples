@@ -41,6 +41,7 @@ public class OrderUpdates : IScriptApiSample
         {
             ExchangeMarket.BinanceSpot => 6.0m,
             ExchangeMarket.KucoinSpot => 2.0m,
+            ExchangeMarket.KrakenSpot => 5.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -72,7 +73,6 @@ public class OrderUpdates : IScriptApiSample
                         [UPD] Order update received: {{update}}
                         
                         """);
-                        
                 }
             }
             catch (OperationCanceledException)

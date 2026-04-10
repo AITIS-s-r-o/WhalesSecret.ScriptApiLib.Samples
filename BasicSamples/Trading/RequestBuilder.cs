@@ -52,6 +52,7 @@ public class RequestBuilder : IScriptApiSample
         {
             ExchangeMarket.BinanceSpot => 6.0m,
             ExchangeMarket.KucoinSpot => 1.0m,
+            ExchangeMarket.KrakenSpot => 5.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 

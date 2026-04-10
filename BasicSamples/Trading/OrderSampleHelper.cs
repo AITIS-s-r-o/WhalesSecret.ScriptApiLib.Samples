@@ -85,12 +85,12 @@ public class OrderSampleHelper : IAsyncDisposable
         ConnectionOptions? connectionOptions = null)
     {
         // Credentials must be set before we can create a private connection.
-
 #pragma warning disable CA2000 // Dispose objects before losing scope
         IApiIdentity apiIdentity = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => Credentials.GetBinanceHmacApiIdentity(),
             ExchangeMarket.KucoinSpot => Credentials.GetKucoinApiIdentity(),
+            ExchangeMarket.KrakenSpot => Credentials.GetKrakenApiIdentity(),
             _ => throw new SanityCheckException($"Unsupported exchange market {exchangeMarket} provided."),
         };
 #pragma warning restore CA2000 // Dispose objects before losing scope
@@ -111,6 +111,7 @@ public class OrderSampleHelper : IAsyncDisposable
         {
             ExchangeMarket.BinanceSpot => SymbolPair.BTC_EUR,
             ExchangeMarket.KucoinSpot => SymbolPair.BTC_USDT,
+            ExchangeMarket.KrakenSpot => SymbolPair.BTC_EUR,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 

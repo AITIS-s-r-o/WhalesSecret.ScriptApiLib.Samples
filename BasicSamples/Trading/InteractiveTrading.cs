@@ -32,12 +32,12 @@ public class InteractiveTrading : IScriptApiSample
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, connectionTimeoutCts.Token).ConfigureAwait(false);
 
         // Credentials must be set before we can create a private connection.
-
 #pragma warning disable CA2000 // Dispose objects before losing scope
         IApiIdentity apiIdentity = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => Credentials.GetBinanceHmacApiIdentity(),
             ExchangeMarket.KucoinSpot => Credentials.GetKucoinApiIdentity(),
+            ExchangeMarket.KrakenSpot => Credentials.GetKrakenApiIdentity(),
             _ => throw new SanityCheckException($"Unsupported exchange market {exchangeMarket} provided."),
         };
 #pragma warning restore CA2000 // Dispose objects before losing scope

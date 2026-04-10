@@ -1,0 +1,18 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Code style analyzers. -->
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
+    <PackageVersion Include="Skender.Stock.Indicators" Version="2.6.1" />
+    <!-- Logging library for all C# projects. -->
+    <PackageVersion Include="NLog" Version="5.5.1" />
+    <!-- For tests. -->
+    <PackageVersion Include="Moq" Version="[4.20.72]" />
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+    <!-- Whale's Secret. -->
+    <PackageVersion Include="WhalesSecret.ScriptApiLib" Version="*" />
+  </ItemGroup>
+</Project>

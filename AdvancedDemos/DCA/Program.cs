@@ -71,6 +71,10 @@ internal class Program
     ///         "Key": "INSERT YOUR Kucoin API key HERE",
     ///         "Secret": "INSERT YOUR Kucoin API secret HERE",
     ///         "Passphrase": "INSERT YOUR Kucoin API passphrase HERE"
+    ///       },
+    ///       "Kraken": {
+    ///         "Key": "INSERT YOUR Kraken API key HERE",
+    ///         "Secret": "INSERT YOUR Kraken API secret HERE"
     ///       }
     ///     }
     ///   },

@@ -353,10 +353,10 @@ MigrationBackup/
 .ionide/
 
 # WhalesSecret unit test assets.
-/*UnitTests/Assets/*/Workspace/
-/Exchanges/*UnitTests/Assets/*/Workspace/
-/IntegrationTests/Assets/*/Workspace/
-/GuiIntegrationTests/Assets/*/Workspace/
+/*UnitTests/Assets/*/Workspace*/
+/Exchanges/*UnitTests/Assets/*/Workspace*/
+/IntegrationTests/Assets/*/Workspace*/
+/GuiIntegrationTests/Assets/*/Workspace*/
 
 /Utils/Tests/testdata
 !**/Input/**/Logs/

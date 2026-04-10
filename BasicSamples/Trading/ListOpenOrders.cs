@@ -44,6 +44,7 @@ public class ListOpenOrders : IScriptApiSample
         {
             ExchangeMarket.BinanceSpot => 6.0m,
             ExchangeMarket.KucoinSpot => 1.0m,
+            ExchangeMarket.KrakenSpot => 5.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -74,7 +75,7 @@ public class ListOpenOrders : IScriptApiSample
 
         Console.WriteLine("List open orders.");
         IReadOnlyList<ILiveOrder> liveOrders = await tradeClient.GetOpenOrdersAsync(OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
-        
+
         Console.WriteLine();
         Console.WriteLine("Following open orders were found:");
         for (int i = 0; i < liveOrders.Count; i++)
