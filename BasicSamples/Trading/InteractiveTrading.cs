@@ -68,7 +68,7 @@ public class InteractiveTrading : IScriptApiSample
             if (orderSize is null)
                 continue;
 
-            string cId = Guid.NewGuid().ToString();
+            string cId = Guid.NewGuid().ToString().Substring(0, 16);
 
             ILiveOrder liveOrder;
 
