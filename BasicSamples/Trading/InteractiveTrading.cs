@@ -20,7 +20,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;
 public class InteractiveTrading : IScriptApiSample
 {
     /// <summary>Symbol pair of orders.</summary>
-    private static readonly SymbolPair OrderSymbolPair = SymbolPair.BTC_USDT;
+    private static readonly SymbolPair OrderSymbolPair = SymbolPair.BTC_EUR;
 
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
