@@ -55,7 +55,7 @@ public static class SizeSampleCore
         // Rounding is necessary to get accepted on exchanges.
         decimal orderSize = Math.Round(exchangeOrderSize / limitPrice, decimals: helper.BaseVolumePrecision);
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"order-size-sample-{DateTime.UtcNow.Ticks}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"os-{DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond}");
         ILiveLimitOrder liveOrder = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 

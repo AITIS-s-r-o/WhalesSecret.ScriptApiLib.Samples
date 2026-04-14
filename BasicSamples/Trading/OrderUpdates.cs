@@ -49,7 +49,7 @@ public class OrderUpdates : IScriptApiSample
         decimal orderSize = Math.Round(exchangeOrderSize / limitPrice, decimals: helper.BaseVolumePrecision);
 
         Console.WriteLine("Creating the first limit order.");
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"updates-sample-1-{DateTime.UtcNow.Ticks}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"us1-{DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond}");
         ILiveLimitOrder liveOrder = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 
@@ -85,7 +85,7 @@ public class OrderUpdates : IScriptApiSample
 
         Console.WriteLine();
         Console.WriteLine("Creating the second limit order.");
-        clientOrderId = string.Create(CultureInfo.InvariantCulture, $"updates-sample-2-{DateTime.UtcNow.Ticks}");
+        clientOrderId = string.Create(CultureInfo.InvariantCulture, $"us2-{DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond}");
         ILiveLimitOrder liveOrder2 = await tradeClient.CreateLimitOrderAsync(clientOrderId, symbolPair, OrderSide.Buy, price: limitPrice, size: orderSize, timeoutCts.Token)
             .ConfigureAwait(false);
 

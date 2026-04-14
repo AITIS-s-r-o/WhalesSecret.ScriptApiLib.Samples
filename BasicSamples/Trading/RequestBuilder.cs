@@ -43,9 +43,9 @@ public class RequestBuilder : IScriptApiSample
 
         OrderRequestBuilder<LimitOrderRequest> limitBuilder = new(helper.ExchangeInfo);
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"builder-sample-1-{DateTime.UtcNow.Ticks}");
-        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"builder-sample-2-{DateTime.UtcNow.Ticks}");
-        string clientOrderId3 = string.Create(CultureInfo.InvariantCulture, $"builder-sample-3-{DateTime.UtcNow.Ticks}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"bs1-{DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond}");
+        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"bs2-{DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond}");
+        string clientOrderId3 = string.Create(CultureInfo.InvariantCulture, $"bs3-{DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond}");
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
@@ -114,10 +114,10 @@ public class RequestBuilder : IScriptApiSample
         _ = await limitOrder.WaitUntilClosedAsync(timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine("Wait until the market order 1 is filled.");
-        await marketOrder1.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await marketOrder1.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine("Wait until the market order 2 is filled.");
-        await marketOrder2.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await marketOrder2.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine("Disposing trade API client and script API.");
     }

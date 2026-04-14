@@ -147,7 +147,7 @@ public class Program
         },
         new object[]
         {
-            "Trading/TralingStopLoss",
+            "Trading/TrailingStopLoss",
             typeof(TrailingStopLoss),
             "Sample that demonstrates placing bracketed order with trailing stop-loss. Requires credentials.",
         },
