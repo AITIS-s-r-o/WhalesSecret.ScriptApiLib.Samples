@@ -83,8 +83,8 @@ public class StrategyBudget : IScriptApiSample
 
         // The client order ID suffix is a special requirement when the budget is used. We can either use null client order ID in our requests, or we need to specify the suffix,
         // which will be altered by the budget. The suffix is used to uniquely identify the orders that are created by trade API client with the budget.
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"budget-sample-1{ITradingStrategyBudget.ClientOrderIdSuffix}");
-        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"budget-sample-2{ITradingStrategyBudget.ClientOrderIdSuffix}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"bs1-{ITradingStrategyBudget.ClientOrderIdSuffix}");
+        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"bs2-{ITradingStrategyBudget.ClientOrderIdSuffix}");
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
@@ -117,7 +117,7 @@ public class StrategyBudget : IScriptApiSample
         Console.WriteLine();
 
         Console.WriteLine("Wait until the market order is filled.");
-        await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine("The first order was fully filled.");
         Console.WriteLine();
@@ -144,7 +144,7 @@ public class StrategyBudget : IScriptApiSample
         Console.WriteLine();
 
         Console.WriteLine("Wait until the market order is filled.");
-        await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine("The second order has concluded. Now calculate profit and loss.");
         Console.WriteLine();

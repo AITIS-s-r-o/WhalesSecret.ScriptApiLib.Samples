@@ -73,7 +73,7 @@ public class BracketedOrder : IScriptApiSample
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
-        string clientOrderId = "brackord";
+        string clientOrderId = "br";
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
