@@ -1,5 +1,5 @@
+using System;
 using System.Globalization;
-using System.Text;
 using System.Text.Json.Serialization;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Exceptions;
@@ -43,7 +43,7 @@ public class KrakenApiKeyConfig
     /// <returns>New instance of exchange API credentials for KuCoin exchange.</returns>
     public IApiIdentity GetApiIdentity()
     {
-        byte[] secretBytes = Encoding.UTF8.GetBytes(this.Secret);
+        byte[] secretBytes = Convert.FromBase64String(this.Secret);
         return KrakenApiIdentity.Create(name: "KrakenCredentials", key: this.Key, secret: secretBytes);
     }
 
