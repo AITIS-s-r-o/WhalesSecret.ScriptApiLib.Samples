@@ -18,16 +18,21 @@ public class ApiKeysConfig
     /// <summary>Configuration of KuCoin API keys, or <c>null</c> not to configure API keys for KuCoin.</summary>
     public KucoinApiKeyConfig? Kucoin { get; }
 
+    /// <summary>Configuration of Kraken API keys, or <c>null</c> not to configure API keys for Kraken.</summary>
+    public KrakenApiKeyConfig? Kraken { get; }
+
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
     /// <param name="binance">Configuration of Binance API keys, or <c>null</c> not to configure API keys for Binance.</param>
     /// <param name="kucoin">Configuration of KuCoin API keys, or <c>null</c> not to configure API keys for KuCoin.</param>
+    /// <param name="kraken">Configuration of Kraken API keys, or <c>null</c> not to configure API keys for Kraken.</param>
     [JsonConstructor]
-    public ApiKeysConfig(BinanceApiKeyConfig? binance, KucoinApiKeyConfig? kucoin)
+    public ApiKeysConfig(BinanceApiKeyConfig? binance, KucoinApiKeyConfig? kucoin, KrakenApiKeyConfig? kraken)
     {
         this.Binance = binance;
         this.Kucoin = kucoin;
+        this.Kraken = kraken;
     }
 
     /// <summary>
@@ -57,6 +62,19 @@ public class ApiKeysConfig
     }
 
     /// <summary>
+    /// Gets exchange API credentials for Kraken exchange.
+    /// </summary>
+    /// <returns>Exchange API credentials for Kraken exchange.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if Kraken API keys are not configured.</exception>
+    public IApiIdentity GetKrakenApiIdentity()
+    {
+        if (this.Kraken is null)
+            throw new InvalidOperationException("Kraken API keys are not configured.");
+
+        return this.Kraken.GetApiIdentity();
+    }
+
+    /// <summary>
     /// Gets exchange API credentials for the given exchange.
     /// </summary>
     /// <param name="exchangeMarket">Exchange market for which to get API credentials.</param>
@@ -68,6 +86,7 @@ public class ApiKeysConfig
         {
             ExchangeMarket.BinanceSpot => this.GetBinanceApiIdentity(),
             ExchangeMarket.KucoinSpot => this.GetKucoinApiIdentity(),
+            ExchangeMarket.KrakenSpot => this.GetKrakenApiIdentity(),
             _ => throw new SanityCheckException($"Unsupported exchange market {exchangeMarket} provided."),
         };
     }
@@ -78,9 +97,10 @@ public class ApiKeysConfig
         return string.Format
         (
             CultureInfo.InvariantCulture,
-            "[{0}=`{1}`,{2}=`{3}`]",
+            "[{0}=`{1}`,{2}=`{3}`,{4}=`{5}`]",
             nameof(this.Binance), this.Binance,
-            nameof(this.Kucoin), this.Kucoin
+            nameof(this.Kucoin), this.Kucoin,
+            nameof(this.Kraken), this.Kraken
         );
     }
 }

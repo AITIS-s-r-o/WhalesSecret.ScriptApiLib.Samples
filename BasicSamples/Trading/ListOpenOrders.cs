@@ -37,13 +37,14 @@ public class ListOpenOrders : IScriptApiSample
 
         OrderRequestBuilder<LimitOrderRequest> limitBuilder = new(helper.ExchangeInfo);
 
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"activeOrders-1-{DateTime.UtcNow.Ticks}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"aO1-{DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond}");
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => 6.0m,
             ExchangeMarket.KucoinSpot => 1.0m,
+            ExchangeMarket.KrakenSpot => 5.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -74,7 +75,7 @@ public class ListOpenOrders : IScriptApiSample
 
         Console.WriteLine("List open orders.");
         IReadOnlyList<ILiveOrder> liveOrders = await tradeClient.GetOpenOrdersAsync(OrderFilterOptions.AllOrders, timeoutCts.Token).ConfigureAwait(false);
-        
+
         Console.WriteLine();
         Console.WriteLine("Following open orders were found:");
         for (int i = 0; i < liveOrders.Count; i++)

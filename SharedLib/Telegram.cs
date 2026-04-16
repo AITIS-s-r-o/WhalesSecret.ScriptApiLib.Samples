@@ -13,7 +13,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib;
 /// </summary>
 public class Telegram : IAsyncDisposable
 {
-    /// <summary>Maximum length of a Telegram message</summary>
+    /// <summary>Maximum length of a Telegram message.</summary>
     private const int MaxMessageLength = 4096;
 
     /// <summary>URL-encoded Telegram group ID to which to send messages.</summary>

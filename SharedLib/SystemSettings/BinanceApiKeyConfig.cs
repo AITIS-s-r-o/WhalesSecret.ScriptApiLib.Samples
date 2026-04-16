@@ -48,8 +48,10 @@ public class BinanceApiKeyConfig
                 throw new InvalidArgumentException($"'{nameof(hmacKey)}' must not be an empty string.", parameterName: nameof(hmacKey));
 
             if (string.IsNullOrEmpty(hmacSecret))
+            {
                 throw new InvalidArgumentException($"'{nameof(hmacSecret)}' must be specified and not empty when '{nameof(hmacKey)}' is specified.",
                     parameterName: nameof(hmacSecret));
+            }
         }
 
         if (rsaKey is not null)
@@ -63,8 +65,10 @@ public class BinanceApiKeyConfig
                 throw new InvalidArgumentException($"'{nameof(rsaKey)}' must not be an empty string.", parameterName: nameof(rsaKey));
 
             if (string.IsNullOrEmpty(rsaSecret))
+            {
                 throw new InvalidArgumentException($"'{nameof(rsaSecret)}' must be specified and not empty when '{nameof(rsaKey)}' is specified.",
                     parameterName: nameof(rsaSecret));
+            }
         }
 
         this.HmacKey = hmacKey;

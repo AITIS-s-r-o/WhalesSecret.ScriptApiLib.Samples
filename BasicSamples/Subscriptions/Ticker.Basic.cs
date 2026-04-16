@@ -38,7 +38,7 @@ public class TickerBasic : IScriptApiSample
         Console.WriteLine($"First ticker update '{ticker}' has been received.");
 
         Ticker ticker2 = await subscription.GetNewerTickerAsync(timeoutCts.Token).ConfigureAwait(false);
-            
+
         Console.WriteLine($"Second ticker update '{ticker2}' has been received.");
 
         Console.WriteLine("Disposing ticker subscription, trade API client, and script API.");

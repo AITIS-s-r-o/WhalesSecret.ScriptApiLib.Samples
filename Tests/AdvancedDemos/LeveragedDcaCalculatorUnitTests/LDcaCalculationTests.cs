@@ -27,7 +27,8 @@ public class LDcaCalculationTests
     /// </summary>
     public LDcaCalculationTests()
     {
-        ExchangeSymbolPairLimits exchangeSymbolPairLimits = new(baseVolumePrecision: 5, quoteVolumePrecision: 2, pricePrecision: 3, minBaseSize: 0.001m, minQuoteSize: 10.0m);
+        ExchangeSymbolPairLimits exchangeSymbolPairLimits = new(alternativeSymbolPairs: Array.Empty<string>(), baseVolumePrecision: 5, quoteVolumePrecision: 2, pricePrecision: 3,
+            minBaseSize: 0.001m, minQuoteSize: 10.0m);
 
         Dictionary<SymbolPair, ExchangeSymbolPairLimits> symbolPairLimits = new()
         {

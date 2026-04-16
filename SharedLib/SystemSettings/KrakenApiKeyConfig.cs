@@ -1,5 +1,5 @@
+using System;
 using System.Globalization;
-using System.Text;
 using System.Text.Json.Serialization;
 using WhalesSecret.ScriptApiLib.Exchanges;
 using WhalesSecret.TradeScriptLib.Exceptions;
@@ -7,29 +7,25 @@ using WhalesSecret.TradeScriptLib.Exceptions;
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 
 /// <summary>
-/// Configuration of KuCoin API keys.
+/// Configuration of Kraken API keys.
 /// </summary>
-public class KucoinApiKeyConfig
+public class KrakenApiKeyConfig
 {
-    /// <summary>API key for KuCoin exchange.</summary>
+    /// <summary>API key for Kraken exchange.</summary>
     public string Key { get; }
 
-    /// <summary>API secret for KuCoin exchange.</summary>
+    /// <summary>API secret for Kraken exchange.</summary>
     public string Secret { get; }
-
-    /// <summary>API passphrase for KuCoin exchange.</summary>
-    public string Passphrase { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="key">API key for KuCoin exchange.</param>
-    /// <param name="secret">API secret for KuCoin exchange.</param>
-    /// <param name="passphrase">API passphrase for KuCoin exchange.</param>
+    /// <param name="key">API key for Kraken exchange.</param>
+    /// <param name="secret">API secret for Kraken exchange.</param>
     /// <exception cref="InvalidArgumentException">Thrown if any of the parameters is <c>null</c> or empty.
     /// </exception>
     [JsonConstructor]
-    public KucoinApiKeyConfig(string? key, string secret, string passphrase)
+    public KrakenApiKeyConfig(string? key, string secret)
     {
         if (string.IsNullOrEmpty(key))
             throw new InvalidArgumentException($"'{nameof(key)}' must not be null or empty.", parameterName: nameof(key));
@@ -37,12 +33,8 @@ public class KucoinApiKeyConfig
         if (string.IsNullOrEmpty(secret))
             throw new InvalidArgumentException($"'{nameof(secret)}' must not be null or empty.", parameterName: nameof(secret));
 
-        if (string.IsNullOrEmpty(passphrase))
-            throw new InvalidArgumentException($"'{nameof(passphrase)}' must not be null or empty.", parameterName: nameof(passphrase));
-
         this.Key = key;
         this.Secret = secret;
-        this.Passphrase = passphrase;
     }
 
     /// <summary>
@@ -51,9 +43,8 @@ public class KucoinApiKeyConfig
     /// <returns>New instance of exchange API credentials for KuCoin exchange.</returns>
     public IApiIdentity GetApiIdentity()
     {
-        byte[] secretBytes = Encoding.UTF8.GetBytes(this.Secret);
-        byte[] passphraseBytes = Encoding.UTF8.GetBytes(this.Passphrase);
-        return KucoinApiIdentity.Create(name: "KuCoinCredentials", key: this.Key, secret: secretBytes, passphrase: passphraseBytes);
+        byte[] secretBytes = Convert.FromBase64String(this.Secret);
+        return KrakenApiIdentity.Create(name: "KrakenCredentials", key: this.Key, secret: secretBytes);
     }
 
     /// <inheritdoc/>

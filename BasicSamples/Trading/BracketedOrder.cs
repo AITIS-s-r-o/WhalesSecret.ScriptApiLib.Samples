@@ -24,7 +24,6 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;
 /// Bracketed order is a synthetic order type that opens a trading position with a so called working order, and then attempts to close the position with, so called, bracket orders
 /// that either lock a profit or a loss. Bracketed order also includes a closing order request that is executed when the position is to be closed "manually", i.e. not relying on
 /// the bracket orders. The closing order is a market order with opposite side to the working order.
-/// </para>
 /// <para>
 /// Schema of a bracketed order with a buy limit working order a single take-profit bracket order and a single stop-loss bracket order is as follows:
 ///
@@ -45,8 +44,8 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;
 ///                                                                    (Locks loss).
 /// </para>
 /// <para>
-/// A single bracketed order may have up to <see cref="IBracketOrdersManager.MaxBracketOrders"/> bracket orders. The number of stop-loss orders does not need to match the number of
-/// take-profit orders. Nor do their sizes in percent need to match. However, the sum of their sizes in percent on each side must not exceed <c>100%</c>. The actual size is
+/// A single bracketed order may have up to <see cref="IBracketedOrdersFactory.MaxBracketOrders"/> bracket orders. The number of stop-loss orders does not need to match the number
+/// of take-profit orders. Nor do their sizes in percent need to match. However, the sum of their sizes in percent on each side must not exceed <c>100%</c>. The actual size is
 /// calculated as a percentage from the filled size of the working order.
 /// </para>
 /// <para>IMPORTANT: You have to change the secrets in <see cref="Credentials"/> to make the sample work.</para>
@@ -65,6 +64,7 @@ public class BracketedOrder : IScriptApiSample
         {
             ExchangeMarket.BinanceSpot => "EUR",
             ExchangeMarket.KucoinSpot => "USDT",
+            ExchangeMarket.KrakenSpot => "EUR",
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -73,13 +73,14 @@ public class BracketedOrder : IScriptApiSample
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
-        string clientOrderId = "brackord";
+        string clientOrderId = "br";
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => 20.0m,
             ExchangeMarket.KucoinSpot => 5.0m,
+            ExchangeMarket.KrakenSpot => 10.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -146,6 +147,7 @@ public class BracketedOrder : IScriptApiSample
         ConsoleCancelEventHandler controlCancelHandler = (object? sender, ConsoleCancelEventArgs e) =>
         {
             Console.WriteLine("Ctrl+C / SIGINT detected.");
+
             // If cancellation of the control event is set to true, the process won't terminate automatically and we will have control over the shutdown.
             e.Cancel = true;
 

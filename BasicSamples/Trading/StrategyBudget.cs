@@ -34,9 +34,9 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;
 /// </para>
 /// <para>
 /// Let's assume then that the client makes trades and by doing so gains <c>0.02</c> BTC and loses <c>400</c> EUR including trading fees. Suppose further that the price of 1 BTC
-/// changes to 85,000 EUR. Using <see cref="ITradeApiClient.GenerateReportAsync(CancellationToken)"/> we can generate report that will give us the current value of the budget in
-/// the primary asset as well as profit and loss. In our example, the current value of the budget will be <c>0.1 + 0.02 + (5,000 - 400) / 85,000 = 0.12 + 0.05176 = 0.17176</c> BTC.
-/// Therefore, the profit will be calculated as <c>0.17176 - 0.1625 = 0.00926</c> BTC.
+/// changes to 85,000 EUR. Using <see cref="ITradeApiClient.GenerateBudgetReportAsync(CancellationToken)"/> we can generate report that will give us the current value of the budget
+/// in the primary asset as well as profit and loss. In our example, the current value of the budget will be <c>0.1 + 0.02 + (5,000 - 400) / 85,000 = 0.12 + 0.05176 = 0.17176</c>
+/// BTC. Therefore, the profit will be calculated as <c>0.17176 - 0.1625 = 0.00926</c> BTC.
 /// </para>
 /// <para>
 /// Note that the budget does not take into account the actual balance in the exchange wallet. It is a mechanism that is implemented within an instance of a trade API client. It is
@@ -62,6 +62,7 @@ public class StrategyBudget : IScriptApiSample
         {
             ExchangeMarket.BinanceSpot => "EUR",
             ExchangeMarket.KucoinSpot => "USDT",
+            ExchangeMarket.KrakenSpot => "EUR",
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -82,14 +83,15 @@ public class StrategyBudget : IScriptApiSample
 
         // The client order ID suffix is a special requirement when the budget is used. We can either use null client order ID in our requests, or we need to specify the suffix,
         // which will be altered by the budget. The suffix is used to uniquely identify the orders that are created by trade API client with the budget.
-        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"budget-sample-1{ITradingStrategyBudget.ClientOrderIdSuffix}");
-        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"budget-sample-2{ITradingStrategyBudget.ClientOrderIdSuffix}");
+        string clientOrderId = string.Create(CultureInfo.InvariantCulture, $"bs1-{ITradingStrategyBudget.ClientOrderIdSuffix}");
+        string clientOrderId2 = string.Create(CultureInfo.InvariantCulture, $"bs2-{ITradingStrategyBudget.ClientOrderIdSuffix}");
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => 6.0m,
             ExchangeMarket.KucoinSpot => 1.0m,
+            ExchangeMarket.KrakenSpot => 5.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -115,7 +117,7 @@ public class StrategyBudget : IScriptApiSample
         Console.WriteLine();
 
         Console.WriteLine("Wait until the market order is filled.");
-        await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine("The first order was fully filled.");
         Console.WriteLine();
@@ -142,7 +144,7 @@ public class StrategyBudget : IScriptApiSample
         Console.WriteLine();
 
         Console.WriteLine("Wait until the market order is filled.");
-        await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
+        _ = await marketOrder.WaitForFillAsync(timeoutCts.Token).ConfigureAwait(false);
 
         Console.WriteLine("The second order has concluded. Now calculate profit and loss.");
         Console.WriteLine();

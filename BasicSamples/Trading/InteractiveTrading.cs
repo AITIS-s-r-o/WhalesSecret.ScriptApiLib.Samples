@@ -20,7 +20,7 @@ namespace WhalesSecret.ScriptApiLib.Samples.BasicSamples.Trading;
 public class InteractiveTrading : IScriptApiSample
 {
     /// <summary>Symbol pair of orders.</summary>
-    private static readonly SymbolPair OrderSymbolPair = SymbolPair.BTC_USDT;
+    private static readonly SymbolPair OrderSymbolPair = SymbolPair.BTC_EUR;
 
     /// <inheritdoc/>
     public async Task RunSampleAsync(ExchangeMarket exchangeMarket)
@@ -32,12 +32,12 @@ public class InteractiveTrading : IScriptApiSample
         await using ScriptApi scriptApi = await ScriptApi.CreateAsync(createOptions, connectionTimeoutCts.Token).ConfigureAwait(false);
 
         // Credentials must be set before we can create a private connection.
-
 #pragma warning disable CA2000 // Dispose objects before losing scope
         IApiIdentity apiIdentity = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => Credentials.GetBinanceHmacApiIdentity(),
             ExchangeMarket.KucoinSpot => Credentials.GetKucoinApiIdentity(),
+            ExchangeMarket.KrakenSpot => Credentials.GetKrakenApiIdentity(),
             _ => throw new SanityCheckException($"Unsupported exchange market {exchangeMarket} provided."),
         };
 #pragma warning restore CA2000 // Dispose objects before losing scope
@@ -68,7 +68,7 @@ public class InteractiveTrading : IScriptApiSample
             if (orderSize is null)
                 continue;
 
-            string cId = Guid.NewGuid().ToString();
+            string cId = Guid.NewGuid().ToString().Substring(0, 16);
 
             ILiveOrder liveOrder;
 

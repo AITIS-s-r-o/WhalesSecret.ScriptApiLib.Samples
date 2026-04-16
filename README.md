@@ -21,7 +21,7 @@ await using ITradeApiClient tradeClient = await scriptApi.ConnectAsync(exchangeM
 
 ## Running Basic Samples
 
-Make sure [.NET9](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) is installed on your computer. Build the samples .NET solution using the latest MSVS or any other .NET 
+Make sure [.NET10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) is installed on your computer. Build the samples .NET solution using the latest MSVS or any other .NET 
 tool of your choice. Then simply run the main executable as a console application in order to see the following usage instructions:
 
 ```
@@ -53,7 +53,7 @@ Usage: WhalesSecret.ScriptApiLib.Samples.BasicSamples <sampleName> <exchangeMark
         Trading/TralingStopLoss - Sample that demonstrates placing bracketed order with trailing stop-loss. Requires credentials. 
         Trading/Interactive - Sample that demonstrates creating orders and cancelling them in an interactive mode. Requires credentials.
 
-    exchangeMarket - Exchange market to use in the sample. Supported values are BinanceSpot,KucoinSpot
+    exchangeMarket - Exchange market to use in the sample. Supported values are BinanceSpot,KucoinSpot,KrakenSpot
 ```
 
 Choose the sample you want and run it in console:

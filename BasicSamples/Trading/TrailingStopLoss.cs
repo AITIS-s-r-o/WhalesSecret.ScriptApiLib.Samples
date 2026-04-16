@@ -42,6 +42,7 @@ public class TrailingStopLoss : IScriptApiSample
         {
             ExchangeMarket.BinanceSpot => "EUR",
             ExchangeMarket.KucoinSpot => "USDT",
+            ExchangeMarket.KrakenSpot => "EUR",
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -50,13 +51,14 @@ public class TrailingStopLoss : IScriptApiSample
         ITradeApiClient tradeClient = helper.TradeApiClient;
         SymbolPair symbolPair = helper.SelectedSymbolPair;
 
-        string clientOrderId = "brackord";
+        string clientOrderId = "br";
 
         // Buy a small amount of bitcoin.
         decimal quoteOrderSize = exchangeMarket switch
         {
             ExchangeMarket.BinanceSpot => 20.0m,
             ExchangeMarket.KucoinSpot => 5.0m,
+            ExchangeMarket.KrakenSpot => 10.0m,
             _ => throw new SanityCheckException($"Invalid exchange market {exchangeMarket} provided."),
         };
 
@@ -122,6 +124,7 @@ public class TrailingStopLoss : IScriptApiSample
         ConsoleCancelEventHandler controlCancelHandler = (object? sender, ConsoleCancelEventArgs e) =>
         {
             Console.WriteLine("Ctrl+C / SIGINT detected.");
+
             // If cancellation of the control event is set to true, the process won't terminate automatically and we will have control over the shutdown.
             e.Cancel = true;
 

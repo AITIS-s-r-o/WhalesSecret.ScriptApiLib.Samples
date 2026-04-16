@@ -52,10 +52,10 @@ public class OrderBookSet : IScriptApiSample
                 // state, which is propagated as an update, but it may be preceded with any number of updates of earlier subscribed symbol pairs of the same set.
                 OrderBook orderBook = await subscriptionSet.WhenAnyNewOrderBookAsync().ConfigureAwait(false);
                 Console.WriteLine($"  {DateTime.UtcNow} | New order book received:");
-            
+
                 OrderBookHelper.PrintOrderBook(orderBook);
             }
-            
+
             Console.WriteLine();
 
             Console.WriteLine("Dispose batch monitoring to be able to remove subscription from the set.");
