@@ -286,7 +286,7 @@ internal class Program
                     orderCounter++;
 
                     MarketOrderRequest orderRequest = builder
-                        .SetClientOrderId($"dca_{orderCounter:00000000}{ITradingStrategyBudget.ClientOrderIdSuffix}")
+                        .SetClientOrderId($"dca_{orderCounter:000}{ITradingStrategyBudget.ClientOrderIdSuffix}")
                         .Build();
 
                     await PlaceOrderAsync(tradeClient, orderRequest, cancellationToken).ConfigureAwait(false);
