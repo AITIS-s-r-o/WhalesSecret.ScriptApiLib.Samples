@@ -26,6 +26,6 @@
   <ItemGroup>
     <PackageReference Include="WhalesSecret.ScriptApiLib" />
     <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
-    <PackageReference Include="NLog" PrivateAssets="all" />
+    <PackageReference Include="NLog" />
   </ItemGroup>
 </Project>
