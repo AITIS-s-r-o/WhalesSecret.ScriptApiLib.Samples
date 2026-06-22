@@ -93,6 +93,18 @@ public class Program
         },
         new object[]
         {
+            "Subscriptions/Trades.Basic",
+            typeof(TradesBasic),
+            "Basic trades subscription sample. Demonstrates how a trades subscription can be created and consumed.",
+        },
+        new object[]
+        {
+            "Subscriptions/Trades.Set",
+            typeof(TradesSet),
+            "Advanced trades subscription sample. Demonstrates how multiple trades subscriptions can be created and consumed at the same time.",
+        },
+        new object[]
+        {
             "Trading/Order.Size.Small",
             typeof(SizeSmall),
             "Basic order sample. Demonstrates how small-sized orders can be placed. Requires credentials.",
