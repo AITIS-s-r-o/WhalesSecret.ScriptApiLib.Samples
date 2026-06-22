@@ -35,7 +35,7 @@ public class LDcaCalculationTests
             { symbolPair, exchangeSymbolPairLimits },
         };
 
-        ExchangeInfo exchangeInfo = new(ExchangeMarket.BinanceSpot, symbolPairLimits, timeShift: TimeSpan.Zero);
+        ExchangeInfo exchangeInfo = new(ExchangeMarket.BinanceSpot, symbolPairLimits, timeShift: TimeSpan.Zero, latency: TimeSpan.Zero);
         this.orderRequestBuilder = new OrderRequestBuilder<MarketOrderRequest>(exchangeInfo);
     }
 
