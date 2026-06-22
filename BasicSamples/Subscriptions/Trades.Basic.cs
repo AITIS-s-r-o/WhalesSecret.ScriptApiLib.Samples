@@ -27,7 +27,7 @@ public class TradesBasic : IScriptApiSample
         Console.WriteLine($"Public connection to {exchangeMarket} has been established successfully.");
 
         SymbolPair symbolPair = SymbolPair.BTC_USDT;
-        Console.WriteLine($"Create subscription for '{symbolPair}' trade on {exchangeMarket}.");
+        Console.WriteLine($"Create subscription for '{symbolPair}' trades on {exchangeMarket}.");
         await using ITradeSubscription subscription = await tradeClient.CreateTradeSubscriptionAsync(symbolPair).ConfigureAwait(false);
 
         Console.WriteLine($"Trade subscription for '{symbolPair}' on {exchangeMarket} has been created successfully as '{subscription}'.");
