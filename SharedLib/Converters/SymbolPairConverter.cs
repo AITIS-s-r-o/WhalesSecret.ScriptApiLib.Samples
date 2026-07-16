@@ -17,10 +17,10 @@ public class SymbolPairConverter : JsonConverter<SymbolPair>
         if (str is null)
             throw new JsonException("Symbol pair cannot be null.");
 
-        if (!SymbolPair.TryParseToString(str, out SymbolPair? symbolPair))
+        if (!SymbolPair.TryParseToString(str, out SymbolPair symbolPair))
             throw new JsonException("Invalid symbol pair format.");
 
-        return symbolPair.Value;
+        return symbolPair;
     }
 
     /// <inheritdoc/>
