@@ -105,6 +105,18 @@ public class Program
         },
         new object[]
         {
+            "Subscriptions/BestBidAsk.Basic",
+            typeof(BestBidAskBasic),
+            "Basic best bid/ask subscription sample. Demonstrates how a best bid/ask subscription can be created and consumed.",
+        },
+        new object[]
+        {
+            "Subscriptions/BestBidAsk.Set",
+            typeof(BestBidAskSet),
+            "Advanced best bid/ask subscription sample. Demonstrates how multiple best bid/ask subscriptions can be created and consumed at the same time.",
+        },
+        new object[]
+        {
             "Trading/Order.Size.Small",
             typeof(SizeSmall),
             "Basic order sample. Demonstrates how small-sized orders can be placed. Requires credentials.",
