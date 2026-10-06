@@ -7,7 +7,7 @@ Whale's Secret ScriptApiLib is a .NET library that provides unified API to diffe
 ## How to Start
 
 The simplest example is [PublicConnection sample](BasicSamples/Connections/PublicConnection.cs) which simply connects to a selected exchange market without need to have credentials or license.
-Such a public connection enables you to download public market data, such as order books, tickers, or candlesticks.
+Such a public connection enables you to download public market data, such as order books, candlesticks, tickers, trades, best bid/asks (BBO).
 
 The core of this sample looks as follows:
 
@@ -41,6 +41,10 @@ Usage: WhalesSecret.ScriptApiLib.Samples.BasicSamples <sampleName> <exchangeMark
         Subscriptions/OrderBook.Arbitrage - Advanced order book subscription sample. Demonstrates how to monitor order books on two different exchanges at the same time.
         Subscriptions/Ticker.Basic - Basic ticker subscription sample. Demonstrates how a ticker subscription can be created and consumed.
         Subscriptions/Ticker.Set - Advanced ticker subscription sample. Demonstrates how multiple ticker subscriptions can be created and consumed at the same time.
+        Subscriptions/Trades.Basic - Basic trades subscription sample. Demonstrates how a trades subscription can be created and consumed.
+        Subscriptions/Trades.Set - Advanced trades subscription sample. Demonstrates how multiple trades subscriptions can be created and consumed at the same time.
+        Subscriptions/BestBidAsk.Basic - Basic best bid/ask subscription sample. Demonstrates how a best bid/ask subscription can be created and consumed.
+        Subscriptions/BestBidAsk.Set - Advanced best bid/ask subscription sample. Demonstrates how multiple best bid/ask subscriptions can be created and consumed at the same time.
         Trading/Order.Size.Small - Basic order sample. Demonstrates how small-sized orders can be placed. Requires credentials.
         Trading/Order.Size.Large - Basic order sample. Demonstrates how larger-sized orders can be placed. Requires credentials and a valid license.
         Trading/Order.Updates - Basic order's updates sample. Demonstrates how order's updates can be consumed. Requires credentials.
