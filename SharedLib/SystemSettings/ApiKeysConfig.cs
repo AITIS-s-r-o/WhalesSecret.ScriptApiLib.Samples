@@ -18,21 +18,26 @@ public class ApiKeysConfig
     /// <summary>Configuration of KuCoin API keys, or <c>null</c> not to configure API keys for KuCoin.</summary>
     public KucoinApiKeyConfig? Kucoin { get; }
 
-    /// <summary>Configuration of Kraken API keys, or <c>null</c> not to configure API keys for Kraken.</summary>
+    /// <summary>Configuration of Kraken Spot API keys, or <c>null</c> not to configure API keys for Kraken.</summary>
     public KrakenApiKeyConfig? Kraken { get; }
+
+    /// <summary>Configuration of Kraken Futures API keys, or <c>null</c> not to configure API keys for Kraken Futures.</summary>
+    public KrakenFuturesApiKeyConfig? KrakenFutures { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
     /// <param name="binance">Configuration of Binance API keys, or <c>null</c> not to configure API keys for Binance.</param>
     /// <param name="kucoin">Configuration of KuCoin API keys, or <c>null</c> not to configure API keys for KuCoin.</param>
-    /// <param name="kraken">Configuration of Kraken API keys, or <c>null</c> not to configure API keys for Kraken.</param>
+    /// <param name="kraken">Configuration of Kraken Spot API keys, or <c>null</c> not to configure API keys for Kraken.</param>
+    /// <param name="krakenFutures">Configuration of Kraken Futures API keys, or <c>null</c> not to configure API keys for Kraken Futures.</param>
     [JsonConstructor]
-    public ApiKeysConfig(BinanceApiKeyConfig? binance, KucoinApiKeyConfig? kucoin, KrakenApiKeyConfig? kraken)
+    public ApiKeysConfig(BinanceApiKeyConfig? binance, KucoinApiKeyConfig? kucoin, KrakenApiKeyConfig? kraken, KrakenFuturesApiKeyConfig? krakenFutures)
     {
         this.Binance = binance;
         this.Kucoin = kucoin;
         this.Kraken = kraken;
+        this.KrakenFutures = krakenFutures;
     }
 
     /// <summary>
@@ -75,6 +80,19 @@ public class ApiKeysConfig
     }
 
     /// <summary>
+    /// Gets exchange API credentials for Kraken Futures exchange.
+    /// </summary>
+    /// <returns>Exchange API credentials for Kraken Futures exchange.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if Kraken Futures API keys are not configured.</exception>
+    public IApiIdentity GetKrakenFuturesApiIdentity()
+    {
+        if (this.KrakenFutures is null)
+            throw new InvalidOperationException("Kraken Futures API keys are not configured.");
+
+        return this.KrakenFutures.GetApiIdentity();
+    }
+
+    /// <summary>
     /// Gets exchange API credentials for the given exchange.
     /// </summary>
     /// <param name="exchangeMarket">Exchange market for which to get API credentials.</param>
@@ -87,6 +105,7 @@ public class ApiKeysConfig
             ExchangeMarket.BinanceSpot => this.GetBinanceApiIdentity(),
             ExchangeMarket.KucoinSpot => this.GetKucoinApiIdentity(),
             ExchangeMarket.KrakenSpot => this.GetKrakenApiIdentity(),
+            ExchangeMarket.KrakenFutures => this.GetKrakenFuturesApiIdentity(),
             _ => throw new SanityCheckException($"Unsupported exchange market {exchangeMarket} provided."),
         };
     }
@@ -97,10 +116,11 @@ public class ApiKeysConfig
         return string.Format
         (
             CultureInfo.InvariantCulture,
-            "[{0}=`{1}`,{2}=`{3}`,{4}=`{5}`]",
+            "[{0}=`{1}`,{2}=`{3}`,{4}=`{5}`,{6}=`{7}`]",
             nameof(this.Binance), this.Binance,
             nameof(this.Kucoin), this.Kucoin,
-            nameof(this.Kraken), this.Kraken
+            nameof(this.Kraken), this.Kraken,
+            nameof(this.KrakenFutures), this.KrakenFutures
         );
     }
 }

@@ -7,25 +7,25 @@ using WhalesSecret.TradeScriptLib.Exceptions;
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 
 /// <summary>
-/// Configuration of Kraken Spot API keys.
+/// Configuration of Kraken Futures API keys.
 /// </summary>
-public class KrakenApiKeyConfig
+public class KrakenFuturesApiKeyConfig
 {
-    /// <summary>API key for Kraken exchange.</summary>
+    /// <summary>API key for Kraken Futures exchange.</summary>
     public string Key { get; }
 
-    /// <summary>API secret for Kraken exchange.</summary>
+    /// <summary>API secret for Kraken Futures exchange.</summary>
     public string Secret { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="key">API key for Kraken exchange.</param>
-    /// <param name="secret">API secret for Kraken exchange.</param>
+    /// <param name="key">API key for Kraken Futures exchange.</param>
+    /// <param name="secret">API secret for Kraken Futures exchange.</param>
     /// <exception cref="InvalidArgumentException">Thrown if any of the parameters is <c>null</c> or empty.
     /// </exception>
     [JsonConstructor]
-    public KrakenApiKeyConfig(string? key, string secret)
+    public KrakenFuturesApiKeyConfig(string? key, string secret)
     {
         if (string.IsNullOrEmpty(key))
             throw new InvalidArgumentException($"'{nameof(key)}' must not be null or empty.", parameterName: nameof(key));
@@ -44,7 +44,7 @@ public class KrakenApiKeyConfig
     public IApiIdentity GetApiIdentity()
     {
         byte[] secretBytes = Convert.FromBase64String(this.Secret);
-        return KrakenApiIdentity.Create(name: "KrakenCredentials", key: this.Key, secret: secretBytes);
+        return KrakenApiIdentity.Create(name: "KrakenFuturesCredentials", key: this.Key, secret: secretBytes);
     }
 
     /// <inheritdoc/>
