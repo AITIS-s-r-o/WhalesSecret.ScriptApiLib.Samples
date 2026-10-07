@@ -11,17 +11,17 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 /// </summary>
 public class KrakenApiKeyConfig
 {
-    /// <summary>API key for Kraken exchange.</summary>
+    /// <summary>API key for Kraken Spot exchange.</summary>
     public string Key { get; }
 
-    /// <summary>API secret for Kraken exchange.</summary>
+    /// <summary>API secret for Kraken Spot exchange.</summary>
     public string Secret { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="key">API key for Kraken exchange.</param>
-    /// <param name="secret">API secret for Kraken exchange.</param>
+    /// <param name="key">API key for Kraken Spot exchange.</param>
+    /// <param name="secret">API secret for Kraken Spot exchange.</param>
     /// <exception cref="InvalidArgumentException">Thrown if any of the parameters is <c>null</c> or empty.
     /// </exception>
     [JsonConstructor]
