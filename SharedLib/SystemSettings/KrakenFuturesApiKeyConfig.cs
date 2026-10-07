@@ -44,7 +44,7 @@ public class KrakenFuturesApiKeyConfig
     public IApiIdentity GetApiIdentity()
     {
         byte[] secretBytes = Convert.FromBase64String(this.Secret);
-        return KrakenApiIdentity.Create(name: "KrakenFuturesCredentials", key: this.Key, secret: secretBytes);
+        return KrakenFuturesApiIdentity.Create(name: "KrakenFuturesCredentials", key: this.Key, secret: secretBytes);
     }
 
     /// <inheritdoc/>
