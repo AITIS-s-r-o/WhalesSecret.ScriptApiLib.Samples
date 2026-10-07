@@ -38,9 +38,9 @@ public class KrakenApiKeyConfig
     }
 
     /// <summary>
-    /// Gets exchange API credentials for KuCoin exchange.
+    /// Gets exchange API credentials for Kraken exchange.
     /// </summary>
-    /// <returns>New instance of exchange API credentials for KuCoin exchange.</returns>
+    /// <returns>New instance of exchange API credentials for Kraken exchange.</returns>
     public IApiIdentity GetApiIdentity()
     {
         byte[] secretBytes = Convert.FromBase64String(this.Secret);
