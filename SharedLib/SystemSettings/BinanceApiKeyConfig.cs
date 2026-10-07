@@ -9,29 +9,29 @@ using WhalesSecret.TradeScriptLib.Logging;
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 
 /// <summary>
-/// Configuration of Binance API keys.
+/// Configuration of Binance Spot API keys.
 /// </summary>
 public class BinanceApiKeyConfig
 {
-    /// <summary>API key for Binance exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</summary>
+    /// <summary>API key for Binance Spot exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</summary>
     public string? HmacKey { get; }
 
-    /// <summary>API secret for Binance exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</summary>
+    /// <summary>API secret for Binance Spot exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</summary>
     public string? HmacSecret { get; }
 
-    /// <summary>API key for Binance exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</summary>
+    /// <summary>API key for Binance Spot exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</summary>
     public string? RsaKey { get; }
 
-    /// <summary>API secret for Binance exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</summary>
+    /// <summary>API secret for Binance Spot exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</summary>
     public string? RsaSecret { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="hmacKey">API key for Binance exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</param>
-    /// <param name="hmacSecret">API secret for Binance exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</param>
-    /// <param name="rsaKey">API key for Binance exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</param>
-    /// <param name="rsaSecret">API secret for Binance exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</param>
+    /// <param name="hmacKey">API key for Binance Spot exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</param>
+    /// <param name="hmacSecret">API secret for Binance Spot exchange using HMAC algorithm, or <c>null</c> to use RSA algorithm keys.</param>
+    /// <param name="rsaKey">API key for Binance Spot exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</param>
+    /// <param name="rsaSecret">API secret for Binance Spot exchange using RSA algorithm, or <c>null</c> to use HMAC algorithm keys.</param>
     /// <exception cref="InvalidArgumentException">Thrown if information is provided for both HMAC and RSA algorithms, or if all keys or all secrets are <c>null</c> or empty.
     /// </exception>
     [JsonConstructor]

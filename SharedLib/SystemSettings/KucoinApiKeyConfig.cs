@@ -7,25 +7,25 @@ using WhalesSecret.TradeScriptLib.Exceptions;
 namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 
 /// <summary>
-/// Configuration of KuCoin API keys.
+/// Configuration of KuCoin Spot API keys.
 /// </summary>
 public class KucoinApiKeyConfig
 {
-    /// <summary>API key for KuCoin exchange.</summary>
+    /// <summary>API key for KuCoin Spot exchange.</summary>
     public string Key { get; }
 
-    /// <summary>API secret for KuCoin exchange.</summary>
+    /// <summary>API secret for KuCoin Spot exchange.</summary>
     public string Secret { get; }
 
-    /// <summary>API passphrase for KuCoin exchange.</summary>
+    /// <summary>API passphrase for KuCoin Spot exchange.</summary>
     public string Passphrase { get; }
 
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="key">API key for KuCoin exchange.</param>
-    /// <param name="secret">API secret for KuCoin exchange.</param>
-    /// <param name="passphrase">API passphrase for KuCoin exchange.</param>
+    /// <param name="key">API key for KuCoin Spot exchange.</param>
+    /// <param name="secret">API secret for KuCoin Spot exchange.</param>
+    /// <param name="passphrase">API passphrase for KuCoin Spot exchange.</param>
     /// <exception cref="InvalidArgumentException">Thrown if any of the parameters is <c>null</c> or empty.
     /// </exception>
     [JsonConstructor]
