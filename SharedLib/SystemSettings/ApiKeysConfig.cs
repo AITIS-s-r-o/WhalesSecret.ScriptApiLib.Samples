@@ -12,10 +12,10 @@ namespace WhalesSecret.ScriptApiLib.Samples.SharedLib.SystemSettings;
 /// </summary>
 public class ApiKeysConfig
 {
-    /// <summary>Configuration of Binance API keys, or <c>null</c> not to configure API keys for Binance.</summary>
+    /// <summary>Configuration of Binance Spot API keys, or <c>null</c> not to configure API keys for Binance.</summary>
     public BinanceApiKeyConfig? Binance { get; }
 
-    /// <summary>Configuration of KuCoin API keys, or <c>null</c> not to configure API keys for KuCoin.</summary>
+    /// <summary>Configuration of KuCoin Spot API keys, or <c>null</c> not to configure API keys for KuCoin.</summary>
     public KucoinApiKeyConfig? Kucoin { get; }
 
     /// <summary>Configuration of Kraken Spot API keys, or <c>null</c> not to configure API keys for Kraken.</summary>
@@ -27,9 +27,9 @@ public class ApiKeysConfig
     /// <summary>
     /// Creates a new instance of the object.
     /// </summary>
-    /// <param name="binance">Configuration of Binance API keys, or <c>null</c> not to configure API keys for Binance.</param>
-    /// <param name="kucoin">Configuration of KuCoin API keys, or <c>null</c> not to configure API keys for KuCoin.</param>
-    /// <param name="kraken">Configuration of Kraken Spot API keys, or <c>null</c> not to configure API keys for Kraken.</param>
+    /// <param name="binance">Configuration of Binance Spot API keys, or <c>null</c> not to configure API keys for Binance Spot.</param>
+    /// <param name="kucoin">Configuration of KuCoin Spot API keys, or <c>null</c> not to configure API keys for KuCoin Spot.</param>
+    /// <param name="kraken">Configuration of Kraken Spot API keys, or <c>null</c> not to configure API keys for Kraken Spot.</param>
     /// <param name="krakenFutures">Configuration of Kraken Futures API keys, or <c>null</c> not to configure API keys for Kraken Futures.</param>
     [JsonConstructor]
     public ApiKeysConfig(BinanceApiKeyConfig? binance, KucoinApiKeyConfig? kucoin, KrakenApiKeyConfig? kraken, KrakenFuturesApiKeyConfig? krakenFutures)
@@ -41,40 +41,40 @@ public class ApiKeysConfig
     }
 
     /// <summary>
-    /// Gets exchange API credentials for Binance exchange.
+    /// Gets exchange API credentials for Binance Spot exchange.
     /// </summary>
-    /// <returns>Exchange API credentials for Binance exchange.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if Binance API keys are not configured.</exception>
+    /// <returns>Exchange API credentials for Binance Spot exchange.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if Binance Spot API keys are not configured.</exception>
     public IApiIdentity GetBinanceApiIdentity()
     {
         if (this.Binance is null)
-            throw new InvalidOperationException("Binance API keys are not configured.");
+            throw new InvalidOperationException("Binance Spot API keys are not configured.");
 
         return this.Binance.GetApiIdentity();
     }
 
     /// <summary>
-    /// Gets exchange API credentials for KuCoin exchange.
+    /// Gets exchange API credentials for KuCoin Spot exchange.
     /// </summary>
-    /// <returns>Exchange API credentials for KuCoin exchange.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if KuCoin API keys are not configured.</exception>
+    /// <returns>Exchange API credentials for KuCoin Spot exchange.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if KuCoin Spot API keys are not configured.</exception>
     public IApiIdentity GetKucoinApiIdentity()
     {
         if (this.Kucoin is null)
-            throw new InvalidOperationException("KuCoin API keys are not configured.");
+            throw new InvalidOperationException("KuCoin Spot API keys are not configured.");
 
         return this.Kucoin.GetApiIdentity();
     }
 
     /// <summary>
-    /// Gets exchange API credentials for Kraken exchange.
+    /// Gets exchange API credentials for Kraken Spot exchange.
     /// </summary>
-    /// <returns>Exchange API credentials for Kraken exchange.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if Kraken API keys are not configured.</exception>
+    /// <returns>Exchange API credentials for Kraken Spot exchange.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if Kraken Spot API keys are not configured.</exception>
     public IApiIdentity GetKrakenApiIdentity()
     {
         if (this.Kraken is null)
-            throw new InvalidOperationException("Kraken API keys are not configured.");
+            throw new InvalidOperationException("Kraken Spot API keys are not configured.");
 
         return this.Kraken.GetApiIdentity();
     }
